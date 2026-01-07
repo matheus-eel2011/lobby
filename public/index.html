@@ -376,7 +376,7 @@
           try {
             const r = await fetch("/api/tournaments", { cache: "no-store" });
             const payload = await r.json();
-            tournaments = Array.isArray(payload) ? payload : (payload.data || []);
+            tournaments = payload.data || payload || [];
     filteredTournaments = [...tournaments];
 
             applyFilters();
