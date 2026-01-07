@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pega Blinder Lobby - Poker Tournament Aggregator</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -941,6 +941,7 @@
 
 <script>
     // ===== CARREGAMENTO DA API =====
+    let allTournamentsData = [];
     let filteredTournaments = [];
     let registered = new Set();
     let selectedDays = new Set([0, 1, 2, 3, 4, 5, 6]);
@@ -958,7 +959,7 @@
             let tournaments = Array.isArray(payload) ? payload : (payload.data || payload || []);
             
             console.log("✅ API respondeu:", tournaments);
-
+            allTournamentsData = [...tournaments];
             filteredTournaments = [...tournaments];
             applyFilters();
         } catch (e) {
@@ -1235,73 +1236,83 @@
     }
 
     function exportPDF() {
-        const registeredTournaments = Array.from(registered).map(id => filteredTournaments.find(t => t.id === id)).filter(t => t);
+        const registeredTournaments = Array.from(registered)
+            .map(id => filteredTournaments.find(t => t.id === id))
+            .filter(t => t);
+        
         if (registeredTournaments.length === 0) {
             showNotification('Aviso', 'Nenhum torneio registrado para exportar', 'warning');
             return;
         }
+        
         const totalBuyin = registeredTournaments.reduce((sum, t) => sum + t.buyin, 0);
-        const totalCashout = registeredTournaments.reduce((sum, t) => sum + (cashouts[t.id] !== undefined ? cashouts[t.id] : t.buyin), 0);
+        const totalCashout = registeredTournaments.reduce((sum, t) => 
+            sum + (cashouts[t.id] !== undefined ? cashouts[t.id] : t.buyin), 0);
         const profit = totalCashout - totalBuyin;
         const roi = totalBuyin > 0 ? (profit / totalBuyin * 100).toFixed(1) : 0;
         const today = new Date().toLocaleDateString('pt-BR');
+        
         let html = `
-            <div style="font-family: Arial, sans-serif; padding: 20px;">
-                <h1 style="color: #4f46e5;">🎯 Pega Blinder Lobby</h1>
-                <h2>Histórico de Registros</h2>
-                <p><strong>Data:</strong> ${today}</p>
-                <div style="margin: 20px 0; padding: 15px; background: #f3f4f6; border-radius: 8px;">
-                    <h3 style="color: #4f46e5;">Resumo da Sessão</h3>
+            <div style="font-family: Arial, sans-serif; padding: 20px; background: white; color: black;">
+                <h1 style="color: #4f46e5; text-align: center;">🎯 Pega Blinder Lobby</h1>
+                <h2 style="text-align: center;">Histórico de Registros</h2>
+                <p style="text-align: center;"><strong>Data:</strong> ${today}</p>
+                
+                <div style="margin: 20px 0; padding: 15px; background: #f3f4f6; border-radius: 8px; border-left: 4px solid #4f46e5;">
+                    <h3 style="color: #4f46e5; margin-top: 0;">📊 Resumo da Sessão</h3>
                     <table style="width: 100%; border-collapse: collapse;">
-                        <tr>
-                            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Torneios Registrados</strong></td>
-                            <td style="padding: 8px; border: 1px solid #ddd;">${registeredTournaments.length}</td>
+                        <tr style="background: #f9f9f9;">
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Torneios Registrados</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${registeredTournaments.length}</td>
                         </tr>
                         <tr>
-                            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Total Buy-in</strong></td>
-                            <td style="padding: 8px; border: 1px solid #ddd;">$${totalBuyin}</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Total Buy-in</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">$${totalBuyin.toFixed(2)}</td>
                         </tr>
-                        <tr>
-                            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Total Cashout</strong></td>
-                            <td style="padding: 8px; border: 1px solid #ddd;">$${totalCashout}</td>
+                        <tr style="background: #f9f9f9;">
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Total Cashout</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">$${totalCashout.toFixed(2)}</td>
                         </tr>
                         <tr style="background: ${profit >= 0 ? '#dcfce7' : '#fee2e2'};">
-                            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Lucro/Prejuízo</strong></td>
-                            <td style="padding: 8px; border: 1px solid #ddd; color: ${profit >= 0 ? '#10b981' : '#ef4444'}; font-weight: bold;">$${profit.toFixed(2)}</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Lucro/Prejuízo</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd; color: ${profit >= 0 ? '#10b981' : '#ef4444'}; font-weight: bold;">$${profit.toFixed(2)}</td>
                         </tr>
                         <tr>
-                            <td style="padding: 8px; border: 1px solid #ddd;"><strong>ROI</strong></td>
-                            <td style="padding: 8px; border: 1px solid #ddd; color: ${roi >= 0 ? '#10b981' : '#ef4444'}; font-weight: bold;">${roi}%</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>ROI</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd; color: ${roi >= 0 ? '#10b981' : '#ef4444'}; font-weight: bold;">${roi}%</td>
                         </tr>
                     </table>
                 </div>
-                <h3 style="color: #4f46e5;">Detalhes dos Torneios</h3>
-                <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                
+                <h3 style="color: #4f46e5; margin-top: 30px;">📋 Detalhes dos Torneios</h3>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
                     <thead>
                         <tr style="background: #4f46e5; color: white;">
-                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Torneio</th>
-                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Sala</th>
-                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Tipo</th>
-                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Buy-in</th>
-                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Cashout</th>
-                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Resultado</th>
-                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">ROI</th>
+                            <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Torneio</th>
+                            <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Sala</th>
+                            <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Tipo</th>
+                            <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Buy-in</th>
+                            <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Cashout</th>
+                            <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Resultado</th>
+                            <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">ROI</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${registeredTournaments.map(t => {
+                        ${registeredTournaments.map((t, idx) => {
                             const cashout = cashouts[t.id] !== undefined ? cashouts[t.id] : '-';
-                            let resultColor = '';
+                            let resultColor = 'black';
                             let resultado = '-';
                             let roiValue = '-';
+                            
                             if (cashout !== '-') {
                                 resultado = (cashout - t.buyin).toFixed(2);
                                 roiValue = ((resultado / t.buyin) * 100).toFixed(1);
                                 resultColor = resultado >= 0 ? '#10b981' : '#ef4444';
                             }
+                            
                             return `
-                                <tr>
-                                    <td style="padding: 10px; border: 1px solid #ddd;">${t.name}</td>
+                                <tr style="background: ${idx % 2 === 0 ? '#f9f9f9' : 'white'};">
+                                    <td style="padding: 10px; border: 1px solid #ddd; font-weight: 500;">${t.name}</td>
                                     <td style="padding: 10px; border: 1px solid #ddd;">${t.site}</td>
                                     <td style="padding: 10px; border: 1px solid #ddd;">${t.type}</td>
                                     <td style="padding: 10px; border: 1px solid #ddd;">$${t.buyin}</td>
@@ -1313,80 +1324,95 @@
                         }).join('')}
                     </tbody>
                 </table>
+                
+                <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #ddd; text-align: center; color: #666; font-size: 12px;">
+                    <p>Relatório gerado em ${new Date().toLocaleString('pt-BR')}</p>
+                    <p>Pega Blinder Lobby - Agregador de Torneios de Poker</p>
+                </div>
             </div>
         `;
-        const element = document.createElement('div');
-        element.innerHTML = html;
-        const opt = {
-            margin: 10,
-            filename: `historico-torneios-${today.replace(/\//g, '-')}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2 },
-            jsPDF: { orientation: 'landscape', unit: 'mm', format: 'a4' }
-        };
-        html2pdf.set(opt).from(element).save();
-        showNotification('✅ Exportado!', 'Histórico exportado como PDF', 'success');
+        
+        // 🔧 CORREÇÃO: Usar setTimeout para garantir que a biblioteca está carregada
+        setTimeout(() => {
+            try {
+                const element = document.createElement('div');
+                element.innerHTML = html;
+                
+                // Verifica se html2pdf existe
+                if (typeof html2pdf === 'undefined') {
+                    showNotification('❌ Erro', 'Biblioteca PDF não disponível. Tente novamente.', 'warning');
+                    return;
+                }
+                
+                const opt = {
+                    margin: [15, 15, 15, 15],
+                    filename: `pega-blinder-${today.replace(/\//g, '-')}.pdf`,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { 
+                        scale: 2,
+                        useCORS: true,
+                        allowTaint: true,
+                        backgroundColor: '#ffffff'
+                    },
+                    jsPDF: { 
+                        orientation: 'landscape', 
+                        unit: 'mm', 
+                        format: 'a4',
+                        compress: true
+                    }
+                };
+                
+                html2pdf().set(opt).from(element).save().then(() => {
+                    showNotification('✅ Exportado!', 'PDF gerado com sucesso', 'success');
+                }).catch((err) => {
+                    console.error('Erro ao gerar PDF:', err);
+                    showNotification('❌ Erro', 'Erro ao gerar PDF: ' + err.message, 'warning');
+                });
+                
+            } catch (error) {
+                console.error('Erro ao exportar PDF:', error);
+                showNotification('❌ Erro', 'Erro ao exportar: ' + error.message, 'warning');
+            }
+        }, 500);
     }
+
 
     function applyFilters() {
-        const rooms = Array.from(document.querySelectorAll('.room-filter:checked')).map(e => e.value);
-        const types = Array.from(document.querySelectorAll('.type-filter:checked')).map(e => e.value);
-        const minBuyin = parseInt(document.getElementById('minBuyin').value) || 0;
-        const maxBuyin = parseInt(document.getElementById('maxBuyin').value) || 999999;
-        filteredTournaments = filteredTournaments.filter(t => 
-            rooms.includes(t.site) && 
-            types.includes(t.type) && 
-            t.buyin >= minBuyin && 
-            t.buyin <= maxBuyin && 
-            selectedDays.has(t.day)
-        );
-        renderTable();
+        // 🔧 CORREÇÃO: Recarrega os dados originais antes de filtrar
+        // Isso garante que temos TODOS os torneios para filtrar
+        
+        let allTournaments = [];
+        
+        // Reconstrói a lista completa dos dados da API
+        async function getAndFilterTournaments() {
+            try {
+                const r = await fetch("/api/tournaments", { cache: "no-store" });
+                const payload = await r.json();
+                allTournaments = Array.isArray(payload) ? payload : (payload.data || payload || []);
+                
+                // Agora aplica os filtros aos dados COMPLETOS
+                const rooms = Array.from(document.querySelectorAll('.room-filter:checked')).map(e => e.value);
+                const types = Array.from(document.querySelectorAll('.type-filter:checked')).map(e => e.value);
+                const minBuyin = parseInt(document.getElementById('minBuyin').value) || 0;
+                const maxBuyin = parseInt(document.getElementById('maxBuyin').value) || 999999;
+                
+                filteredTournaments = allTournaments.filter(t => 
+                    rooms.includes(t.site) && 
+                    types.includes(t.type) && 
+                    t.buyin >= minBuyin && 
+                    t.buyin <= maxBuyin && 
+                    selectedDays.has(t.day)
+                );
+                
+                renderTable();
+            } catch (e) {
+                console.error("Erro ao filtrar:", e);
+            }
+        }
+        
+        getAndFilterTournaments();
     }
 
-    document.querySelectorAll('.weekday-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const day = parseInt(e.target.dataset.day);
-            if (selectedDays.has(day)) {
-                selectedDays.delete(day);
-                e.target.classList.remove('active');
-            } else {
-                selectedDays.add(day);
-                e.target.classList.add('active');
-            }
-            applyFilters();
-        });
-    });
-
-    document.querySelectorAll('.view-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
-            e.target.classList.add('active');
-            document.getElementById('listView').style.display = 'none';
-            document.getElementById('grindView').style.display = 'none';
-            document.getElementById('controlView').style.display = 'none';
-            const view = e.target.dataset.view;
-            if (view === 'list') {
-                document.getElementById('listView').style.display = 'block';
-            } else if (view === 'grind') {
-                document.getElementById('grindView').style.display = 'block';
-            } else if (view === 'control') {
-                document.getElementById('controlView').style.display = 'block';
-            }
-        });
-    });
-
-    document.getElementById('applyFilters').addEventListener('click', applyFilters);
-    document.querySelectorAll('.room-filter, .type-filter').forEach(el => {
-        el.addEventListener('change', applyFilters);
-    });
-    document.getElementById('minBuyin').addEventListener('input', applyFilters);
-    document.getElementById('maxBuyin').addEventListener('input', applyFilters);
-    document.getElementById('targetBuyin').addEventListener('change', updateGrindMode);
-    document.getElementById('targetRoi').addEventListener('change', updateGrindMode);
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeCashoutModal();
-    });
 
     // FILE UPLOAD
     document.getElementById('fileInput').addEventListener('change', async (e) => {
