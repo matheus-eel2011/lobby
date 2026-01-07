@@ -951,7 +951,7 @@
     // ===== FUNÇÃO PARA CARREGAR API =====
     async function loadTournamentsFromAPI() {
         try {
-            const r = await fetch("/api/tournaments", { cache: "no-store" });
+            const r = await fetch("./api/tournaments.js", { cache: "no-store" });
             const payload = await r.json();
 
             // CORRIGIDO: Extrai corretamente o array
