@@ -1,0 +1,1448 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pega Blinder Lobby - Poker Tournament Aggregator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --secondary: #06b6d4;
+            --bg-dark: #0f172a;
+            --bg-lighter: #1e293b;
+            --bg-card: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --border: #334155;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            
+            --ggpoker: #FF6B35;
+            --pokerstars: #1F4788;
+            --poker888: #FF9800;
+            --yapoker: #6C63FF;
+            --champion: #00D4FF;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            line-height: 1.5;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: var(--bg-lighter);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .sidebar-header {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--secondary);
+            margin-bottom: 30px;
+        }
+
+        .sidebar-section {
+            margin-bottom: 25px;
+        }
+
+        .sidebar-section-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .weekday-group {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+        }
+
+        .weekday-btn {
+            padding: 8px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .weekday-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        input[type="text"], input[type="number"], select {
+            width: 100%;
+            padding: 8px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 13px;
+            margin-top: 5px;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 10px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 8px;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-upload {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-dark);
+            border: 2px dashed var(--border);
+            color: var(--text-secondary);
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 5px;
+        }
+
+        .btn-upload:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: rgba(79, 70, 229, 0.05);
+        }
+
+        .upload-info {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: var(--bg-lighter);
+            border-bottom: 1px solid var(--border);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 10px;
+        }
+
+        .view-btn {
+            padding: 8px 12px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .view-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+        }
+
+        .table-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        thead {
+            background: var(--bg-lighter);
+            position: sticky;
+            top: 0;
+        }
+
+        th {
+            padding: 12px 10px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-size: 10px;
+        }
+
+        td {
+            padding: 12px 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tbody tr:hover {
+            background: rgba(79, 70, 229, 0.05);
+        }
+
+        tbody tr.registered {
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .countdown-bar {
+            width: 100%;
+            height: 20px;
+            background: var(--bg-dark);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 4px;
+        }
+
+        .countdown-progress {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            text-align: center;
+            min-width: 55px;
+        }
+
+        .badge-regular { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+        .badge-turbo { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+        .badge-hyper { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        .badge-pko { background: rgba(168, 85, 247, 0.2); color: #a855f7; }
+
+        .priority-very-low { background: rgba(107, 114, 128, 0.2); color: #9ca3af; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; }
+        .priority-low { background: rgba(59, 130, 246, 0.2); color: #3b82f6; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; }
+        .priority-medium { background: rgba(245, 158, 11, 0.2); color: #f59e0b; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; }
+        .priority-high { background: rgba(239, 68, 68, 0.2); color: #ef4444; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; }
+        .priority-very-high { background: rgba(168, 85, 247, 0.2); color: #a855f7; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; }
+
+        .site-badge {
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+            text-align: center;
+            min-width: 80px;
+        }
+
+        .site-ggpoker { background: var(--ggpoker); }
+        .site-pokerstars { background: var(--pokerstars); }
+        .site-888poker { background: var(--poker888); }
+        .site-yapoker { background: var(--yapoker); }
+        .site-champion { background: var(--champion); }
+
+        .btn-register {
+            padding: 6px 10px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .btn-register.active {
+            background: var(--success);
+            color: white;
+            border-color: var(--success);
+        }
+
+        .btn-cashout {
+            padding: 6px 10px;
+            background: var(--primary);
+            border: 1px solid var(--primary);
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .btn-cashout:hover {
+            background: var(--primary-dark);
+        }
+
+        .grind-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .grind-item {
+            background: var(--bg-lighter);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .grind-item-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .grind-item-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--secondary);
+        }
+
+        .progress-bar-container {
+            background: var(--bg-dark);
+            border-radius: 8px;
+            height: 30px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .timer-box {
+            background: var(--bg-lighter);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .timer-name {
+            color: var(--secondary);
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .timer-display {
+            font-size: 32px;
+            font-weight: bold;
+            color: var(--primary);
+            font-family: 'Courier New', monospace;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .dashboard-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .dashboard-card-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 15px;
+            letter-spacing: 0.5px;
+        }
+
+        .dashboard-value {
+            font-size: 40px;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 8px;
+            line-height: 1;
+        }
+
+        .dashboard-subtext {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .stat-item {
+            background: var(--bg-lighter);
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--secondary);
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .grind-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .grind-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--secondary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-export {
+            padding: 8px 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-export:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-export.csv {
+            background: #10b981;
+        }
+
+        .btn-export.csv:hover {
+            background: #059669;
+        }
+
+        .btn-export.pdf {
+            background: #ef4444;
+        }
+
+        .btn-export.pdf:hover {
+            background: #dc2626;
+        }
+
+        .notification-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--bg-card);
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            padding: 20px;
+            color: var(--text-primary);
+            z-index: 9999;
+            max-width: 400px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(500px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .notification-toast.success { border-color: var(--success); }
+        .notification-toast.warning { border-color: var(--warning); }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--secondary);
+        }
+
+        .modal-field {
+            margin-bottom: 20px;
+        }
+
+        .modal-label {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modal-btn-save {
+            background: var(--primary);
+            color: white;
+        }
+
+        .modal-btn-save:hover {
+            background: var(--primary-dark);
+        }
+
+        .modal-btn-cancel {
+            background: var(--bg-lighter);
+            color: var(--text-primary);
+        }
+
+        .modal-btn-cancel:hover {
+            background: rgba(79, 70, 229, 0.2);
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .history-table thead {
+            background: var(--bg-darker);
+            border-bottom: 2px solid var(--border);
+        }
+
+        .history-table th {
+            padding: 10px;
+            text-align: left;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .history-table td {
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-dark); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+        .positive { color: var(--success); }
+        .negative { color: var(--danger); }
+
+        .print-hide {
+            display: none;
+        }
+
+        @media print {
+            body {
+                background: white;
+                color: black;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="sidebar-header">🎯 Pega Blinder Lobby</div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Dia da Semana</div>
+                <div class="weekday-group" id="weekdayGroup">
+                    <button class="weekday-btn active" data-day="0">Seg</button>
+                    <button class="weekday-btn active" data-day="1">Ter</button>
+                    <button class="weekday-btn active" data-day="2">Qua</button>
+                    <button class="weekday-btn active" data-day="3">Qui</button>
+                    <button class="weekday-btn active" data-day="4">Sex</button>
+                    <button class="weekday-btn active" data-day="5">Sab</button>
+                    <button class="weekday-btn active" data-day="6">Dom</button>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Salas</div>
+                <div class="checkbox-item"><input type="checkbox" id="ggpoker" class="room-filter" value="GGPoker" checked><label for="ggpoker">🟠 GGPoker</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="pokerstars" class="room-filter" value="PokerStars" checked><label for="pokerstars">🔵 PokerStars</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="888poker" class="room-filter" value="888Poker" checked><label for="888poker">🟡 888Poker</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="yapoker" class="room-filter" value="YaPoker" checked><label for="yapoker">🟣 YaPoker</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="champion" class="room-filter" value="Champion" checked><label for="champion">🔷 Champion</label></div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Tipos</div>
+                <div class="checkbox-item"><input type="checkbox" id="regular" class="type-filter" value="REGULAR" checked><label for="regular">Regular</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="turbo" class="type-filter" value="TURBO" checked><label for="turbo">Turbo</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="hyper" class="type-filter" value="HYPER" checked><label for="hyper">Hyper</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="pko" class="type-filter" value="PKO" checked><label for="pko">PKO</label></div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Buy-in</div>
+                <input type="number" id="minBuyin" placeholder="Min" value="0">
+                <input type="number" id="maxBuyin" placeholder="Max" value="500">
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Importar Dados</div>
+                <input type="file" id="fileInput" accept=".json,.csv,.xlsx" style="display: none;">
+                <button class="btn-upload" onclick="document.getElementById('fileInput').click()">
+                    📁 Importar Torneios
+                </button>
+                <div class="upload-info">
+                    JSON, CSV ou XLSX<br>
+                    Adiciona novos torneios
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <button class="btn-primary" id="applyFilters">Aplicar Filtros</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="header">
+                <div style="font-size: 22px; font-weight: 600;">🎯 Pega Blinder Lobby</div>
+                <div class="view-toggle">
+                    <button class="view-btn active" data-view="list">📋 Lista</button>
+                    <button class="view-btn" data-view="grind">⏱️ Grind Mode</button>
+                    <button class="view-btn" data-view="control">📊 Controle</button>
+                </div>
+            </div>
+
+            <div class="content-area">
+                <!-- LISTA VIEW -->
+                <div id="listView">
+                    <div class="table-container">
+                        <table id="tournamentTable">
+                            <thead>
+                                <tr>
+                                    <th>⏱️ Hora</th>
+                                    <th>Sala</th>
+                                    <th>Torneio</th>
+                                    <th>Tipo</th>
+                                    <th>Buy-in</th>
+                                    <th>GTD</th>
+                                    <th>Field</th>
+                                    <th>ROI %</th>
+                                    <th>Late Reg</th>
+                                    <th>Status</th>
+                                    <th>Registrado</th>
+                                    <th>Cashout</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tournamentBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- GRIND MODE VIEW -->
+                <div id="grindView" style="display:none;">
+                    <div class="grind-card">
+                        <div class="grind-title">⏱️ Próximos Torneios</div>
+                        <div class="grind-grid" id="timerContainer"></div>
+                    </div>
+
+                    <div class="grind-card">
+                        <div class="grind-title">📊 Sessão Atual</div>
+                        <div class="grind-grid">
+                            <div class="grind-item">
+                                <div class="grind-item-label">Torneios Registrados</div>
+                                <div class="grind-item-value" id="registeredCount">0</div>
+                            </div>
+                            <div class="grind-item">
+                                <div class="grind-item-label">Buy-in Total</div>
+                                <div class="grind-item-value">$<span id="totalBuyin">0</span></div>
+                            </div>
+                            <div class="grind-item">
+                                <div class="grind-item-label">Cashout Total</div>
+                                <div class="grind-item-value">$<span id="totalCashout">0</span></div>
+                            </div>
+                            <div class="grind-item">
+                                <div class="grind-item-label">GTD Total</div>
+                                <div class="grind-item-value">$<span id="totalGtd">0</span>K</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grind-card">
+                        <div class="grind-title">🎯 Metas de Grind</div>
+                        <div class="grind-grid">
+                            <div class="grind-item">
+                                <div class="grind-item-label">Meta Buy-in</div>
+                                <input type="number" id="targetBuyin" placeholder="$500" value="500">
+                            </div>
+                            <div class="grind-item">
+                                <div class="grind-item-label">Meta ROI</div>
+                                <input type="number" id="targetRoi" placeholder="15" value="15">
+                            </div>
+                        </div>
+                        <div style="margin-top: 15px;">
+                            <label style="color: var(--text-secondary); font-size: 12px; display: block; margin-bottom: 10px;">Progresso Buy-in</label>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill" id="buyinProgress" style="width: 0%">0%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CONTROL DASHBOARD VIEW -->
+                <div id="controlView" style="display:none;">
+                    <div class="dashboard-grid">
+                        <div class="dashboard-card">
+                            <div class="dashboard-card-title">🎲 Torneios Hoje</div>
+                            <div class="dashboard-value" id="dashTournamentsTotal">0</div>
+                            <div class="dashboard-subtext">disponíveis</div>
+                        </div>
+
+                        <div class="dashboard-card">
+                            <div class="dashboard-card-title">💵 Registrados</div>
+                            <div class="dashboard-value" id="dashRegistered">0</div>
+                            <div class="dashboard-subtext">nesta sessão</div>
+                        </div>
+
+                        <div class="dashboard-card">
+                            <div class="dashboard-card-title">💰 Total Buy-in</div>
+                            <div class="dashboard-value">$<span id="dashTotalBuyin">0</span></div>
+                            <div class="dashboard-subtext">investimento</div>
+                        </div>
+
+                        <div class="dashboard-card">
+                            <div class="dashboard-card-title">📊 ROI Médio</div>
+                            <div class="dashboard-value" id="dashAvgRoi">0%</div>
+                            <div class="dashboard-subtext">esperado</div>
+                        </div>
+
+                        <div class="dashboard-card">
+                            <div class="dashboard-card-title">💸 Cash Out Total</div>
+                            <div class="dashboard-value">$<span id="dashTotalCashout">0</span></div>
+                            <div class="dashboard-subtext">retorno total</div>
+                        </div>
+
+                        <div class="dashboard-card">
+                            <div class="dashboard-card-title">🏆 Lucro/Prejuízo</div>
+                            <div class="dashboard-value" id="dashProfit">$0</div>
+                            <div class="dashboard-subtext" id="dashProfitROI">ROI: 0%</div>
+                        </div>
+                    </div>
+
+                    <div class="grind-card">
+                        <div class="grind-title">
+                            📈 Histórico de Registros
+                            <div class="export-buttons" id="exportButtons" style="display: none;">
+                                <button class="btn-export csv" onclick="exportCSV()">📥 CSV</button>
+                                <button class="btn-export pdf" onclick="exportPDF()">📄 PDF</button>
+                            </div>
+                        </div>
+                        <div id="historyContainer" style="color: var(--text-secondary); font-size: 12px; text-align: center; padding: 20px;">
+                            Nenhum torneio registrado ainda
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE CASHOUT -->
+    <div id="cashoutModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">💰 Registrar Cashout</div>
+            <div class="modal-field">
+                <label class="modal-label">Torneio</label>
+                <div id="modalTournamentName" style="padding: 12px; background: var(--bg-dark); border-radius: 6px; color: var(--secondary); font-weight: 600;"></div>
+            </div>
+            <div class="modal-field">
+                <label class="modal-label">Buy-in</label>
+                <div id="modalBuyin" style="padding: 12px; background: var(--bg-dark); border-radius: 6px; color: var(--text-secondary);"></div>
+            </div>
+            <div class="modal-field">
+                <label class="modal-label">Cashout ($)</label>
+                <input type="number" id="cashoutInput" class="modal-input" placeholder="0" min="0" step="1">
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-save" onclick="saveCashout()">Salvar</button>
+                <button class="modal-btn modal-btn-cancel" onclick="closeCashoutModal()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="notificationContainer"></div>
+
+    <script>
+        const tournaments = [
+            { id: 1, time: "14:00", site: "GGPoker", name: "Main Event", type: "REGULAR", buyin: 100, guaranteed: 50000, field: 1200, roi: 12, priority: "high", lateReg: 45, status: "Aberto", day: 0 },
+            { id: 2, time: "14:30", site: "GGPoker", name: "Turbo Championship", type: "TURBO", buyin: 50, guaranteed: 25000, field: 800, roi: 15, priority: "medium", lateReg: 30, status: "Aberto", day: 0 },
+            { id: 3, time: "15:00", site: "GGPoker", name: "PKO Special", type: "PKO", buyin: 25, guaranteed: 15000, field: 500, roi: 18, priority: "high", lateReg: 20, status: "Aberto", day: 0 },
+            { id: 4, time: "15:30", site: "YaPoker", name: "Hyper Turbo", type: "HYPER", buyin: 10, guaranteed: 5000, field: 300, roi: 20, priority: "low", lateReg: 15, status: "Aberto", day: 0 },
+            { id: 5, time: "16:00", site: "888Poker", name: "Championship Series", type: "REGULAR", buyin: 55, guaranteed: 30000, field: 650, roi: 14, priority: "very-high", lateReg: 45, status: "Aberto", day: 0 },
+            { id: 6, time: "16:30", site: "PokerStars", name: "Sunday Million", type: "REGULAR", buyin: 200, guaranteed: 100000, field: 2500, roi: 10, priority: "very-high", lateReg: 60, status: "Tardio", day: 6 },
+        ];
+
+        let filteredTournaments = [...tournaments];
+        let registered = new Set();
+        let selectedDays = new Set([0,1,2,3,4,5,6]);
+        let notifiedTournaments = new Set();
+        let cashouts = {};
+        let currentCashoutId = null;
+
+        function playAlertSound() {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                oscillator.frequency.value = 800;
+                oscillator.type = 'sine';
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.5);
+            } catch (e) {}
+        }
+
+        function showNotification(title, message, type = 'success') {
+            const container = document.getElementById('notificationContainer');
+            const toast = document.createElement('div');
+            toast.className = `notification-toast ${type}`;
+            toast.innerHTML = `<strong>${title}</strong><p>${message}</p>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        function exportCSV() {
+            const registeredTournaments = Array.from(registered).map(id => tournaments.find(t => t.id === id)).filter(t => t);
+            
+            if (registeredTournaments.length === 0) {
+                showNotification('⚠️ Aviso', 'Nenhum torneio registrado para exportar', 'warning');
+                return;
+            }
+
+            let csv = 'Torneio,Sala,Tipo,Buy-in,Cashout,Lucro/Prejuízo,ROI %,Data\n';
+            const today = new Date().toLocaleDateString('pt-BR');
+
+            registeredTournaments.forEach(t => {
+                const cashout = cashouts[t.id] !== undefined ? cashouts[t.id] : 'Pendente';
+                let profit = '';
+                let roi = '';
+                if (cashout !== 'Pendente') {
+                    profit = (cashout - t.buyin).toFixed(2);
+                    roi = ((profit / t.buyin) * 100).toFixed(1);
+                } else {
+                    profit = 'Pendente';
+                    roi = 'Pendente';
+                }
+                csv += `"${t.name}","${t.site}","${t.type}","${t.buyin}","${cashout}","${profit}","${roi}","${today}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `historico-torneios-${today.replace(/\//g, '-')}.csv`;
+            link.click();
+            
+            showNotification('✅ Exportado!', 'Histórico exportado como CSV', 'success');
+        }
+
+        function exportPDF() {
+            const registeredTournaments = Array.from(registered).map(id => tournaments.find(t => t.id === id)).filter(t => t);
+            
+            if (registeredTournaments.length === 0) {
+                showNotification('⚠️ Aviso', 'Nenhum torneio registrado para exportar', 'warning');
+                return;
+            }
+
+            const totalBuyin = registeredTournaments.reduce((sum, t) => sum + t.buyin, 0);
+            const totalCashout = registeredTournaments.reduce((sum, t) => {
+                return sum + (cashouts[t.id] !== undefined ? cashouts[t.id] : t.buyin);
+            }, 0);
+            const profit = totalCashout - totalBuyin;
+            const roi = totalBuyin > 0 ? ((profit / totalBuyin) * 100).toFixed(1) : 0;
+            const today = new Date().toLocaleDateString('pt-BR');
+
+            let html = `
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h1 style="color: #4f46e5;">🎯 Pega Blinder Lobby</h1>
+                    <h2>Histórico de Registros</h2>
+                    <p><strong>Data:</strong> ${today}</p>
+                    
+                    <div style="margin: 20px 0; padding: 15px; background: #f3f4f6; border-radius: 8px;">
+                        <h3 style="color: #4f46e5;">Resumo da Sessão</h3>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr>
+                                <td style="padding: 8px; border: 1px solid #ddd;"><strong>Torneios Registrados:</strong></td>
+                                <td style="padding: 8px; border: 1px solid #ddd;">${registeredTournaments.length}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px; border: 1px solid #ddd;"><strong>Total Buy-in:</strong></td>
+                                <td style="padding: 8px; border: 1px solid #ddd;">$${totalBuyin}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px; border: 1px solid #ddd;"><strong>Total Cashout:</strong></td>
+                                <td style="padding: 8px; border: 1px solid #ddd;">$${totalCashout}</td>
+                            </tr>
+                            <tr style="background: ${profit >= 0 ? '#dcfce7' : '#fee2e2'};">
+                                <td style="padding: 8px; border: 1px solid #ddd;"><strong>Lucro/Prejuízo:</strong></td>
+                                <td style="padding: 8px; border: 1px solid #ddd; color: ${profit >= 0 ? '#10b981' : '#ef4444'}; font-weight: bold;">$${profit.toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px; border: 1px solid #ddd;"><strong>ROI:</strong></td>
+                                <td style="padding: 8px; border: 1px solid #ddd; color: ${roi >= 0 ? '#10b981' : '#ef4444'}; font-weight: bold;">${roi}%</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <h3 style="color: #4f46e5;">Detalhes dos Torneios</h3>
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                        <thead>
+                            <tr style="background: #4f46e5; color: white;">
+                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Torneio</th>
+                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Sala</th>
+                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Tipo</th>
+                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Buy-in</th>
+                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Cashout</th>
+                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Resultado</th>
+                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">ROI</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${registeredTournaments.map(t => {
+                                const cashout = cashouts[t.id] !== undefined ? cashouts[t.id] : '-';
+                                let resultColor = '';
+                                let resultado = '-';
+                                let roiValue = '-';
+                                if (cashout !== '-') {
+                                    resultado = (cashout - t.buyin).toFixed(2);
+                                    roiValue = ((resultado / t.buyin) * 100).toFixed(1);
+                                    resultColor = resultado >= 0 ? '#10b981' : '#ef4444';
+                                }
+                                return `
+                                    <tr>
+                                        <td style="padding: 10px; border: 1px solid #ddd;">${t.name}</td>
+                                        <td style="padding: 10px; border: 1px solid #ddd;">${t.site}</td>
+                                        <td style="padding: 10px; border: 1px solid #ddd;">${t.type}</td>
+                                        <td style="padding: 10px; border: 1px solid #ddd;">$${t.buyin}</td>
+                                        <td style="padding: 10px; border: 1px solid #ddd;">$${cashout}</td>
+                                        <td style="padding: 10px; border: 1px solid #ddd; color: ${resultColor}; font-weight: bold;">$${resultado}</td>
+                                        <td style="padding: 10px; border: 1px solid #ddd; color: ${resultColor}; font-weight: bold;">${roiValue}%</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            const element = document.createElement('div');
+            element.innerHTML = html;
+            
+            const opt = {
+                margin: 10,
+                filename: `historico-torneios-${today.replace(/\//g, '-')}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { orientation: 'landscape', unit: 'mm', format: 'a4' }
+            };
+
+            html2pdf().set(opt).from(element).save();
+            
+            showNotification('✅ Exportado!', 'Histórico exportado como PDF', 'success');
+        }
+
+        function openCashoutModal(id) {
+            const tournament = tournaments.find(t => t.id === id);
+            if (!tournament) return;
+
+            currentCashoutId = id;
+            document.getElementById('modalTournamentName').textContent = tournament.name;
+            document.getElementById('modalBuyin').textContent = '$' + tournament.buyin;
+            document.getElementById('cashoutInput').value = cashouts[id] || tournament.buyin;
+            document.getElementById('cashoutModal').classList.add('active');
+        }
+
+        function closeCashoutModal() {
+            document.getElementById('cashoutModal').classList.remove('active');
+            currentCashoutId = null;
+        }
+
+        function saveCashout() {
+            if (currentCashoutId === null) return;
+            const value = parseFloat(document.getElementById('cashoutInput').value) || 0;
+            cashouts[currentCashoutId] = value;
+            closeCashoutModal();
+            showNotification('✅ Cashout Registrado', `Valor de $${value} salvo com sucesso`, 'success');
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tournamentBody');
+            tbody.innerHTML = filteredTournaments.map(t => {
+                const cashoutValue = cashouts[t.id] !== undefined ? cashouts[t.id] : null;
+                const roiValue = cashoutValue !== null ? ((cashoutValue - t.buyin) / t.buyin * 100).toFixed(1) : t.roi;
+                const roiColor = cashoutValue !== null ? (roiValue > 0 ? 'color: var(--success)' : roiValue < 0 ? 'color: var(--danger)' : '') : '';
+
+                return `
+                    <tr class="${registered.has(t.id) ? 'registered' : ''}">
+                        <td><span style="color: var(--secondary); font-weight: 600;">${t.time}</span></td>
+                        <td><span class="site-badge site-${t.site.toLowerCase().replace(' ', '')}">${t.site}</span></td>
+                        <td><span style="color: var(--secondary); font-weight: 500;">${t.name}</span></td>
+                        <td><span class="badge badge-${t.type.toLowerCase()}">${t.type}</span></td>
+                        <td>$${t.buyin}</td>
+                        <td>$${(t.guaranteed/1000).toFixed(0)}K</td>
+                        <td>${t.field}</td>
+                        <td style="${roiColor}; font-weight: 600;">${roiValue}%</td>
+                        <td>${t.lateReg}min</td>
+                        <td><span style="color: ${t.status === 'Aberto' ? 'var(--success)' : 'var(--warning)'}">${t.status}</span></td>
+                        <td><button class="btn-register ${registered.has(t.id) ? 'active' : ''}" data-id="${t.id}">${registered.has(t.id) ? '✅' : '📝'}</button></td>
+                        <td><button class="btn-cashout ${registered.has(t.id) ? '' : 'disabled'}" data-id="${t.id}" onclick="openCashoutModal(${t.id})" ${registered.has(t.id) ? '' : 'disabled'}>💰</button></td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.querySelectorAll('.btn-register').forEach(btn => {
+                btn.addEventListener('click', (e) => toggleRegister(parseInt(e.target.dataset.id)));
+            });
+
+            updateCountdowns();
+            updateGrindMode();
+            updateControlDashboard();
+        }
+
+        function updateCountdowns() {
+            const rows = document.querySelectorAll('table tbody tr');
+            rows.forEach((row, idx) => {
+                const t = filteredTournaments[idx];
+                if (!t) return;
+
+                const now = new Date();
+                const [hours, minutes] = t.time.split(':');
+                const startTime = new Date();
+                startTime.setHours(parseInt(hours), parseInt(minutes), 0);
+                const timeLeft = startTime - now;
+                const minutesLeft = Math.max(0, Math.floor(timeLeft / 60000));
+
+                if (minutesLeft === 30 && !notifiedTournaments.has(t.id + '-30')) {
+                    notifiedTournaments.add(t.id + '-30');
+                    playAlertSound();
+                    showNotification('⏰ Aviso', `${t.name} começa em 30 minutos`, 'warning');
+                }
+
+                if (minutesLeft === 5 && !notifiedTournaments.has(t.id + '-5')) {
+                    notifiedTournaments.add(t.id + '-5');
+                    playAlertSound();
+                    showNotification('⏰ ATENÇÃO', `${t.name} inicia em 5 minutos!`, 'warning');
+                }
+
+                if (timeLeft <= 0 && !notifiedTournaments.has(t.id + '-start')) {
+                    notifiedTournaments.add(t.id + '-start');
+                    playAlertSound();
+                    showNotification('🎬 Iniciado', `${t.name} começou!`, 'success');
+                }
+            });
+        }
+
+        function updateGrindMode() {
+            const timerContainer = document.getElementById('timerContainer');
+            const nextTournaments = filteredTournaments.slice(0, 5);
+            
+            timerContainer.innerHTML = nextTournaments.map(t => {
+                const now = new Date();
+                const [hours, minutes] = t.time.split(':');
+                const startTime = new Date();
+                startTime.setHours(parseInt(hours), parseInt(minutes), 0);
+                const timeLeft = startTime - now;
+                const h = Math.floor(timeLeft / 3600000);
+                const m = Math.floor((timeLeft % 3600000) / 60000);
+                const s = Math.floor((timeLeft % 60000) / 1000);
+                
+                return `
+                    <div class="timer-box">
+                        <div class="timer-name">${t.name}</div>
+                        <div class="timer-display">${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}</div>
+                        <div style="font-size: 11px; color: var(--text-secondary);">${t.site} - $${t.buyin}</div>
+                    </div>
+                `;
+            }).join('');
+
+            const registeredTournaments = Array.from(registered).map(id => tournaments.find(t => t.id === id)).filter(t => t);
+            
+            document.getElementById('registeredCount').textContent = registeredTournaments.length;
+            const totalBuyin = registeredTournaments.reduce((sum, t) => sum + t.buyin, 0);
+            document.getElementById('totalBuyin').textContent = totalBuyin.toFixed(0);
+            
+            const totalCashoutVal = registeredTournaments.reduce((sum, t) => {
+                return sum + (cashouts[t.id] !== undefined ? cashouts[t.id] : t.buyin);
+            }, 0);
+            document.getElementById('totalCashout').textContent = totalCashoutVal.toFixed(0);
+            
+            const totalGtd = registeredTournaments.reduce((sum, t) => sum + t.guaranteed, 0) / 1000;
+            document.getElementById('totalGtd').textContent = totalGtd.toFixed(0);
+
+            const targetBuyin = parseInt(document.getElementById('targetBuyin').value) || 500;
+            const progress = Math.min(100, (totalBuyin / targetBuyin) * 100);
+            const progressBar = document.getElementById('buyinProgress');
+            progressBar.style.width = progress + '%';
+            progressBar.textContent = progress.toFixed(0) + '%';
+        }
+
+        function updateControlDashboard() {
+            const registeredTournaments = Array.from(registered).map(id => tournaments.find(t => t.id === id)).filter(t => t);
+            const totalBuyin = registeredTournaments.reduce((sum, t) => sum + t.buyin, 0);
+            const totalCashoutVal = registeredTournaments.reduce((sum, t) => {
+                return sum + (cashouts[t.id] !== undefined ? cashouts[t.id] : t.buyin);
+            }, 0);
+            const profit = totalCashoutVal - totalBuyin;
+            const roi = totalBuyin > 0 ? ((profit) / totalBuyin * 100).toFixed(1) : 0;
+
+            document.getElementById('dashTournamentsTotal').textContent = filteredTournaments.length;
+            document.getElementById('dashRegistered').textContent = registeredTournaments.length;
+            document.getElementById('dashTotalBuyin').textContent = totalBuyin.toFixed(0);
+            document.getElementById('dashAvgRoi').textContent = filteredTournaments.length > 0 
+                ? (filteredTournaments.reduce((sum, t) => sum + t.roi, 0) / filteredTournaments.length).toFixed(1) + '%'
+                : '0%';
+            document.getElementById('dashTotalCashout').textContent = totalCashoutVal.toFixed(0);
+            
+            const profitElement = document.getElementById('dashProfit');
+            const profitROI = document.getElementById('dashProfitROI');
+            profitElement.textContent = '$' + profit.toFixed(0);
+            profitElement.className = 'dashboard-value ' + (profit > 0 ? 'positive' : profit < 0 ? 'negative' : '');
+            profitROI.textContent = 'ROI: ' + roi + '%';
+
+            // Mostrar botões de exportação
+            const exportButtons = document.getElementById('exportButtons');
+            if (registeredTournaments.length > 0) {
+                exportButtons.style.display = 'flex';
+            } else {
+                exportButtons.style.display = 'none';
+            }
+
+            // Histórico
+            const historyContainer = document.getElementById('historyContainer');
+            if (registeredTournaments.length > 0) {
+                historyContainer.innerHTML = `
+                    <table class="history-table">
+                        <thead>
+                            <tr>
+                                <th>Torneio</th>
+                                <th>Sala</th>
+                                <th>Tipo</th>
+                                <th>Buy-in</th>
+                                <th>Cashout</th>
+                                <th>Resultado</th>
+                                <th>ROI</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${registeredTournaments.map(t => {
+                                const cashout = cashouts[t.id] !== undefined ? cashouts[t.id] : 'Pendente';
+                                let resultado = '';
+                                let roi = '';
+                                let resultColor = '';
+                                if (cashout !== 'Pendente') {
+                                    resultado = (cashout - t.buyin).toFixed(2);
+                                    roi = ((resultado / t.buyin) * 100).toFixed(1) + '%';
+                                    resultColor = resultado >= 0 ? 'positive' : 'negative';
+                                } else {
+                                    resultado = 'Pendente';
+                                    roi = 'Pendente';
+                                }
+                                return `<tr>
+                                    <td>${t.name}</td>
+                                    <td>${t.site}</td>
+                                    <td>${t.type}</td>
+                                    <td>$${t.buyin}</td>
+                                    <td>$${cashout}</td>
+                                    <td class="${resultColor}">$${resultado}</td>
+                                    <td class="${resultColor}">${roi}</td>
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                `;
+            }
+        }
+
+        function toggleRegister(id) {
+            if (registered.has(id)) {
+                registered.delete(id);
+                delete cashouts[id];
+                showNotification('❌ Removido', 'Registro cancelado', 'warning');
+            } else {
+                registered.add(id);
+                const tournament = tournaments.find(t => t.id === id);
+                showNotification('✅ Registrado!', `${tournament.name} adicionado`, 'success');
+            }
+            renderTable();
+        }
+
+        function applyFilters() {
+            const rooms = Array.from(document.querySelectorAll('.room-filter:checked')).map(e => e.value);
+            const types = Array.from(document.querySelectorAll('.type-filter:checked')).map(e => e.value);
+            const minBuyin = parseInt(document.getElementById('minBuyin').value) || 0;
+            const maxBuyin = parseInt(document.getElementById('maxBuyin').value) || 999999;
+
+            filteredTournaments = tournaments.filter(t => 
+                rooms.includes(t.site) &&
+                types.includes(t.type) &&
+                t.buyin >= minBuyin &&
+                t.buyin <= maxBuyin &&
+                selectedDays.has(t.day)
+            );
+
+            renderTable();
+        }
+
+        document.querySelectorAll('.weekday-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const day = parseInt(e.target.dataset.day);
+                if (selectedDays.has(day)) {
+                    selectedDays.delete(day);
+                    e.target.classList.remove('active');
+                } else {
+                    selectedDays.add(day);
+                    e.target.classList.add('active');
+                }
+                applyFilters();
+            });
+        });
+
+        document.querySelectorAll('.view-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+
+                document.getElementById('listView').style.display = 'none';
+                document.getElementById('grindView').style.display = 'none';
+                document.getElementById('controlView').style.display = 'none';
+
+                const view = e.target.dataset.view;
+                if (view === 'list') document.getElementById('listView').style.display = 'block';
+                else if (view === 'grind') document.getElementById('grindView').style.display = 'block';
+                else if (view === 'control') document.getElementById('controlView').style.display = 'block';
+            });
+        });
+
+        document.getElementById('applyFilters').addEventListener('click', applyFilters);
+        document.querySelectorAll('.room-filter, .type-filter').forEach(el => {
+            el.addEventListener('change', applyFilters);
+        });
+        document.getElementById('minBuyin').addEventListener('input', applyFilters);
+        document.getElementById('maxBuyin').addEventListener('input', applyFilters);
+        document.getElementById('targetBuyin').addEventListener('change', updateGrindMode);
+        document.getElementById('targetRoi').addEventListener('change', updateGrindMode);
+
+        // MODAL CLOSE ON ESC
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeCashoutModal();
+        });
+
+        // FILE UPLOAD HANDLER
+        document.getElementById('fileInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            try {
+                const fileName = file.name.toLowerCase();
+                let importedTournaments = [];
+
+                if (fileName.endsWith('.json')) {
+                    const text = await file.text();
+                    importedTournaments = JSON.parse(text);
+                } else if (fileName.endsWith('.csv')) {
+                    importedTournaments = parseCSV(await file.text());
+                } else {
+                    showNotification('❌ Erro', 'Use arquivo JSON ou CSV', 'warning');
+                    return;
+                }
+
+                if (Array.isArray(importedTournaments) && importedTournaments.length > 0) {
+                    const validTournaments = importedTournaments.filter(t => 
+                        t.time && t.site && t.name && t.type && t.buyin !== undefined
+                    );
+
+                    if (validTournaments.length > 0) {
+                        const maxId = Math.max(...tournaments.map(t => t.id), 0);
+                        validTournaments.forEach((t, i) => {
+                            t.id = maxId + i + 1;
+                            t.day = t.day || 0;
+                            t.priority = t.priority || 'medium';
+                            t.lateReg = t.lateReg || 30;
+                            t.status = t.status || 'Aberto';
+                            t.guaranteed = t.guaranteed || 0;
+                            t.field = t.field || 0;
+                            t.roi = t.roi || 15;
+                        });
+
+                        tournaments.push(...validTournaments);
+                        applyFilters();
+                        showNotification('✅ Sucesso!', `${validTournaments.length} torneios importados`, 'success');
+                    } else {
+                        showNotification('❌ Erro', 'Nenhum torneio válido encontrado', 'warning');
+                    }
+                } else {
+                    showNotification('❌ Erro', 'Arquivo vazio ou inválido', 'warning');
+                }
+            } catch (error) {
+                showNotification('❌ Erro', `Erro ao processar: ${error.message}`, 'warning');
+            }
+
+            e.target.value = '';
+        });
+
+        function parseCSV(text) {
+            const lines = text.trim().split('\n');
+            if (lines.length < 2) return [];
+
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+            const result = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',').map(v => v.trim());
+                const obj = {};
+                headers.forEach((h, idx) => {
+                    const val = values[idx];
+                    obj[h] = isNaN(val) ? val : parseFloat(val);
+                });
+                if (obj.time) result.push(obj);
+            }
+
+            return result;
+        }
+
+        setInterval(() => {
+            updateCountdowns();
+            updateGrindMode();
+        }, 1000);
+
+        renderTable();
+    </script>
+</body>
+</html>
