@@ -687,6 +687,16 @@
             <div class="checkbox-item"><input type="checkbox" id="pko" class="type-filter" value="PKO" checked><label for="pko">PKO</label></div>
         </div>
 
+        <!-- PRIORIDADE -->
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">⭐ Prioridade</div>
+            <div class="checkbox-item"><input type="checkbox" id="very-low" class="priority-filter" value="very-low" checked><label for="very-low">Very Low</label></div>
+            <div class="checkbox-item"><input type="checkbox" id="low" class="priority-filter" value="low" checked><label for="low">Low</label></div>
+            <div class="checkbox-item"><input type="checkbox" id="medium" class="priority-filter" value="medium" checked><label for="medium">Medium</label></div>
+            <div class="checkbox-item"><input type="checkbox" id="high" class="priority-filter" value="high" checked><label for="high">High</label></div>
+            <div class="checkbox-item"><input type="checkbox" id="very-high" class="priority-filter" value="very-high" checked><label for="very-high">Very High</label></div>
+        </div>
+
         <!-- BUY-IN -->
         <div class="sidebar-section">
             <div class="sidebar-section-title">Buy-in</div>
@@ -955,7 +965,7 @@
             showNotification('✅ Atualizado', 'Dados recarregados da API', 'success');
         });
         
-        document.querySelectorAll('.room-filter, .type-filter').forEach(el => {
+        document.querySelectorAll('.room-filter, .type-filter, .priority-filter').forEach(el => {
             el.addEventListener('change', applyFilters);
         });
         document.getElementById('minBuyin').addEventListener('input', applyFilters);
@@ -971,12 +981,14 @@
     function applyFilters() {
         const rooms = Array.from(document.querySelectorAll('.room-filter:checked')).map(e => e.value);
         const types = Array.from(document.querySelectorAll('.type-filter:checked')).map(e => e.value);
+        const priorities = Array.from(document.querySelectorAll('.priority-filter:checked')).map(e => e.value);
         const minBuyin = parseInt(document.getElementById('minBuyin').value) || 0;
         const maxBuyin = parseInt(document.getElementById('maxBuyin').value) || 999999;
         
         filteredTournaments = allTournamentsData.filter(t => 
             rooms.includes(t.site) && 
             types.includes(t.type) && 
+            priorities.includes(t.priority) &&
             t.buyin >= minBuyin && 
             t.buyin <= maxBuyin && 
             selectedDays.has(t.day)
