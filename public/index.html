@@ -683,13 +683,13 @@
             <div class="sidebar-section">
                 <div class="sidebar-section-title">Dia da Semana</div>
                 <div class="weekday-group" id="weekdayGroup">
-                    <button class="weekday-btn active" data-day="0">Seg</button>
-                    <button class="weekday-btn active" data-day="1">Ter</button>
-                    <button class="weekday-btn active" data-day="2">Qua</button>
-                    <button class="weekday-btn active" data-day="3">Qui</button>
-                    <button class="weekday-btn active" data-day="4">Sex</button>
-                    <button class="weekday-btn active" data-day="5">Sab</button>
-                    <button class="weekday-btn active" data-day="6">Dom</button>
+                    <button class="weekday-btn active" data-day="1">Seg</button>
+                    <button class="weekday-btn active" data-day="2">Ter</button>
+                    <button class="weekday-btn active" data-day="3">Qua</button>
+                    <button class="weekday-btn active" data-day="4">Qui</button>
+                    <button class="weekday-btn active" data-day="5">Sex</button>
+                    <button class="weekday-btn active" data-day="6">Sab</button>
+                    <button class="weekday-btn active" data-day="0">Dom</button>
                 </div>
             </div>
 
@@ -842,7 +842,7 @@
         let allTournamentsData = [];
         let filteredTournaments = [];
         let registered = new Set();
-        let selectedDays = new Set([0, 1, 2, 3, 4, 5, 6]);
+        let selectedDays = new Set([1, 2, 3, 4, 5, 6, 0]);
         let cashouts = {};
         let currentCashoutId = null;
         let apiOnline = false;
@@ -859,10 +859,16 @@
                 let tournaments = Array.isArray(data) ? data : data.tournaments || data.data || [];
                 if (tournaments.length === 0) throw new Error('Nenhum torneio encontrado na resposta');
 
-                // ✅ CORREÇÃO: Parsear data da API e calcular dayOfWeek
+                // ✅ CORREÇÃO: Parsear data LOCAL (sem Z) para evitar problemas de timezone
                 tournaments = tournaments.map((t, idx) => {
-                    const dateObj = new Date(t.date + 'T00:00:00Z');
-                    const dayOfWeek = dateObj.getUTCDay();
+                    // Parse a string de data YYYY-MM-DD em componentes
+                    const [year, month, day] = t.date.split('-');
+                    // Cria uma data LOCAL usando esses componentes
+                    const dateObj = new Date(year, parseInt(month) - 1, parseInt(day));
+                    // Obtém o dia da semana LOCAL (0=dom, 1=seg, 2=ter, etc)
+                    const dayOfWeek = dateObj.getDay();
+                    
+                    console.log(`📅 ${t.date} = Dia ${dayOfWeek} (getDay)`);
                     
                     return {
                         id: t.id || idx + 1,
