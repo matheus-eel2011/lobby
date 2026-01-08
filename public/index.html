@@ -832,15 +832,20 @@
     let currentCashoutId = null;
     let apiOnline = false;
 
-    // ===== FUNÇÃO PARA GERAR DATA =====
+       // ===== FUNÇÃO PARA GERAR DATA (CORRIGIDA) =====
     function generateDate(day) {
         const today = new Date();
         const daysToAdd = (day - today.getDay() + 7) % 7;
         const date = new Date(today);
         date.setDate(date.getDate() + (daysToAdd === 0 ? 0 : daysToAdd));
-        return date.toLocaleDateString('pt-BR');
+        
+        // ✅ Retorna em formato ISO: YYYY-MM-DD
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const dayStr = String(date.getDate()).padStart(2, '0');
+        
+        return `${year}-${month}-${dayStr}`;
     }
-
     // ===== CARREGAR DADOS DA API =====
     async function loadTournamentsFromAPI() {
         try {
