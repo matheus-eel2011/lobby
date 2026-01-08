@@ -1211,32 +1211,112 @@
             const roi = totalBuyin > 0 ? (profit / totalBuyin * 100).toFixed(1) : 0;
             const today = new Date().toLocaleDateString('pt-BR');
 
-            let html = `<div style="font-family: Arial, sans-serif; padding: 20px;"><h1 style="text-align:center; color:#4f46e5;">Pega Blinder Lobby</h1><p style="text-align:center;"><strong>Data:</strong> ${today}</p></div>`;
+            try {
+                // ✅ Carrega html2pdf dinamicamente se não estiver disponível
+                if (typeof html2pdf === 'undefined') {
+                    const script = document.createElement('script');
+                    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+                    script.onload = () => generatePDF();
+                    script.onerror = () => {
+                        showNotification('❌ Erro', 'Não foi possível carregar a biblioteca PDF', 'error');
+                    };
+                    document.head.appendChild(script);
+                } else {
+                    generatePDF();
+                }
 
-            setTimeout(() => {
-                try {
+                function generatePDF() {
+                    const table = document.getElementById('tournamentTable');
+                    const historyTable = document.getElementById('historyContainer').querySelector('.history-table');
+                    
+                    let html = `
+                        <div style="font-family: Arial, sans-serif; padding: 20px;">
+                            <h1 style="text-align:center; color:#4f46e5; margin-bottom: 10px;">🎯 Pega Blinder Lobby</h1>
+                            <p style="text-align:center; color: #999; margin-bottom: 20px;"><strong>Data:</strong> ${today}</p>
+                            <hr style="border: none; border-top: 2px solid #ddd; margin: 20px 0;">
+                            <h2 style="color: #4f46e5; margin-top: 20px;">Resumo Financeiro</h2>
+                            <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
+                                <tr style="background: #f5f5f5;">
+                                    <td style="padding: 12px; border: 1px solid #ddd;"><strong>Total Buy-in:</strong></td>
+                                    <td style="padding: 12px; border: 1px solid #ddd; text-align: right;"><strong>$${totalBuyin.toFixed(2)}</strong></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 12px; border: 1px solid #ddd;"><strong>Total Cashout:</strong></td>
+                                    <td style="padding: 12px; border: 1px solid #ddd; text-align: right;"><strong>$${totalCashout.toFixed(2)}</strong></td>
+                                </tr>
+                                <tr style="background: ${profit >= 0 ? '#d4edda' : '#f8d7da'};">
+                                    <td style="padding: 12px; border: 1px solid #ddd;"><strong>Lucro/Prejuízo:</strong></td>
+                                    <td style="padding: 12px; border: 1px solid #ddd; text-align: right; color: ${profit >= 0 ? '#155724' : '#721c24'}; font-weight: bold;">$${profit.toFixed(2)}</td>
+                                </tr>
+                                <tr style="background: ${profit >= 0 ? '#d4edda' : '#f8d7da'};">
+                                    <td style="padding: 12px; border: 1px solid #ddd;"><strong>ROI:</strong></td>
+                                    <td style="padding: 12px; border: 1px solid #ddd; text-align: right; color: ${profit >= 0 ? '#155724' : '#721c24'}; font-weight: bold;">${roi}%</td>
+                                </tr>
+                            </table>
+                            <h2 style="color: #4f46e5; margin-top: 30px;">Torneios Registrados</h2>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                                <thead>
+                                    <tr style="background: #2d3748; color: white;">
+                                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Torneio</th>
+                                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Sala</th>
+                                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Tipo</th>
+                                        <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">Buy-in</th>
+                                        <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">Cashout</th>
+                                        <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">Resultado</th>
+                                        <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">ROI</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${registeredTournaments.map((t, idx) => {
+                                        const cashout = cashouts[t.id] !== undefined ? cashouts[t.id] : '-';
+                                        let resultado = '-';
+                                        let roi_calc = '-';
+                                        
+                                        if (cashout !== '-') {
+                                            resultado = (cashout - t.buyin).toFixed(2);
+                                            roi_calc = (resultado / t.buyin * 100).toFixed(1);
+                                        }
+                                        
+                                        return `
+                                            <tr style="background: ${idx % 2 === 0 ? '#f9f9f9' : 'white'};">
+                                                <td style="padding: 10px; border: 1px solid #ddd;">${t.name}</td>
+                                                <td style="padding: 10px; border: 1px solid #ddd;">${t.site}</td>
+                                                <td style="padding: 10px; border: 1px solid #ddd;">${t.type}</td>
+                                                <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">$${t.buyin}</td>
+                                                <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">$${cashout}</td>
+                                                <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">${resultado}</td>
+                                                <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">${roi_calc}%</td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                            <p style="text-align: center; color: #999; margin-top: 30px; font-size: 10px;">Gerado em ${new Date().toLocaleString('pt-BR')}</p>
+                        </div>
+                    `;
+
                     const element = document.createElement('div');
                     element.innerHTML = html;
 
-                    if (typeof html2pdf === 'undefined') {
-                        showNotification('❌ Erro', 'Biblioteca PDF não disponível', 'warning');
-                        return;
-                    }
-
                     const opt = {
-                        margin: [15, 15, 15, 15],
+                        margin: 10,
                         filename: `pega-blinder-${today.replace(/\//g, '-')}.pdf`,
                         image: { type: 'jpeg', quality: 0.98 },
-                        jsPDF: { orientation: 'landscape', unit: 'mm', format: 'a4' }
+                        html2canvas: { scale: 2 },
+                        jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
                     };
 
                     html2pdf().setOptions(opt).from(element).save()
                         .then(() => showNotification('✅ Exportado!', 'PDF gerado com sucesso', 'success'))
-                        .catch(err => showNotification('❌ Erro', err.message, 'warning'));
-                } catch (error) {
-                    showNotification('❌ Erro', error.message, 'warning');
+                        .catch(err => {
+                            console.error('Erro PDF:', err);
+                            showNotification('❌ Erro', 'Falha ao gerar PDF: ' + err.message, 'error');
+                        });
                 }
-            }, 500);
+            } catch (error) {
+                console.error('Erro:', error);
+                showNotification('❌ Erro', error.message, 'error');
+            }
         }
 
         function showNotification(title, message, type = 'success') {
