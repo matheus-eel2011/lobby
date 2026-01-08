@@ -22,16 +22,15 @@ export default function handler(req, res) {
 
   // Data atual: 2026-01-07
   // Gerar datas para todo janeiro a partir de 2026-01-07
-  function generateDatesForJanuary() {
-    const dates = [];
-    const startDate = new Date(2026, 0, 7);  // Ano, Mês (0-11), Dia
-    const endDate = new Date(2026, 0, 31);
+  // 1. Construtor de data com local time
+  const startDate = new Date(2026, 0, 7);  // Sem conversão UTC
 
-    
-    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-      dates.push(new Date(d));
-    }
-    return dates;
+  // 2. Função formatDateString para format local
+  function formatDateString(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   // Templates de torneios diários
