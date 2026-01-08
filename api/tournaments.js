@@ -20,17 +20,24 @@ export default function handler(req, res) {
     return "medium";
   };
 
-  // Data atual: 2026-01-07
-  // Gerar datas para todo janeiro a partir de 2026-01-07
-  // 1. Construtor de data com local time
-  const startDate = new Date(2026, 0, 7);  // Sem conversão UTC
-
-  // 2. Função formatDateString para format local
+  // ✅ FUNÇÃO: Formatar data sem conversão para UTC
   function formatDateString(date) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+  }
+
+  // ✅ FUNÇÃO: Gerar datas para todo janeiro a partir de 2026-01-07
+  function generateDatesForJanuary() {
+    const dates = [];
+    const startDate = new Date(2026, 0, 7); // Janeiro (0), dia 7
+    const endDate = new Date(2026, 0, 31); // Janeiro (0), dia 31
+    
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+      dates.push(new Date(d));
+    }
+    return dates;
   }
 
   // Templates de torneios diários
@@ -100,7 +107,8 @@ export default function handler(req, res) {
 
   // Adicionar Daily Hypers e Turbos para cada dia
   dates.forEach(date => {
-    const dateStr = date.toISOString().split('T')[0];
+    // ✅ CORRIGIDO: Usar formatDateString() ao invés de toISOString()
+    const dateStr = formatDateString(date);
     
     // Daily Hyper
     dailyHyperTemplate.forEach(template => {
@@ -166,7 +174,8 @@ export default function handler(req, res) {
     const dayOfWeek = date.getDay();
     // Sunday = 0
     if (dayOfWeek === 0) {
-      const dateStr = date.toISOString().split('T')[0];
+      // ✅ CORRIGIDO: Usar formatDateString() ao invés de toISOString()
+      const dateStr = formatDateString(date);
       sundaySpecials.forEach(special => {
         tournaments.push({
           id: id++,
