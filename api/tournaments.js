@@ -24,8 +24,8 @@ export default function handler(req, res) {
   // Gerar datas para todo janeiro a partir de 2026-01-07
   function generateDatesForJanuary() {
     const dates = [];
-    const startDate = new Date(2026, 0, 7);  // Ano, Mês (0-11), Dia
-    const endDate = new Date(2026, 0, 31);
+    const startDate = new Date(2026, 01, 7);  // Ano, Mês (0-11), Dia
+    const endDate = new Date(2026, 01, 31);
 
     
     for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
