@@ -729,6 +729,30 @@
                 <button class="btn-primary" id="applyFilters">Aplicar Filtros</button>
                 <button class="btn-reload-api" id="reloadAPI">Recarregar API</button>
             </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Perfis Salvos</div>
+                <div style="display: flex; gap: 6px; margin-bottom: 10px;">
+                    <input type="text" id="profileName" placeholder="Nome do perfil" style="flex: 1;">
+                    <button class="btn-primary" id="saveProfile" style="flex: 0; width: auto; padding: 8px 12px;">💾</button>
+                </div>
+                <div id="profilesList" style="max-height: 200px; overflow-y: auto;"></div>
+            </div>
+        </div>
+
+            <div class="sidebar-section">
+                <button class="btn-primary" id="applyFilters">Aplicar Filtros</button>
+                <button class="btn-reload-api" id="reloadAPI">Recarregar API</button>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Perfis Salvos</div>
+                <div style="display: flex; gap: 6px; margin-bottom: 10px;">
+                    <input type="text" id="profileName" placeholder="Nome do perfil" style="flex: 1;">
+                    <button class="btn-primary" id="saveProfile" style="flex: 0; width: auto; padding: 8px 12px; margin-top: 5px;">💾</button>
+                </div>
+                <div id="profilesList" style="max-height: 200px; overflow-y: auto;"></div>
+            </div>
         </div>
 
         <div class="main-content">
@@ -846,6 +870,112 @@
         let cashouts = {};
         let currentCashoutId = null;
         let apiOnline = false;
+        let profiles = {};
+
+        // ✅ Carrega perfis do localStorage
+        function loadProfiles() {
+            const saved = localStorage.getItem('pokerProfiles');
+            profiles = saved ? JSON.parse(saved) : {};
+            renderProfilesList();
+        }
+
+        // ✅ Salva perfis no localStorage
+        function saveProfilesToStorage() {
+            localStorage.setItem('pokerProfiles', JSON.stringify(profiles));
+        }
+
+        // ✅ Renderiza lista de perfis salvos
+        function renderProfilesList() {
+            const container = document.getElementById('profilesList');
+            if (Object.keys(profiles).length === 0) {
+                container.innerHTML = '<div style="font-size: 11px; color: var(--text-secondary); text-align: center; padding: 10px;">Nenhum perfil salvo</div>';
+                return;
+            }
+
+            container.innerHTML = Object.keys(profiles).map(name => `
+                <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+                    <button class="btn-primary" onclick="loadProfile('${name}')" style="flex: 1; padding: 6px; font-size: 11px; margin-top: 0;">📂 ${name}</button>
+                    <button class="btn-primary" onclick="deleteProfile('${name}')" style="flex: 0; width: auto; padding: 6px 8px; background: var(--danger); margin-top: 0;">❌</button>
+                </div>
+            `).join('');
+        }
+
+        // ✅ Salva configuração atual como novo perfil
+        function saveCurrentProfile() {
+            const name = document.getElementById('profileName').value.trim();
+            if (!name) {
+                showNotification('⚠️ Aviso', 'Digite um nome para o perfil', 'warning');
+                return;
+            }
+
+            if (profiles[name]) {
+                showNotification('⚠️ Aviso', 'Perfil com este nome já existe', 'warning');
+                return;
+            }
+
+            profiles[name] = {
+                days: Array.from(selectedDays),
+                rooms: Array.from(document.querySelectorAll('.room-filter:checked')).map(e => e.value),
+                types: Array.from(document.querySelectorAll('.type-filter:checked')).map(e => e.value),
+                priorities: Array.from(document.querySelectorAll('.priority-filter:checked')).map(e => e.value),
+                minBuyin: document.getElementById('minBuyin').value,
+                maxBuyin: document.getElementById('maxBuyin').value
+            };
+
+            saveProfilesToStorage();
+            renderProfilesList();
+            document.getElementById('profileName').value = '';
+            showNotification('✅ Salvo!', `Perfil "${name}" salvo com sucesso`, 'success');
+        }
+
+        // ✅ Carrega um perfil salvo
+        function loadProfile(name) {
+            const profile = profiles[name];
+            if (!profile) return;
+
+            // Restaura dias da semana
+            selectedDays = new Set(profile.days);
+            document.querySelectorAll('.weekday-btn').forEach(btn => {
+                const day = parseInt(btn.dataset.day);
+                if (selectedDays.has(day)) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
+            // Restaura salas
+            document.querySelectorAll('.room-filter').forEach(el => {
+                el.checked = profile.rooms.includes(el.value);
+            });
+
+            // Restaura tipos
+            document.querySelectorAll('.type-filter').forEach(el => {
+                el.checked = profile.types.includes(el.value);
+            });
+
+            // Restaura prioridades
+            document.querySelectorAll('.priority-filter').forEach(el => {
+                el.checked = profile.priorities.includes(el.value);
+            });
+
+            // Restaura buy-in
+            document.getElementById('minBuyin').value = profile.minBuyin;
+            document.getElementById('maxBuyin').value = profile.maxBuyin;
+
+            applyFilters();
+            showNotification('📂 Carregado!', `Perfil "${name}" carregado com sucesso`, 'success');
+        }
+
+        // ✅ Deleta um perfil salvo
+        function deleteProfile(name) {
+            if (confirm(`Tem certeza que deseja deletar o perfil "${name}"?`)) {
+                delete profiles[name];
+                saveProfilesToStorage();
+                renderProfilesList();
+                showNotification('🗑️ Deletado', `Perfil "${name}" foi removido`, 'warning');
+            }
+        }
 
         async function loadTournamentsFromAPI() {
             try {
@@ -934,6 +1064,7 @@
 
         async function initializeApp() {
             console.log('🚀 Inicializando aplicação...');
+            loadProfiles();
             allTournamentsData = await loadTournamentsFromAPI();
             filteredTournaments = [...allTournamentsData];
             renderTable();
@@ -974,6 +1105,8 @@
                 applyFilters();
                 showNotification('✅ Atualizado', 'Dados recarregados da API', 'success');
             });
+
+            document.getElementById('saveProfile').addEventListener('click', saveCurrentProfile);
 
             document.querySelectorAll('.room-filter, .type-filter, .priority-filter').forEach(el => {
                 el.addEventListener('change', applyFilters);
@@ -1213,26 +1346,26 @@
 
             try {
                 let html = `
-                    <div style="font-family: Arial, sans-serif; padding: 20px; color: #1a1a1a;">
+                    <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
                         <h1 style="text-align:center; color:#4f46e5; margin-bottom: 10px;">🎯 Pega Blinder Lobby</h1>
                         <p style="text-align:center; color: #333; margin-bottom: 20px;"><strong>Data:</strong> ${today}</p>
                         <hr style="border: none; border-top: 2px solid #ddd; margin: 20px 0;">
                         <h2 style="color: #4f46e5; margin-top: 20px;">Resumo Financeiro</h2>
                         <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
                             <tr style="background: #f5f5f5;">
-                                <td style="padding: 12px; border: 1px solid #ddd;"><strong>Total Buy-in:</strong></td>
-                                <td style="padding: 12px; border: 1px solid #ddd; text-align: right;"><strong>$${totalBuyin.toFixed(2)}</strong></td>
+                                <td style="padding: 12px; border: 1px solid #ddd; color: #333;"><strong>Total Buy-in:</strong></td>
+                                <td style="padding: 12px; border: 1px solid #ddd; text-align: right; color: #333;"><strong>$${totalBuyin.toFixed(2)}</strong></td>
                             </tr>
                             <tr>
-                                <td style="padding: 12px; border: 1px solid #ddd;"><strong>Total Cashout:</strong></td>
-                                <td style="padding: 12px; border: 1px solid #ddd; text-align: right;"><strong>$${totalCashout.toFixed(2)}</strong></td>
+                                <td style="padding: 12px; border: 1px solid #ddd; color: #333;"><strong>Total Cashout:</strong></td>
+                                <td style="padding: 12px; border: 1px solid #ddd; text-align: right; color: #333;"><strong>$${totalCashout.toFixed(2)}</strong></td>
                             </tr>
                             <tr style="background: ${profit >= 0 ? '#d4edda' : '#f8d7da'};">
-                                <td style="padding: 12px; border: 1px solid #ddd;"><strong>Lucro/Prejuízo:</strong></td>
+                                <td style="padding: 12px; border: 1px solid #ddd; color: #333;"><strong>Lucro/Prejuízo:</strong></td>
                                 <td style="padding: 12px; border: 1px solid #ddd; text-align: right; color: ${profit >= 0 ? '#155724' : '#721c24'}; font-weight: bold;">$${profit.toFixed(2)}</td>
                             </tr>
                             <tr style="background: ${profit >= 0 ? '#d4edda' : '#f8d7da'};">
-                                <td style="padding: 12px; border: 1px solid #ddd;"><strong>ROI:</strong></td>
+                                <td style="padding: 12px; border: 1px solid #ddd; color: #333;"><strong>ROI:</strong></td>
                                 <td style="padding: 12px; border: 1px solid #ddd; text-align: right; color: ${profit >= 0 ? '#155724' : '#721c24'}; font-weight: bold;">${roi}%</td>
                             </tr>
                         </table>
@@ -1262,19 +1395,19 @@
                                     
                                     return `
                                         <tr style="background: ${idx % 2 === 0 ? '#f9f9f9' : 'white'};">
-                                            <td style="padding: 10px; border: 1px solid #ddd;">${t.name}</td>
-                                            <td style="padding: 10px; border: 1px solid #ddd;">${t.site}</td>
-                                            <td style="padding: 10px; border: 1px solid #ddd;">${t.type}</td>
-                                            <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">$${t.buyin}</td>
-                                            <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">$${cashout}</td>
-                                            <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">${resultado}</td>
-                                            <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">${roi_calc}%</td>
+                                            <td style="padding: 10px; border: 1px solid #ddd; color: #333;">${t.name}</td>
+                                            <td style="padding: 10px; border: 1px solid #ddd; color: #333;">${t.site}</td>
+                                            <td style="padding: 10px; border: 1px solid #ddd; color: #333;">${t.type}</td>
+                                            <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #333;">$${t.buyin}</td>
+                                            <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #333;">$${cashout}</td>
+                                            <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #333;">${resultado}</td>
+                                            <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #333;">${roi_calc}%</td>
                                         </tr>
                                     `;
                                 }).join('')}
                             </tbody>
                         </table>
-                        <p style="text-align: center; color: #999; margin-top: 30px; font-size: 10px;">Gerado em ${new Date().toLocaleString('pt-BR')}</p>
+                        <p style="text-align: center; color: #666; margin-top: 30px; font-size: 10px;">Gerado em ${new Date().toLocaleString('pt-BR')}</p>
                     </div>
                 `;
 
