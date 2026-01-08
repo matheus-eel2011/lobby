@@ -1373,9 +1373,26 @@
             });
         }
 
+        // Mapeamento entre valores dos checkboxes e tipos da API
+        const typeMapping = {
+        'REG': ['REGULAR'],           
+        'TURBO': ['TURBO'],          
+        'REG KO': ['BOUNTY'],        
+        'TURBO KO': ['BOUNTY'],      
+        'MYSTERY': ['REGULAR'],      
+        'HYPER': ['HYPER'],          
+        'BOUNTY': ['BOUNTY']         
+        };
+
         function applyFilters() {
             const rooms = Array.from(document.querySelectorAll('.room-filter:checked')).map(e => e.value);
-            const types = Array.from(document.querySelectorAll('.type-filter:checked')).map(e => e.value);
+            const checkboxTypes = Array.from(document.querySelectorAll('.type-filter:checked')).map(e => e.value);
+            const types = [];
+            checkboxTypes.forEach(checkboxType => {
+                if (typeMapping[checkboxType]) {
+                    types.push(...typeMapping[checkboxType]);
+                }
+            });
             const priorities = Array.from(document.querySelectorAll('.priority-filter:checked')).map(e => e.value);
             const statuses = Array.from(document.querySelectorAll('.status-filter:checked')).map(e => e.value);
             const minBuyin = parseInt(document.getElementById('minBuyin').value) || 0;
