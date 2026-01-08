@@ -124,6 +124,178 @@ const dailyTurboTemplate = [
 
 ];
 
+// ✅ Templates para Regular Daily Tournaments (Mon-Sat)
+
+const regularDailyMonToSat = [
+
+{ time: "00:05", name: "Micro Madness $1.88 [Hyper]", buyin: 1.88, guaranteed: 1250 },
+
+{ time: "00:05", name: "Mini Midnight Madness $8.88 [Hyper]", buyin: 8.88, guaranteed: 5000 },
+
+{ time: "00:05", name: "Daily Special $250", buyin: 250, guaranteed: 10000 },
+
+{ time: "00:05", name: "Daily Special $50", buyin: 50, guaranteed: 7500 },
+
+{ time: "00:05", name: "Midnight Madness $88 [Hyper]", buyin: 88, guaranteed: 30000 },
+
+{ time: "01:05", name: "Midnight Madness II $8.88 [Hyper]", buyin: 8.88, guaranteed: 4000 },
+
+{ time: "01:05", name: "Midnight Madness II $88 [Hyper]", buyin: 88, guaranteed: 8500 },
+
+{ time: "02:05", name: "Midnight Madness III $88 [Hyper]", buyin: 88, guaranteed: 6000 },
+
+{ time: "02:05", name: "Midnight Madness III $8.88 [Hyper]", buyin: 8.88, guaranteed: 2500 },
+
+{ time: "03:05", name: "Daily Special $88", buyin: 88, guaranteed: 3500 },
+
+{ time: "03:05", name: "Daily Special $10", buyin: 10, guaranteed: 3000 },
+
+{ time: "04:05", name: "Daily Special $3", buyin: 3, guaranteed: 1000 },
+
+{ time: "04:05", name: "Daily Special $30", buyin: 30, guaranteed: 3000 },
+
+{ time: "04:15", name: "Superstack Turbo Special $8.80", buyin: 8.80, guaranteed: 3500 },
+
+{ time: "05:05", name: "Daily Monster Stack $5", buyin: 5, guaranteed: 2500 },
+
+{ time: "05:05", name: "Daily Monster Stack $50", buyin: 50, guaranteed: 10000 },
+
+{ time: "06:05", name: "Daily Special $250", buyin: 250, guaranteed: 10000 },
+
+{ time: "06:05", name: "Daily Special $25", buyin: 25, guaranteed: 5000 },
+
+{ time: "06:05", name: "Daily Special $2.50", buyin: 2.50, guaranteed: 1500 },
+
+{ time: "07:05", name: "Daily Special $125", buyin: 125, guaranteed: 4000 },
+
+{ time: "07:05", name: "Daily Special $15", buyin: 15, guaranteed: 5000 },
+
+{ time: "07:15", name: "Mini Superstack Turbo $2.50", buyin: 2.50, guaranteed: 2250 },
+
+{ time: "08:05", name: "Daily Special $30", buyin: 30, guaranteed: 5000 },
+
+{ time: "09:05", name: "Fifty Stack $55", buyin: 55, guaranteed: 15000 },
+
+{ time: "09:05", name: "Fifty Stack $5.50", buyin: 5.50, guaranteed: 4000 },
+
+{ time: "10:05", name: "Daily Special $4", buyin: 4, guaranteed: 2000 },
+
+{ time: "10:05", name: "Daily Special $40", buyin: 40, guaranteed: 5000 },
+
+{ time: "10:15", name: "Superstack Turbo Special $30", buyin: 30, guaranteed: 6000 },
+
+{ time: "10:15", name: "Mini Superstack Turbo $3", buyin: 3, guaranteed: 2500 },
+
+{ time: "11:05", name: "Superstack Special $88", buyin: 88, guaranteed: 10000 },
+
+{ time: "11:05", name: "Superstack Special $8.88", buyin: 8.88, guaranteed: 6500 },
+
+{ time: "12:05", name: "Daily Special $3", buyin: 3, guaranteed: 2000 },
+
+{ time: "12:05", name: "Daily Special $30", buyin: 30, guaranteed: 7000 },
+
+{ time: "12:45", name: "Mini Hypersonic $2.50", buyin: 2.50, guaranteed: 2000 },
+
+{ time: "12:45", name: "Daily Hypersonic $20", buyin: 20, guaranteed: 7500 },
+
+{ time: "13:05", name: "Daily Monster Stack $250", buyin: 250, guaranteed: 30000 },
+
+{ time: "13:05", name: "Daily Monster Stack $2.50", buyin: 2.50, guaranteed: 4000 },
+
+{ time: "14:05", name: "Daily Deepstack Special $125", buyin: 125, guaranteed: 15000 },
+
+{ time: "14:45", name: "Mini Hypersonic $2.50", buyin: 2.50, guaranteed: 2000 },
+
+{ time: "15:05", name: "Daily 7-Max Special $200", buyin: 200, guaranteed: 12500 },
+
+{ time: "15:05", name: "Mini Forty Stack $4.40", buyin: 4.40, guaranteed: 6000 },
+
+{ time: "15:05", name: "Forty Stack $44", buyin: 44, guaranteed: 22500 },
+
+{ time: "16:05", name: "Daily Special $10", buyin: 10, guaranteed: 10000 },
+
+{ time: "16:05", name: "Daily Special $88", buyin: 88, guaranteed: 25000 },
+
+{ time: "17:05", name: "Daily Special $2.50", buyin: 2.50, guaranteed: 2500 },
+
+{ time: "17:05", name: "Daily Main Event $250", buyin: 250, guaranteed: 25000 },
+
+{ time: "18:05", name: "Mini Monday Monster Stack $15", buyin: 15, guaranteed: 30000 },
+
+{ time: "18:05", name: "Monday Monster Stack $150", buyin: 150, guaranteed: 80000 },
+
+{ time: "18:45", name: "Mini Hypersonic $2.50", buyin: 2.50, guaranteed: 2500 },
+
+{ time: "18:45", name: "Daily Hypersonic $20", buyin: 20, guaranteed: 15000 },
+
+{ time: "19:05", name: "Fifty Stack $5.50", buyin: 5.50, guaranteed: 5000 },
+
+{ time: "19:05", name: "Fifty Stack $55", buyin: 55, guaranteed: 20000 },
+
+{ time: "20:05", name: "Mini LUCKY SEVENS Superstack Turbo $17.77 [7-Max]", buyin: 17.77, guaranteed: 20000 },
+
+{ time: "20:05", name: "LUCKY SEVENS Superstack Turbo $77 [7-Max]", buyin: 77, guaranteed: 25000 },
+
+{ time: "21:45", name: "Daily Hypersonic $20", buyin: 20, guaranteed: 12500 },
+
+{ time: "21:45", name: "Mini Hypersonic $2.50", buyin: 2.50, guaranteed: 2000 },
+
+{ time: "23:05", name: "Mini Saver $5 [Hyper]", buyin: 5, guaranteed: 3000 },
+
+{ time: "23:05", name: "Day Saver $50 [Hyper]", buyin: 50, guaranteed: 17500 },
+
+{ time: "23:05", name: "Day Saver $250 [Hyper]", buyin: 250, guaranteed: 15000 },
+
+{ time: "23:45", name: "Daily Hypersonic $50", buyin: 50, guaranteed: 7000 },
+
+];
+
+// ✅ Torneios adicionais para Sunday
+
+const regularDailySunday = [
+
+{ time: "23:45", name: "Mini Hypersonic $5", buyin: 5, guaranteed: 2000 },
+
+{ time: "00:05", name: "Daily Special $250", buyin: 250, guaranteed: 5000 },
+
+{ time: "00:05", name: "Mini Midnight Madness $8.88 [Hyper]", buyin: 8.88, guaranteed: 5000 },
+
+{ time: "00:05", name: "Daily Special $50", buyin: 50, guaranteed: 6000 },
+
+{ time: "00:05", name: "Micro Madness $1.88 [Hyper]", buyin: 1.88, guaranteed: 1000 },
+
+{ time: "00:05", name: "Midnight Madness $88 [Hyper]", buyin: 88, guaranteed: 10000 },
+
+{ time: "01:05", name: "Midnight Madness II $8.88 [Hyper]", buyin: 8.88, guaranteed: 4000 },
+
+{ time: "01:05", name: "Midnight Madness II $88 [Hyper]", buyin: 88, guaranteed: 7500 },
+
+{ time: "02:05", name: "Midnight Madness III $8.88 [Hyper]", buyin: 8.88, guaranteed: 2500 },
+
+{ time: "02:05", name: "Midnight Madness III $88 [Hyper]", buyin: 88, guaranteed: 6000 },
+
+{ time: "03:05", name: "Daily Special $88", buyin: 88, guaranteed: 3000 },
+
+{ time: "03:05", name: "Daily Special $10", buyin: 10, guaranteed: 3000 },
+
+{ time: "04:05", name: "Daily Special $3", buyin: 3, guaranteed: 1000 },
+
+{ time: "04:05", name: "Daily Special $30", buyin: 30, guaranteed: 2500 },
+
+{ time: "04:15", name: "Superstack Turbo Special $8.80", buyin: 8.80, guaranteed: 3500 },
+
+{ time: "05:05", name: "Daily Monster Stack $5", buyin: 5, guaranteed: 2500 },
+
+{ time: "05:05", name: "Daily Monster Stack $50", buyin: 50, guaranteed: 10000 },
+
+{ time: "06:05", name: "Daily Special $25", buyin: 25, guaranteed: 4000 },
+
+{ time: "06:05", name: "Daily Special $2.50", buyin: 2.50, guaranteed: 1500 },
+
+{ time: "06:05", name: "Daily Special $250", buyin: 250, guaranteed: 7500 },
+
+];
+
 const mainEventSeries = [
 
 { id: 25, date: "2026-01-07", time: "18:00", name: "#25: $100 Winter Classic [9-Max]", type: "REGULAR", buyin: 100, guaranteed: 200000, priority: "medium" },
@@ -194,9 +366,9 @@ id = Math.max(...mainEventSeries.map(t => t.id)) + 1;
 
 dates.forEach(date => {
 
-// ✅ CORRIGIDO: Usar formatDateString() ao invés de toISOString()
-
 const dateStr = formatDateString(date);
+
+const dayOfWeek = date.getDay();
 
 // Daily Hyper
 
@@ -257,6 +429,74 @@ status: "Aberto"
 });
 
 });
+
+// ✅ Adicionar Regular Daily Tournaments (Mon-Sat ou Sunday)
+
+if (dayOfWeek === 0) {
+
+// Sunday
+
+regularDailySunday.forEach(template => {
+
+tournaments.push({
+
+id: id++,
+
+date: dateStr,
+
+time: template.time,
+
+site: "GGPoker",
+
+name: template.name,
+
+type: "REGULAR",
+
+buyin: template.buyin,
+
+guaranteed: template.guaranteed,
+
+priority: getPriority(template.name),
+
+status: "Aberto"
+
+});
+
+});
+
+} else {
+
+// Mon-Sat
+
+regularDailyMonToSat.forEach(template => {
+
+tournaments.push({
+
+id: id++,
+
+date: dateStr,
+
+time: template.time,
+
+site: "GGPoker",
+
+name: template.name,
+
+type: "REGULAR",
+
+buyin: template.buyin,
+
+guaranteed: template.guaranteed,
+
+priority: getPriority(template.name),
+
+status: "Aberto"
+
+});
+
+});
+
+}
 
 });
 
@@ -319,8 +559,6 @@ const dayOfWeek = date.getDay();
 // Sunday = 0
 
 if (dayOfWeek === 0) {
-
-// ✅ CORRIGIDO: Usar formatDateString() ao invés de toISOString()
 
 const dateStr = formatDateString(date);
 
