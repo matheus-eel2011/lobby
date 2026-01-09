@@ -225,12 +225,12 @@ const dailyHyperTemplate = [
 ];
 
 const ggmasterTemplate = [
-  { time: "00:45", name: "Daily Hyper $2", buyin: 2, guaranteed: 1000 },
-  { time: "00:45", name: "Daily Hyper $50", buyin: 50, guaranteed: 2000 },
-  { time: "01:45", name: "Daily Hyper $20", buyin: 20, guaranteed: 2500 },
-  { time: "02:45", name: "Daily Hyper $10", buyin: 10, guaranteed: 1500 },
-  { time: "03:45", name: "Daily Hyper $100", buyin: 100, guaranteed: 2000 },
-]
+  { time: "00:45", name: "Daily master $2", buyin: 2, guaranteed: 1000 },
+  { time: "00:45", name: "Daily master $50", buyin: 50, guaranteed: 2000 },
+  { time: "01:45", name: "Daily master $20", buyin: 20, guaranteed: 2500 },
+  { time: "02:45", name: "Daily master $10", buyin: 10, guaranteed: 1500 },
+  { time: "03:45", name: "Daily master $100", buyin: 100, guaranteed: 2000 },
+];
 const dailyTurboTemplate = [
   { time: "00:15", name: "Daily Turbo $10", buyin: 10, guaranteed: 600 },
   { time: "01:15", name: "Daily Turbo $20", buyin: 20, guaranteed: 500 },
