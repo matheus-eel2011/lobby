@@ -317,6 +317,7 @@ dates.forEach(date => {
     });
   });
 });
+
 // ✅ ADICIONAR YAPOKER - TODOS OS DIAS (segunda a sábado)
 dates.forEach(date => {
   const dayOfWeek = date.getDay();
