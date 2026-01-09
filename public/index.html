@@ -963,6 +963,7 @@
             </div>
 
             <div class="sidebar-section">
+                <button class="btn-primary" id="hideClosed" style="background: var(--warning); border-color: var(--warning);">🚫 Ocultar Fechados</button>
                 <button class="btn-primary" id="applyFilters">Aplicar Filtros</button>
                 <button class="btn-reload-api" id="reloadAPI">Recarregar API</button>
             </div>
@@ -1095,24 +1096,28 @@
         let sortColumn = null;
         let sortDirection = 'asc';
 
-        // ✅ FUNÇÃO PARA CALCULAR STATUS DO TORNEIO
-        function calculateTournamentStatus(date, lateReg) {
+        // ✅ FUNÇÃO PARA CALCULAR STATUS DO TORNEIO EM TEMPO REAL
+        function calculateTournamentStatus(tournament) {
             const now = new Date();
-            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const [year, month, day] = tournament.date.split('-');
+            const [hours, minutes] = tournament.time.split(':');
             
-            // Parse date YYYY-MM-DD
-            const [year, month, day] = date.split('-');
-            const tournamentDate = new Date(year, parseInt(month) - 1, parseInt(day));
+            // Criar data e hora do torneio
+            const tournamentDateTime = new Date(year, parseInt(month) - 1, parseInt(day), parseInt(hours), parseInt(minutes));
             
-            // Se torneio é de ontem ou antes = Fechado
-            if (tournamentDate < today) {
+            // Se o torneio já começou (data/hora passada)
+            if (tournamentDateTime <= now) {
                 return 'Fechado';
             }
             
-            // Se torneio é hoje ou no futuro
-            // Por enquanto, vamos usar dados do servidor
-            // Essa lógica seria mais precisa com hora em tempo real
-            return 'Aberto'; // Valor padrão - será substituído por dados da API
+            // Se faltam menos de 30 minutos, ativa late reg
+            const timeUntilStart = (tournamentDateTime - now) / (1000 * 60); // em minutos
+            if (timeUntilStart <= 30) {
+                return 'Late Reg';
+            }
+            
+            // Torneio aberto normalmente
+            return 'Aberto';
         }
 
         function loadProfiles() {
@@ -1245,7 +1250,6 @@
                         buyin: parseFloat(t.buyin) || 0,
                         guaranteed: parseFloat(t.guaranteed) || 0,
                         field: parseInt(t.field) || 0,
-                        roi: parseFloat(t.roi) || 0,
                         lateReg: parseInt(t.lateReg) || 0,
                         status: t.status || 'Aberto',
                         priority: t.priority || 'medium',
@@ -1291,12 +1295,12 @@
             };
 
             return [
-                { id: 1, time: '19:00', date: formatDate(yesterday), site: 'GGPoker', name: 'HR 3', type: 'REG', buyin: 5, guaranteed: 500, field: 120, roi: 15, lateReg: 30, status: 'Fechado', priority: 'medium', day: yesterday.getDay() },
-                { id: 2, time: '20:00', date: formatDate(now), site: 'PokerStars', name: 'Turbo Special', type: 'TURBO', buyin: 11, guaranteed: 1000, field: 85, roi: 20, lateReg: 15, status: 'Aberto', priority: 'high', day: now.getDay() },
-                { id: 3, time: '21:00', date: formatDate(tomorrow), site: '888Poker', name: 'High Roller', type: 'HYPER', buyin: 50, guaranteed: 5000, field: 45, roi: 25, lateReg: 10, status: 'Aberto', priority: 'very-high', day: tomorrow.getDay() },
-                { id: 4, time: '19:30', date: formatDate(now), site: 'YaPoker', name: 'PKO Night', type: 'REG KO', buyin: 10, guaranteed: 2000, field: 150, roi: 18, lateReg: 20, status: 'Late Reg', priority: 'low', day: now.getDay() },
-                { id: 5, time: '20:30', date: formatDate(tomorrow), site: 'Champion', name: 'Main Event', type: 'TURBO KO', buyin: 25, guaranteed: 3000, field: 95, roi: 22, lateReg: 30, status: 'Aberto', priority: 'very-high', day: tomorrow.getDay() },
-                { id: 6, time: '18:00', date: formatDate(now), site: 'GGPoker', name: 'Mystery Mix', type: 'MYSTERY', buyin: 15, guaranteed: 1500, field: 200, roi: 16, lateReg: 25, status: 'Aberto', priority: 'medium', day: now.getDay() },
+                { id: 1, time: '19:00', date: formatDate(yesterday), site: 'GGPoker', name: 'HR 3', type: 'REG', buyin: 5, guaranteed: 500, field: 120, lateReg: 30, status: 'Fechado', priority: 'medium', day: yesterday.getDay() },
+                { id: 2, time: '20:00', date: formatDate(now), site: 'PokerStars', name: 'Turbo Special', type: 'TURBO', buyin: 11, guaranteed: 1000, field: 85, lateReg: 15, status: 'Aberto', priority: 'high', day: now.getDay() },
+                { id: 3, time: '21:00', date: formatDate(tomorrow), site: '888Poker', name: 'High Roller', type: 'HYPER', buyin: 50, guaranteed: 5000, field: 45, lateReg: 10, status: 'Aberto', priority: 'very-high', day: tomorrow.getDay() },
+                { id: 4, time: '19:30', date: formatDate(now), site: 'YaPoker', name: 'PKO Night', type: 'REG KO', buyin: 10, guaranteed: 2000, field: 150, lateReg: 20, status: 'Late Reg', priority: 'low', day: now.getDay() },
+                { id: 5, time: '20:30', date: formatDate(tomorrow), site: 'Champion', name: 'Main Event', type: 'TURBO KO', buyin: 25, guaranteed: 3000, field: 95, lateReg: 30, status: 'Aberto', priority: 'very-high', day: tomorrow.getDay() },
+                { id: 6, time: '18:00', date: formatDate(now), site: 'GGPoker', name: 'Mystery Mix', type: 'MYSTERY', buyin: 15, guaranteed: 1500, field: 200, lateReg: 25, status: 'Aberto', priority: 'medium', day: now.getDay() },
             ];
         }
 
@@ -1336,6 +1340,13 @@
             });
 
             document.getElementById('applyFilters').addEventListener('click', applyFilters);
+            
+            document.getElementById('hideClosed').addEventListener('click', () => {
+                document.getElementById('status-fechado').checked = false;
+                applyFilters();
+                showNotification('✅ Filtrado', 'Torneios fechados ocultados', 'success');
+            });
+
             document.getElementById('reloadAPI').addEventListener('click', async () => {
                 console.log('🔄 Recarregando API...');
                 allTournamentsData = await loadTournamentsFromAPI();
@@ -1373,26 +1384,9 @@
             });
         }
 
-        // Mapeamento entre valores dos checkboxes e tipos da API
-        const typeMapping = {
-        'REG': ['REGULAR'],           
-        'TURBO': ['TURBO'],          
-        'REG KO': ['BOUNTY'],        
-        'TURBO KO': ['BOUNTY'],      
-        'MYSTERY': ['REGULAR'],      
-        'HYPER': ['HYPER'],          
-        'BOUNTY': ['BOUNTY']         
-        };
-
         function applyFilters() {
             const rooms = Array.from(document.querySelectorAll('.room-filter:checked')).map(e => e.value);
-            const checkboxTypes = Array.from(document.querySelectorAll('.type-filter:checked')).map(e => e.value);
-            const types = [];
-            checkboxTypes.forEach(checkboxType => {
-                if (typeMapping[checkboxType]) {
-                    types.push(...typeMapping[checkboxType]);
-                }
-            });
+            const types = Array.from(document.querySelectorAll('.type-filter:checked')).map(e => e.value);
             const priorities = Array.from(document.querySelectorAll('.priority-filter:checked')).map(e => e.value);
             const statuses = Array.from(document.querySelectorAll('.status-filter:checked')).map(e => e.value);
             const minBuyin = parseInt(document.getElementById('minBuyin').value) || 0;
@@ -1400,17 +1394,21 @@
             const minGuaranteed = parseInt(document.getElementById('minGuaranteed').value) || 0;
             const maxGuaranteed = parseInt(document.getElementById('maxGuaranteed').value) || 999999;
 
-            filteredTournaments = allTournamentsData.filter(t =>
-                rooms.includes(t.site) &&
-                types.includes(t.type) &&
-                priorities.includes(t.priority) &&
-                statuses.includes(t.status) &&
-                t.buyin >= minBuyin &&
-                t.buyin <= maxBuyin &&
-                t.guaranteed >= minGuaranteed &&
-                t.guaranteed <= maxGuaranteed &&
-                selectedDays.has(t.day)
-            );
+            filteredTournaments = allTournamentsData.filter(t => {
+                // Recalcular status em tempo real
+                const currentStatus = calculateTournamentStatus(t);
+                t.status = currentStatus; // Atualizar status do torneio
+                
+                return rooms.includes(t.site) &&
+                    types.includes(t.type) &&
+                    priorities.includes(t.priority) &&
+                    statuses.includes(currentStatus) &&
+                    t.buyin >= minBuyin &&
+                    t.buyin <= maxBuyin &&
+                    t.guaranteed >= minGuaranteed &&
+                    t.guaranteed <= maxGuaranteed &&
+                    selectedDays.has(t.day);
+            });
 
             if (sortColumn) {
                 filteredTournaments.sort((a, b) => {
@@ -1441,10 +1439,6 @@
             });
 
             tbody.innerHTML = filteredTournaments.map(t => {
-                const cashoutValue = cashouts[t.id] !== undefined ? cashouts[t.id] : null;
-                const roiValue = cashoutValue !== null ? (((cashoutValue - t.buyin) / t.buyin) * 100).toFixed(1) : t.roi;
-                const roiColor = cashoutValue !== null ? (roiValue >= 0 ? 'color: var(--success)' : 'color: var(--danger)') : '';
-
                 const priorityLabels = {
                     'very-low': 'Very Low',
                     'low': 'Low',
