@@ -201,7 +201,7 @@ dates.forEach(date => {
   ].forEach(template => {
     tournaments.push({
       id: id++,
-      date: dateStr,
+      date: formatDateString(date),
       time: template.time,
       site: "GGPoker",
       name: template.name,
