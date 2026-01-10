@@ -51,108 +51,6 @@ function generateDatesForJanuary() {
 // ✅ YAPOKER - Torneios de Segunda a Sábado (estrutura idêntica)
 
 // ✅ GGPOKER - Templates diários
-const dailyHyperTemplate = [
-  { time: "00:45", name: "Daily Hyper $2", buyin: 2, guaranteed: 1000 },
-  { time: "00:45", name: "Daily Hyper $50", buyin: 50, guaranteed: 2000 },
-  { time: "00:45", name: "Daily Hyper $10", buyin: 10, guaranteed: 2000 },
-  { time: "01:45", name: "Daily Hyper $20", buyin: 20, guaranteed: 2500 },
-  { time: "01:45", name: "Daily Hyper $1", buyin: 1, guaranteed: 500 },
-  { time: "01:45", name: "Daily Hyper $5", buyin: 5, guaranteed: 1250 },
-  { time: "02:45", name: "Daily Hyper $2", buyin: 2, guaranteed: 600 },
-  { time: "02:45", name: "Daily Hyper $10", buyin: 10, guaranteed: 1500 },
-  { time: "02:45", name: "Daily Hyper $50", buyin: 50, guaranteed: 1500 },
-  { time: "03:45", name: "Daily Hyper $1", buyin: 1, guaranteed: 400 },
-  { time: "03:45", name: "Daily Hyper $100", buyin: 100, guaranteed: 2000 },
-  { time: "03:45", name: "Daily Hyper $30", buyin: 30, guaranteed: 2000 },
-  { time: "03:45", name: "Daily Hyper $8", buyin: 8, guaranteed: 1500 },
-  { time: "04:45", name: "Daily Hyper $20", buyin: 20, guaranteed: 2000 },
-  { time: "04:45", name: "Daily Hyper $60", buyin: 60, guaranteed: 1500 },
-  { time: "04:45", name: "Daily Hyper $1", buyin: 1, guaranteed: 400 },
-  { time: "04:45", name: "Daily Hyper $5", buyin: 5, guaranteed: 1000 },
-  { time: "05:45", name: "Daily Hyper $10", buyin: 10, guaranteed: 1750 },
-  { time: "05:45", name: "Daily Hyper $2", buyin: 2, guaranteed: 750 },
-  { time: "05:45", name: "Daily Hyper $50", buyin: 50, guaranteed: 2000 },
-  { time: "06:45", name: "Daily Hyper $8", buyin: 8, guaranteed: 1500 },
-  { time: "06:45", name: "Daily Hyper $1", buyin: 1, guaranteed: 500 },
-  { time: "06:45", name: "Daily Hyper $100", buyin: 100, guaranteed: 2000 },
-  { time: "06:45", name: "Daily Hyper $30", buyin: 30, guaranteed: 2500 },
-  { time: "07:45", name: "Daily Hyper $2", buyin: 2, guaranteed: 750 },
-  { time: "07:45", name: "Daily Hyper $10", buyin: 10, guaranteed: 2500 },
-  { time: "07:45", name: "Daily Hyper $60", buyin: 60, guaranteed: 2500 },
-  { time: "08:45", name: "Daily Hyper $20", buyin: 20, guaranteed: 2500 },
-  { time: "08:45", name: "Daily Hyper $5", buyin: 5, guaranteed: 1500 },
-  { time: "08:45", name: "Daily Hyper $80", buyin: 80, guaranteed: 2000 },
-  { time: "08:45", name: "Daily Hyper $1", buyin: 1, guaranteed: 500 },
-  { time: "09:45", name: "Daily Hyper $10", buyin: 10, guaranteed: 3000 },
-  { time: "09:45", name: "Daily Hyper $2", buyin: 2, guaranteed: 800 },
-  { time: "09:45", name: "Daily Hyper $50", buyin: 50, guaranteed: 2500 },
-  { time: "10:45", name: "Daily Hyper $1", buyin: 1, guaranteed: 600 },
-  { time: "10:45", name: "Daily Hyper $5", buyin: 5, guaranteed: 1500 },
-  { time: "10:45", name: "Daily Hyper $20", buyin: 20, guaranteed: 3000 },
-  { time: "10:45", name: "Daily Hyper $60", buyin: 60, guaranteed: 2500 },
-  { time: "11:45", name: "Daily Hyper $8", buyin: 8, guaranteed: 2500 },
-  { time: "11:45", name: "Daily Hyper $1", buyin: 1, guaranteed: 750 },
-  { time: "11:45", name: "Daily Hyper $30", buyin: 30, guaranteed: 3000 },
-  { time: "11:45", name: "Daily Hyper $100", buyin: 100, guaranteed: 1500 },
-  { time: "12:45", name: "Daily Hyper $50", buyin: 50, guaranteed: 3500 },
-  { time: "12:45", name: "Daily Hyper $5", buyin: 5, guaranteed: 2000 },
-  { time: "13:45", name: "Daily Hyper $20", buyin: 20, guaranteed: 4000 },
-  { time: "13:45", name: "Daily Hyper $5", buyin: 5, guaranteed: 2500 },
-  { time: "13:45", name: "Daily Hyper $80", buyin: 80, guaranteed: 2500 },
-  { time: "13:45", name: "Daily Hyper $1", buyin: 1, guaranteed: 1000 },
-  { time: "14:45", name: "Daily Hyper $2", buyin: 2, guaranteed: 2000 },
-  { time: "14:45", name: "Daily Hypersonic $15", buyin: 15, guaranteed: 8000 },
-  { time: "14:45", name: "Daily Hyper $50", buyin: 50, guaranteed: 4000 },
-  { time: "15:45", name: "Daily Hyper $1", buyin: 1, guaranteed: 1000 },
-  { time: "15:45", name: "Daily Hyper $100", buyin: 100, guaranteed: 3000 },
-  { time: "15:45", name: "Daily Hyper $30", buyin: 30, guaranteed: 4000 },
-  { time: "15:45", name: "Daily Hyper $8", buyin: 8, guaranteed: 5000 },
-  { time: "16:45", name: "Daily Hyper Special $88", buyin: 88, guaranteed: 8000 },
-  { time: "16:45", name: "Daily Hyper $20", buyin: 20, guaranteed: 6000 },
-  { time: "16:45", name: "Daily Hyper $2", buyin: 2, guaranteed: 1500 },
-  { time: "16:45", name: "Daily Hyper Special $8.88", buyin: 9, guaranteed: 8000 },
-  { time: "16:45", name: "Daily Hyper $200", buyin: 200, guaranteed: 3000 },
-  { time: "17:45", name: "Daily Hyper $5", buyin: 5, guaranteed: 4000 },
-  { time: "17:45", name: "Daily Hyper $1", buyin: 1, guaranteed: 1000 },
-  { time: "17:45", name: "Daily Hyper $50", buyin: 50, guaranteed: 5000 },
-  { time: "18:45", name: "Daily Hyper $8", buyin: 8, guaranteed: 5000 },
-  { time: "18:45", name: "Daily Hyper $80", buyin: 80, guaranteed: 3000 },
-  { time: "18:45", name: "Daily Hyper $2", buyin: 2, guaranteed: 2000 },
-  { time: "19:45", name: "Daily Hyper $10", buyin: 10, guaranteed: 7000 },
-  { time: "19:45", name: "Daily Hyper $2", buyin: 2, guaranteed: 1750 },
-  { time: "19:45", name: "Daily Hyper $50", buyin: 50, guaranteed: 5000 },
-  { time: "20:45", name: "Daily Hyper $20", buyin: 20, guaranteed: 7000 },
-  { time: "20:45", name: "Daily Hyper $1", buyin: 1, guaranteed: 750 },
-  { time: "20:45", name: "Daily Hyper $100", buyin: 100, guaranteed: 3000 },
-  { time: "20:45", name: "Daily Hyper $5", buyin: 5, guaranteed: 3000 },
-  { time: "21:45", name: "Daily Hyper $50", buyin: 50, guaranteed: 4000 },
-  { time: "21:45", name: "Daily Hyper $10", buyin: 10, guaranteed: 2500 },
-  { time: "22:45", name: "Daily Hyper $1", buyin: 1, guaranteed: 600 },
-  { time: "22:45", name: "Daily Hyper $20", buyin: 20, guaranteed: 4000 },
-  { time: "22:45", name: "Daily Hyper $5", buyin: 5, guaranteed: 1500 },
-  { time: "22:45", name: "Daily Hyper $80", buyin: 80, guaranteed: 3000 },
-  { time: "23:45", name: "Daily Hyper $100", buyin: 100, guaranteed: 2000 },
-  { time: "23:45", name: "Daily Hyper $30", buyin: 30, guaranteed: 2500 },
-  { time: "23:45", name: "Daily Hyper $2", buyin: 2, guaranteed: 600 },
-];
-
-
-const dailyTurboTemplate = [
-  { time: "00:15", name: "Daily Turbo $10", buyin: 10, guaranteed: 600 },
-  { time: "01:15", name: "Daily Turbo $20", buyin: 20, guaranteed: 500 },
-  { time: "02:15", name: "Daily Turbo $40", buyin: 40, guaranteed: 500 },
-  { time: "03:15", name: "Daily Turbo $5", buyin: 5, guaranteed: 400 },
-];
-
-
-const sundaySpecials = [
-  { time: "12:00", name: "$125 Sunday Winter KICK-OFF", buyin: 125, guaranteed: 100000 },
-  { time: "13:00", name: "$250 Sunday MERRY Monster Stack", buyin: 250, guaranteed: 100000 },
-  { time: "15:00", name: "$150 Winter GRAND PRIX", buyin: 150, guaranteed: 250000 },
-  { time: "17:30", name: "$215 Bounty Hunters Sunday Winter GAMES", buyin: 215, guaranteed: 400000, type: "BOUNTY", priority: "high" },
-  { time: "19:00", name: "$250 Sunday Winter CLASSIC", buyin: 250, guaranteed: 250000 },
-  { time: "22:15", name: "$77 Sunday Snowy Sevens Turbo", buyin: 77, guaranteed: 100000, type: "TURBO", priority: "very-high" }
-];
 
 
 const tournaments = [];
@@ -177,12 +75,93 @@ id = Math.max(...[
 
 // Adicionar GGPoker Daily Hypers e Turbos para cada dia
 dates.forEach(date => {
-  const dateStr = formatDateString(date);
-
-  dailyHyperTemplate.forEach(template => {
+  [
+    { time: "00:45", name: "Daily Hyper $2", buyin: 2, guaranteed: 1000 },
+    { time: "00:45", name: "Daily Hyper $50", buyin: 50, guaranteed: 2000 },
+    { time: "00:45", name: "Daily Hyper $10", buyin: 10, guaranteed: 2000 },
+    { time: "01:45", name: "Daily Hyper $20", buyin: 20, guaranteed: 2500 },
+    { time: "01:45", name: "Daily Hyper $1", buyin: 1, guaranteed: 500 },
+    { time: "01:45", name: "Daily Hyper $5", buyin: 5, guaranteed: 1250 },
+    { time: "02:45", name: "Daily Hyper $2", buyin: 2, guaranteed: 600 },
+    { time: "02:45", name: "Daily Hyper $10", buyin: 10, guaranteed: 1500 },
+    { time: "02:45", name: "Daily Hyper $50", buyin: 50, guaranteed: 1500 },
+    { time: "03:45", name: "Daily Hyper $1", buyin: 1, guaranteed: 400 },
+    { time: "03:45", name: "Daily Hyper $100", buyin: 100, guaranteed: 2000 },
+    { time: "03:45", name: "Daily Hyper $30", buyin: 30, guaranteed: 2000 },
+    { time: "03:45", name: "Daily Hyper $8", buyin: 8, guaranteed: 1500 },
+    { time: "04:45", name: "Daily Hyper $20", buyin: 20, guaranteed: 2000 },
+    { time: "04:45", name: "Daily Hyper $60", buyin: 60, guaranteed: 1500 },
+    { time: "04:45", name: "Daily Hyper $1", buyin: 1, guaranteed: 400 },
+    { time: "04:45", name: "Daily Hyper $5", buyin: 5, guaranteed: 1000 },
+    { time: "05:45", name: "Daily Hyper $10", buyin: 10, guaranteed: 1750 },
+    { time: "05:45", name: "Daily Hyper $2", buyin: 2, guaranteed: 750 },
+    { time: "05:45", name: "Daily Hyper $50", buyin: 50, guaranteed: 2000 },
+    { time: "06:45", name: "Daily Hyper $8", buyin: 8, guaranteed: 1500 },
+    { time: "06:45", name: "Daily Hyper $1", buyin: 1, guaranteed: 500 },
+    { time: "06:45", name: "Daily Hyper $100", buyin: 100, guaranteed: 2000 },
+    { time: "06:45", name: "Daily Hyper $30", buyin: 30, guaranteed: 2500 },
+    { time: "07:45", name: "Daily Hyper $2", buyin: 2, guaranteed: 750 },
+    { time: "07:45", name: "Daily Hyper $10", buyin: 10, guaranteed: 2500 },
+    { time: "07:45", name: "Daily Hyper $60", buyin: 60, guaranteed: 2500 },
+    { time: "08:45", name: "Daily Hyper $20", buyin: 20, guaranteed: 2500 },
+    { time: "08:45", name: "Daily Hyper $5", buyin: 5, guaranteed: 1500 },
+    { time: "08:45", name: "Daily Hyper $80", buyin: 80, guaranteed: 2000 },
+    { time: "08:45", name: "Daily Hyper $1", buyin: 1, guaranteed: 500 },
+    { time: "09:45", name: "Daily Hyper $10", buyin: 10, guaranteed: 3000 },
+    { time: "09:45", name: "Daily Hyper $2", buyin: 2, guaranteed: 800 },
+    { time: "09:45", name: "Daily Hyper $50", buyin: 50, guaranteed: 2500 },
+    { time: "10:45", name: "Daily Hyper $1", buyin: 1, guaranteed: 600 },
+    { time: "10:45", name: "Daily Hyper $5", buyin: 5, guaranteed: 1500 },
+    { time: "10:45", name: "Daily Hyper $20", buyin: 20, guaranteed: 3000 },
+    { time: "10:45", name: "Daily Hyper $60", buyin: 60, guaranteed: 2500 },
+    { time: "11:45", name: "Daily Hyper $8", buyin: 8, guaranteed: 2500 },
+    { time: "11:45", name: "Daily Hyper $1", buyin: 1, guaranteed: 750 },
+    { time: "11:45", name: "Daily Hyper $30", buyin: 30, guaranteed: 3000 },
+    { time: "11:45", name: "Daily Hyper $100", buyin: 100, guaranteed: 1500 },
+    { time: "12:45", name: "Daily Hyper $50", buyin: 50, guaranteed: 3500 },
+    { time: "12:45", name: "Daily Hyper $5", buyin: 5, guaranteed: 2000 },
+    { time: "13:45", name: "Daily Hyper $20", buyin: 20, guaranteed: 4000 },
+    { time: "13:45", name: "Daily Hyper $5", buyin: 5, guaranteed: 2500 },
+    { time: "13:45", name: "Daily Hyper $80", buyin: 80, guaranteed: 2500 },
+    { time: "13:45", name: "Daily Hyper $1", buyin: 1, guaranteed: 1000 },
+    { time: "14:45", name: "Daily Hyper $2", buyin: 2, guaranteed: 2000 },
+    { time: "14:45", name: "Daily Hypersonic $15", buyin: 15, guaranteed: 8000 },
+    { time: "14:45", name: "Daily Hyper $50", buyin: 50, guaranteed: 4000 },
+    { time: "15:45", name: "Daily Hyper $1", buyin: 1, guaranteed: 1000 },
+    { time: "15:45", name: "Daily Hyper $100", buyin: 100, guaranteed: 3000 },
+    { time: "15:45", name: "Daily Hyper $30", buyin: 30, guaranteed: 4000 },
+    { time: "15:45", name: "Daily Hyper $8", buyin: 8, guaranteed: 5000 },
+    { time: "16:45", name: "Daily Hyper Special $88", buyin: 88, guaranteed: 8000 },
+    { time: "16:45", name: "Daily Hyper $20", buyin: 20, guaranteed: 6000 },
+    { time: "16:45", name: "Daily Hyper $2", buyin: 2, guaranteed: 1500 },
+    { time: "16:45", name: "Daily Hyper Special $8.88", buyin: 9, guaranteed: 8000 },
+    { time: "16:45", name: "Daily Hyper $200", buyin: 200, guaranteed: 3000 },
+    { time: "17:45", name: "Daily Hyper $5", buyin: 5, guaranteed: 4000 },
+    { time: "17:45", name: "Daily Hyper $1", buyin: 1, guaranteed: 1000 },
+    { time: "17:45", name: "Daily Hyper $50", buyin: 50, guaranteed: 5000 },
+    { time: "18:45", name: "Daily Hyper $8", buyin: 8, guaranteed: 5000 },
+    { time: "18:45", name: "Daily Hyper $80", buyin: 80, guaranteed: 3000 },
+    { time: "18:45", name: "Daily Hyper $2", buyin: 2, guaranteed: 2000 },
+    { time: "19:45", name: "Daily Hyper $10", buyin: 10, guaranteed: 7000 },
+    { time: "19:45", name: "Daily Hyper $2", buyin: 2, guaranteed: 1750 },
+    { time: "19:45", name: "Daily Hyper $50", buyin: 50, guaranteed: 5000 },
+    { time: "20:45", name: "Daily Hyper $20", buyin: 20, guaranteed: 7000 },
+    { time: "20:45", name: "Daily Hyper $1", buyin: 1, guaranteed: 750 },
+    { time: "20:45", name: "Daily Hyper $100", buyin: 100, guaranteed: 3000 },
+    { time: "20:45", name: "Daily Hyper $5", buyin: 5, guaranteed: 3000 },
+    { time: "21:45", name: "Daily Hyper $50", buyin: 50, guaranteed: 4000 },
+    { time: "21:45", name: "Daily Hyper $10", buyin: 10, guaranteed: 2500 },
+    { time: "22:45", name: "Daily Hyper $1", buyin: 1, guaranteed: 600 },
+    { time: "22:45", name: "Daily Hyper $20", buyin: 20, guaranteed: 4000 },
+    { time: "22:45", name: "Daily Hyper $5", buyin: 5, guaranteed: 1500 },
+    { time: "22:45", name: "Daily Hyper $80", buyin: 80, guaranteed: 3000 },
+    { time: "23:45", name: "Daily Hyper $100", buyin: 100, guaranteed: 2000 },
+    { time: "23:45", name: "Daily Hyper $30", buyin: 30, guaranteed: 2500 },
+    { time: "23:45", name: "Daily Hyper $2", buyin: 2, guaranteed: 600 },
+  ].forEach(template => {
     tournaments.push({
       id: id++,
-      date: dateStr,
+      date: formatDateString(date),
       time: template.time,
       site: "GGPoker",
       name: template.name,
@@ -194,10 +173,15 @@ dates.forEach(date => {
     });
   });
 
-  dailyTurboTemplate.forEach(template => {
+  [
+    { time: "00:15", name: "Daily Turbo $10", buyin: 10, guaranteed: 600 },
+    { time: "01:15", name: "Daily Turbo $20", buyin: 20, guaranteed: 500 },
+    { time: "02:15", name: "Daily Turbo $40", buyin: 40, guaranteed: 500 },
+    { time: "03:15", name: "Daily Turbo $5", buyin: 5, guaranteed: 400 },
+  ].forEach(template => {
     tournaments.push({
       id: id++,
-      date: dateStr,
+      date: formatDateString(date),
       time: template.time,
       site: "GGPoker",
       name: template.name,
@@ -213,7 +197,6 @@ dates.forEach(date => {
 // Adicionar GGPoker GGMaster para cada dia
 dates.forEach(date => {
   const dateStr = formatDateString(date);
-
   [
     { time: "00:15", name: "Daily master $10", buyin: 10, guaranteed: 600 },
     { time: "01:15", name: "Daily master $20", buyin: 20, guaranteed: 500 },
@@ -356,7 +339,14 @@ const sundays = [
 ];
 
 sundays.forEach(dateStr => {
-  sundaySpecials.forEach(special => {
+  [
+    { time: "12:00", name: "$125 Sunday Winter KICK-OFF", buyin: 125, guaranteed: 100000 },
+    { time: "13:00", name: "$250 Sunday MERRY Monster Stack", buyin: 250, guaranteed: 100000 },
+    { time: "15:00", name: "$150 Winter GRAND PRIX", buyin: 150, guaranteed: 250000 },
+    { time: "17:30", name: "$215 Bounty Hunters Sunday Winter GAMES", buyin: 215, guaranteed: 400000, type: "BOUNTY", priority: "high" },
+    { time: "19:00", name: "$250 Sunday Winter CLASSIC", buyin: 250, guaranteed: 250000 },
+    { time: "22:15", name: "$77 Sunday Snowy Sevens Turbo", buyin: 77, guaranteed: 100000, type: "TURBO", priority: "very-high" }
+  ].forEach(special => {
     tournaments.push({
       id: id++,
       date: dateStr,
