@@ -172,7 +172,6 @@ dates.forEach(date => {
       status: "Aberto"
     });
   });
-
   [
     { time: "00:15", name: "Daily Turbo $10", buyin: 10, guaranteed: 600 },
     { time: "00:15", name: "Daily Turbo $50", buyin: 50, guaranteed: 750 },
