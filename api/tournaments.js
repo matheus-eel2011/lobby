@@ -192,12 +192,7 @@ dates.forEach(date => {
       status: "Aberto"
     });
   });
-});
-
-// Adicionar GGPoker GGMaster para cada dia
-dates.forEach(date => {
-  const dateStr = formatDateString(date);
-  [
+   [
     { time: "00:15", name: "Daily master $10", buyin: 10, guaranteed: 600 },
     { time: "01:15", name: "Daily master $20", buyin: 20, guaranteed: 500 },
     { time: "02:15", name: "Daily master $40", buyin: 40, guaranteed: 500 },
@@ -209,7 +204,7 @@ dates.forEach(date => {
       time: template.time,
       site: "GGPoker",
       name: template.name,
-      type: "TURBO",
+      type: "REG",
       buyin: template.buyin,
       guaranteed: template.guaranteed,
       priority: "medium",
@@ -217,6 +212,7 @@ dates.forEach(date => {
     });
   });
 });
+
 
 // ✅ ADICIONAR YAPOKER - TODOS OS DIAS (segunda a sábado)
 dates.forEach(date => {
