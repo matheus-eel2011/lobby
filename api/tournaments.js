@@ -309,7 +309,7 @@ dates.forEach(date => {
       time: template.time,
       site: "GGPoker",
       name: template.name,
-      type: "REG",
+      type: "TURBO",
       buyin: template.buyin,
       guaranteed: template.guaranteed,
       priority: "medium",
