@@ -312,7 +312,7 @@ dates.forEach(date => {
       type: "REG",
       buyin: template.buyin,
       guaranteed: template.guaranteed,
-      priority: "Medium",
+      priority: "medium",
       status: "Aberto"
     });
   });
