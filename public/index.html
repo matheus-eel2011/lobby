@@ -869,82 +869,6 @@
             border-bottom: 1px solid var(--border);
         }
 
-        .time-slot {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 0;
-            margin-bottom: 20px;
-            overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-
-        .time-slot-header {
-            background: linear-gradient(90deg, var(--bg-lighter) 0%, var(--accent) 100%);
-            padding: 20px;
-            border-bottom: 2px solid var(--secondary);
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .time-slot-time {
-            font-size: 32px;
-            font-weight: 900;
-            color: var(--secondary);
-            min-width: 100px;
-            text-align: center;
-        }
-
-        .time-slot-info {
-            flex: 1;
-        }
-
-        .time-slot-count {
-            font-size: 14px;
-            color: var(--text-secondary);
-            font-weight: 600;
-        }
-
-        .time-slot-label {
-            font-size: 11px;
-            color: var(--secondary);
-            text-transform: uppercase;
-            font-weight: 700;
-            letter-spacing: 1px;
-            margin-top: 5px;
-        }
-
-        .time-slot-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
-        }
-
-        .time-slot-table thead {
-            background: rgba(201, 169, 97, 0.05);
-            border-bottom: 1px solid var(--border);
-        }
-
-        .time-slot-table th {
-            padding: 12px 10px;
-            text-align: left;
-            font-weight: 700;
-            color: var(--secondary);
-            font-size: 10px;
-            text-transform: uppercase;
-            border: none;
-            letter-spacing: 0.3px;
-        }
-
-        .time-slot-table td {
-            padding: 10px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .time-slot-table tbody tr:hover {
-            background: rgba(201, 169, 97, 0.05);
-        }
-
         ::-webkit-scrollbar {
             width: 8px;
         }
@@ -1062,16 +986,11 @@
                 </div>
                 <div class="view-toggle">
                     <button class="view-btn active" data-view="list">Lista</button>
-                    <button class="view-btn" data-view="time">Por Hora</button>
                     <button class="view-btn" data-view="control">Controle</button>
                 </div>
             </div>
 
             <div class="content-area">
-                <div id="timeView" class="view-content hidden">
-                    <div id="timeScheduleContainer"></div>
-                </div>
-
                 <div id="listView" class="view-content">
                     <div class="table-container">
                         <table id="tournamentTable">
@@ -1417,9 +1336,6 @@
                     e.target.classList.add('active');
                     const viewId = e.target.dataset.view;
                     document.getElementById(viewId + 'View').classList.remove('hidden');
-                    if (viewId === 'time') {
-                        renderTimeView();
-                    }
                 });
             });
 
@@ -1494,7 +1410,8 @@
                     selectedDays.has(t.day);
             });
 
-            if (sortColumn) {
+            if (sortColumn && sortColumn !== 'time' && sortColumn !== 'date') {
+                // Se o usuário clicou em outra coluna
                 filteredTournaments.sort((a, b) => {
                     let aVal = a[sortColumn];
                     let bVal = b[sortColumn];
@@ -1504,103 +1421,46 @@
 
                     if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
                     if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
-                    return 0;
+                    
+                    // Desempate: por data + hora
+                    if (a.date !== b.date) return a.date.localeCompare(b.date);
+                    return a.time.localeCompare(b.time);
                 });
-            }
-
+            } else if (sortColumn === 'time') {
+                // Ordenar por hora, depois por data
+                filteredTournaments.sort((a, b) => {
+                    if (a.time !== b.time) {
+                        return sortDirection === 'asc' ? 
+                            a.time.localeCompare(b.time) : 
+                            b.time.localeCompare(a.time);
+                    }
+                    return sortDirection === 'asc' ? 
+                        a.date.localeCompare(b.date) : 
+                        b.date.localeCompare(a.date);
+                });
+            } else if (sortColumn === 'date') {
+                // Ordenar por data, depois por hora
+                filteredTournaments.sort((a, b) => {
+                    if (a.date !== b.date) {
+                        return sortDirection === 'asc' ? 
+                            a.date.localeCompare(b.date) : 
+                            b.date.localeCompare(a.date);
+                    }
+                    return sortDirection === 'asc' ? 
+                        a.time.localeCompare(b.time) : 
+                        b.time.localeCompare(a.time);
+                });
+            } else {
+                // ✅ PADRÃO: Sempre por Data + Hora (sequencial, intercalado)
+                filteredTournaments.sort((a, b) => {
+                    if (a.date !== b.date) {
+                        return a.date.localeCompare(b.date);
+                    }
+                    return a.time.localeCompare(b.time);
+                });
+            }    
             renderTable();
             updateControlDashboard();
-        }
-
-        function renderTimeView() {
-            const container = document.getElementById('timeScheduleContainer');
-            
-            // Agrupar torneios por hora
-            const timeSlots = {};
-            filteredTournaments.forEach(t => {
-                if (!timeSlots[t.time]) {
-                    timeSlots[t.time] = [];
-                }
-                timeSlots[t.time].push(t);
-            });
-
-            // Ordenar horários
-            const sortedTimes = Object.keys(timeSlots).sort();
-
-            if (sortedTimes.length === 0) {
-                container.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 40px;">Nenhum torneio disponível para os filtros selecionados</div>';
-                return;
-            }
-
-            container.innerHTML = sortedTimes.map(time => {
-                const tournaments = timeSlots[time];
-                const priorityLabels = {
-                    'very-low': 'Very Low',
-                    'low': 'Low',
-                    'medium': 'Medium',
-                    'high': 'High',
-                    'very-high': 'Very High'
-                };
-
-                return `
-                    <div class="time-slot">
-                        <div class="time-slot-header">
-                            <div class="time-slot-time">${time}</div>
-                            <div class="time-slot-info">
-                                <div class="time-slot-count">🎯 ${tournaments.length} torneio${tournaments.length > 1 ? 's' : ''}</div>
-                                <div class="time-slot-label">Salas: ${[...new Set(tournaments.map(t => t.site))].join(', ')}</div>
-                            </div>
-                        </div>
-                        <table class="time-slot-table">
-                            <thead>
-                                <tr>
-                                    <th>Sala</th>
-                                    <th>Torneio</th>
-                                    <th>Tipo</th>
-                                    <th>Buy-in</th>
-                                    <th>GTD</th>
-                                    <th>Field</th>
-                                    <th>⭐ Prioridade</th>
-                                    <th>Status</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${tournaments.map(t => {
-                                    const typeClass = t.type.toLowerCase().replace(' ', '-');
-                                    const statusBadgeClass = `badge-status badge-status-${t.status.toLowerCase().replace(' ', '-')}`;
-
-                                    return `
-                                        <tr class="${registered.has(t.id) ? 'registered' : ''}">
-                                            <td><span class="site-badge site-${t.site.toLowerCase().replace(/\s/g, '')}">${t.site}</span></td>
-                                            <td><span style="color: var(--secondary); font-weight: 600;">${t.name}</span></td>
-                                            <td><span class="badge badge-${typeClass}">${t.type}</span></td>
-                                            <td>$${t.buyin}</td>
-                                            <td>$${(t.guaranteed / 1000).toFixed(0)}K</td>
-                                            <td>${t.field}</td>
-                                            <td><span class="badge badge-priority badge-${t.priority}">${priorityLabels[t.priority]}</span></td>
-                                            <td><span class="${statusBadgeClass}">${t.status}</span></td>
-                                            <td style="white-space: nowrap;">
-                                                <button class="btn-register ${registered.has(t.id) ? 'active' : ''}" data-id="${t.id}" style="padding: 6px 10px; font-size: 10px;">${registered.has(t.id) ? '✅' : '📝'}</button>
-                                                <button class="btn-cashout ${!registered.has(t.id) ? 'disabled' : ''}" onclick="openCashoutModal(${t.id})" ${!registered.has(t.id) ? 'disabled' : ''} style="padding: 6px 10px; font-size: 10px;">💰</button>
-                                            </td>
-                                        </tr>
-                                    `;
-                                }).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                `;
-            }).join('');
-
-            // Reattach event listeners para os botões
-            document.querySelectorAll('#timeScheduleContainer .btn-register').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    toggleRegister(parseInt(e.target.dataset.id));
-                    updateControlDashboard();
-                    renderTimeView();
-                });
-            });
         }
 
         function renderTable() {
