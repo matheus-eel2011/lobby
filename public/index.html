@@ -1250,7 +1250,7 @@
 
         const tournamentDateTime = new Date(year, parseInt(month) - 1, parseInt(day), parseInt(hours), parseInt(minutes));
 
-        if (tournamentDateTime <= now) {
+        if (tournamentDateTime < now) {
             return {
                 status: 'Fechado',
                 timeRemaining: null,
