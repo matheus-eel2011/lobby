@@ -1181,7 +1181,7 @@ sundays.forEach(dateStr => {
   ].forEach(special => {
     tournaments.push({
       id: id++,
-      date: formatDateString(date),
+      date: dateStr,
       time: special.time,
       site: "GGPoker",
       name: special.name,
