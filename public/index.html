@@ -70,12 +70,23 @@
         }
 
         .sidebar {
-            width: 280px;
+            width: 0;
             background: var(--bg-lighter);
             border-right: 2px solid var(--secondary);
             overflow-y: auto;
-            padding: 20px;
+            padding: 0;
             box-shadow: inset -5px 0 15px rgba(0,0,0,0.5);
+            transition: width 0.3s ease;
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            z-index: 1000;
+        }
+
+        .sidebar.open {
+            width: 320px;
+            padding: 20px;
         }
 
         .sidebar-header {
@@ -100,6 +111,32 @@
             color: var(--secondary);
             margin-bottom: 12px;
             letter-spacing: 1.5px;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sidebar-section-title::after {
+            content: '▼';
+            font-size: 8px;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-section-title.collapsed::after {
+            transform: rotate(-90deg);
+        }
+
+        .sidebar-section-content {
+            display: block;
+            max-height: 500px;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .sidebar-section-content.collapsed {
+            max-height: 0;
         }
 
         .checkbox-item {
@@ -149,7 +186,7 @@
             border-color: var(--secondary);
         }
 
-        input[type="text"], input[type="number"], select {
+        input[type="text"], input[type="number"], input[type="date"], select {
             width: 100%;
             padding: 10px;
             background: var(--bg-dark);
@@ -162,7 +199,7 @@
             transition: border-color 0.3s;
         }
 
-        input[type="text"]:focus, input[type="number"]:focus, select:focus {
+        input[type="text"]:focus, input[type="number"]:focus, input[type="date"]:focus, select:focus {
             outline: none;
             border-color: var(--secondary);
             box-shadow: 0 0 8px rgba(201, 169, 97, 0.2);
@@ -216,6 +253,12 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            margin-left: 0;
+            transition: margin-left 0.3s ease;
+        }
+
+        .main-content.sidebar-open {
+            margin-left: 320px;
         }
 
         .header {
@@ -226,6 +269,30 @@
             justify-content: space-between;
             align-items: center;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .toggle-sidebar {
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 8px 12px;
+            border-radius: 2px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.3s;
+        }
+
+        .toggle-sidebar:hover {
+            border-color: var(--secondary);
+            color: var(--secondary);
         }
 
         .header-title {
@@ -895,94 +962,141 @@
             color: var(--danger);
             font-weight: 700;
         }
+
+        @media (max-width: 1024px) {
+            .sidebar.open {
+                width: 280px;
+            }
+
+            .main-content.sidebar-open {
+                margin-left: 280px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="sidebar">
+        <!-- SIDEBAR COLAPSÁVEL -->
+        <div class="sidebar" id="sidebar">
             <div class="sidebar-header">🎯 Pega Blinder</div>
 
+            <!-- DIA DA SEMANA -->
             <div class="sidebar-section">
-                <div class="sidebar-section-title">Dia da Semana</div>
-                <div class="weekday-group" id="weekdayGroup">
-                    <button class="weekday-btn active" data-day="1">Seg</button>
-                    <button class="weekday-btn active" data-day="2">Ter</button>
-                    <button class="weekday-btn active" data-day="3">Qua</button>
-                    <button class="weekday-btn active" data-day="4">Qui</button>
-                    <button class="weekday-btn active" data-day="5">Sex</button>
-                    <button class="weekday-btn active" data-day="6">Sab</button>
-                    <button class="weekday-btn active" data-day="0">Dom</button>
+                <div class="sidebar-section-title" onclick="toggleSection(this)">Dia da Semana</div>
+                <div class="sidebar-section-content">
+                    <div class="weekday-group" id="weekdayGroup">
+                        <button class="weekday-btn active" data-day="1">Seg</button>
+                        <button class="weekday-btn active" data-day="2">Ter</button>
+                        <button class="weekday-btn active" data-day="3">Qua</button>
+                        <button class="weekday-btn active" data-day="4">Qui</button>
+                        <button class="weekday-btn active" data-day="5">Sex</button>
+                        <button class="weekday-btn active" data-day="6">Sab</button>
+                        <button class="weekday-btn active" data-day="0">Dom</button>
+                    </div>
                 </div>
             </div>
 
+            <!-- DATA FIXA -->
             <div class="sidebar-section">
-                <div class="sidebar-section-title">Salas</div>
-                <div class="checkbox-item"><input type="checkbox" id="ggpoker" class="room-filter" value="GGPoker" checked><label for="ggpoker">GGPoker</label></div>
-                <div class="checkbox-item"><input type="checkbox" id="pokerstars" class="room-filter" value="PokerStars" checked><label for="pokerstars">PokerStars</label></div>
-                <div class="checkbox-item"><input type="checkbox" id="888poker" class="room-filter" value="888Poker" checked><label for="888poker">888Poker</label></div>
-                <div class="checkbox-item"><input type="checkbox" id="yapoker" class="room-filter" value="YaPoker" checked><label for="yapoker">YaPoker</label></div>
-                <div class="checkbox-item"><input type="checkbox" id="champion" class="room-filter" value="Champion" checked><label for="champion">Champion</label></div>
+                <div class="sidebar-section-title" onclick="toggleSection(this)">Data Fixa</div>
+                <div class="sidebar-section-content">
+                    <input type="date" id="fixedDate" placeholder="Selecione uma data">
+                </div>
             </div>
 
+            <!-- SALAS -->
             <div class="sidebar-section">
-                <div class="sidebar-section-title">Tipos</div>
-                <div class="checkbox-item"><input type="checkbox" id="reg" class="type-filter" value="REG" checked><label for="reg">Reg</label></div>
-                <div class="checkbox-item"><input type="checkbox" id="turbo" class="type-filter" value="TURBO" checked><label for="turbo">Turbo</label></div>
-                <div class="checkbox-item"><input type="checkbox" id="reg-ko" class="type-filter" value="REG KO" checked><label for="reg-ko">Reg KO</label></div>
-                <div class="checkbox-item"><input type="checkbox" id="turbo-ko" class="type-filter" value="TURBO KO" checked><label for="turbo-ko">Turbo KO</label></div>
-                <div class="checkbox-item"><input type="checkbox" id="mystery" class="type-filter" value="MYSTERY" checked><label for="mystery">Mystery</label></div>
-                <div class="checkbox-item"><input type="checkbox" id="hyper" class="type-filter" value="HYPER" checked><label for="hyper">Hyper</label></div>
+                <div class="sidebar-section-title" onclick="toggleSection(this)">Salas</div>
+                <div class="sidebar-section-content">
+                    <div class="checkbox-item"><input type="checkbox" id="ggpoker" class="room-filter" value="GGPoker" checked><label for="ggpoker">GGPoker</label></div>
+                    <div class="checkbox-item"><input type="checkbox" id="pokerstars" class="room-filter" value="PokerStars" checked><label for="pokerstars">PokerStars</label></div>
+                    <div class="checkbox-item"><input type="checkbox" id="888poker" class="room-filter" value="888Poker" checked><label for="888poker">888Poker</label></div>
+                    <div class="checkbox-item"><input type="checkbox" id="yapoker" class="room-filter" value="YaPoker" checked><label for="yapoker">YaPoker</label></div>
+                    <div class="checkbox-item"><input type="checkbox" id="champion" class="room-filter" value="Champion" checked><label for="champion">Champion</label></div>
+                </div>
             </div>
 
+            <!-- TIPOS -->
             <div class="sidebar-section">
-                <div class="sidebar-section-title">Prioridade</div>
-                <div class="checkbox-item"><input type="checkbox" id="very-low" class="priority-filter" value="very-low" checked><label for="very-low">Very Low</label></div>
-                <div class="checkbox-item"><input type="checkbox" id="low" class="priority-filter" value="low" checked><label for="low">Low</label></div>
-                <div class="checkbox-item"><input type="checkbox" id="medium" class="priority-filter" value="medium" checked><label for="medium">Medium</label></div>
-                <div class="checkbox-item"><input type="checkbox" id="high" class="priority-filter" value="high" checked><label for="high">High</label></div>
-                <div class="checkbox-item"><input type="checkbox" id="very-high" class="priority-filter" value="very-high" checked><label for="very-high">Very High</label></div>
+                <div class="sidebar-section-title" onclick="toggleSection(this)">Tipos</div>
+                <div class="sidebar-section-content">
+                    <div class="checkbox-item"><input type="checkbox" id="reg" class="type-filter" value="REG" checked><label for="reg">Reg</label></div>
+                    <div class="checkbox-item"><input type="checkbox" id="turbo" class="type-filter" value="TURBO" checked><label for="turbo">Turbo</label></div>
+                    <div class="checkbox-item"><input type="checkbox" id="reg-ko" class="type-filter" value="REG KO" checked><label for="reg-ko">Reg KO</label></div>
+                    <div class="checkbox-item"><input type="checkbox" id="turbo-ko" class="type-filter" value="TURBO KO" checked><label for="turbo-ko">Turbo KO</label></div>
+                    <div class="checkbox-item"><input type="checkbox" id="mystery" class="type-filter" value="MYSTERY" checked><label for="mystery">Mystery</label></div>
+                    <div class="checkbox-item"><input type="checkbox" id="hyper" class="type-filter" value="HYPER" checked><label for="hyper">Hyper</label></div>
+                </div>
             </div>
 
+            <!-- PRIORIDADE -->
             <div class="sidebar-section">
-                <div class="sidebar-section-title">Buy-in</div>
-                <input type="number" id="minBuyin" placeholder="Min" value="0">
-                <input type="number" id="maxBuyin" placeholder="Max" value="500">
+                <div class="sidebar-section-title" onclick="toggleSection(this)">Prioridade</div>
+                <div class="sidebar-section-content">
+                    <div class="checkbox-item"><input type="checkbox" id="very-low" class="priority-filter" value="very-low" checked><label for="very-low">Very Low</label></div>
+                    <div class="checkbox-item"><input type="checkbox" id="low" class="priority-filter" value="low" checked><label for="low">Low</label></div>
+                    <div class="checkbox-item"><input type="checkbox" id="medium" class="priority-filter" value="medium" checked><label for="medium">Medium</label></div>
+                    <div class="checkbox-item"><input type="checkbox" id="high" class="priority-filter" value="high" checked><label for="high">High</label></div>
+                    <div class="checkbox-item"><input type="checkbox" id="very-high" class="priority-filter" value="very-high" checked><label for="very-high">Very High</label></div>
+                </div>
             </div>
 
+            <!-- BUY-IN -->
             <div class="sidebar-section">
-                <div class="sidebar-section-title">Garantido</div>
-                <input type="number" id="minGuaranteed" placeholder="Min" value="0">
-                <input type="number" id="maxGuaranteed" placeholder="Max" value="999999">
+                <div class="sidebar-section-title" onclick="toggleSection(this)">Buy-in</div>
+                <div class="sidebar-section-content">
+                    <input type="number" id="minBuyin" placeholder="Min" value="0">
+                    <input type="number" id="maxBuyin" placeholder="Max" value="500">
+                </div>
             </div>
 
+            <!-- GARANTIDO -->
             <div class="sidebar-section">
-                <div class="sidebar-section-title">Status</div>
-                <div class="checkbox-item"><input type="checkbox" id="status-aberto" class="status-filter" value="Aberto" checked><label for="status-aberto">Aberto</label></div>
-                <div class="checkbox-item"><input type="checkbox" id="status-late" class="status-filter" value="Late Reg" checked><label for="status-late">Late Reg</label></div>
-                <div class="checkbox-item"><input type="checkbox" id="status-fechado" class="status-filter" value="Fechado" checked><label for="status-fechado">Fechado</label></div>
+                <div class="sidebar-section-title" onclick="toggleSection(this)">Garantido</div>
+                <div class="sidebar-section-content">
+                    <input type="number" id="minGuaranteed" placeholder="Min" value="0">
+                    <input type="number" id="maxGuaranteed" placeholder="Max" value="999999">
+                </div>
             </div>
 
+            <!-- STATUS -->
             <div class="sidebar-section">
-                <button class="btn-primary" id="hideClosed" style="background: var(--warning); border-color: var(--warning);">🚫 Ocultar Fechados</button>
+                <div class="sidebar-section-title" onclick="toggleSection(this)">Status</div>
+                <div class="sidebar-section-content">
+                    <div class="checkbox-item"><input type="checkbox" id="status-aberto" class="status-filter" value="Aberto" checked><label for="status-aberto">Aberto</label></div>
+                    <div class="checkbox-item"><input type="checkbox" id="status-late" class="status-filter" value="Late Reg" checked><label for="status-late">Late Reg</label></div>
+                    <div class="checkbox-item"><input type="checkbox" id="status-fechado" class="status-filter" value="Fechado" checked><label for="status-fechado">Fechado</label></div>
+                </div>
+            </div>
+
+            <!-- BOTÕES -->
+            <div class="sidebar-section">
                 <button class="btn-primary" id="applyFilters">Aplicar Filtros</button>
                 <button class="btn-reload-api" id="reloadAPI">Recarregar API</button>
             </div>
 
+            <!-- PERFIS SALVOS -->
             <div class="sidebar-section">
-                <div class="sidebar-section-title">Perfis Salvos</div>
-                <div style="display: flex; gap: 6px; margin-bottom: 10px;">
-                    <input type="text" id="profileName" placeholder="Nome do perfil" style="flex: 1;">
-                    <button class="btn-primary" id="saveProfile" style="flex: 0; width: auto; padding: 8px 12px; margin-top: 5px;">💾</button>
+                <div class="sidebar-section-title" onclick="toggleSection(this)">Perfis Salvos</div>
+                <div class="sidebar-section-content">
+                    <div style="display: flex; gap: 6px; margin-bottom: 10px;">
+                        <input type="text" id="profileName" placeholder="Nome do perfil" style="flex: 1; margin-top: 0;">
+                        <button class="btn-primary" id="saveProfile" style="flex: 0; width: auto; padding: 8px 12px; margin-top: 0;">💾</button>
+                    </div>
+                    <div id="profilesList" style="max-height: 200px; overflow-y: auto;"></div>
                 </div>
-                <div id="profilesList" style="max-height: 200px; overflow-y: auto;"></div>
             </div>
         </div>
 
-        <div class="main-content">
+        <!-- CONTEÚDO PRINCIPAL -->
+        <div class="main-content" id="mainContent">
             <div class="header">
-                <div class="header-title">
-                    🎯 PEGA BLINDER LOBBY
-                    <span class="api-status online" id="apiStatus">✅ Online</span>
+                <div class="header-left">
+                    <button class="toggle-sidebar" id="toggleSidebar" onclick="toggleSidebar()">☰</button>
+                    <div class="header-title">
+                        🎯 PEGA BLINDER LOBBY
+                        <span class="api-status online" id="apiStatus">✅ Online</span>
+                    </div>
                 </div>
                 <div class="view-toggle">
                     <button class="view-btn active" data-view="list">Lista</button>
@@ -991,6 +1105,7 @@
             </div>
 
             <div class="content-area">
+                <!-- LISTA VIEW -->
                 <div id="listView" class="view-content">
                     <div class="table-container">
                         <table id="tournamentTable">
@@ -1016,6 +1131,7 @@
                     </div>
                 </div>
 
+                <!-- CONTROLE VIEW -->
                 <div id="controlView" class="view-content hidden">
                     <div class="dashboard-grid">
                         <div class="dashboard-card">
@@ -1060,6 +1176,7 @@
         </div>
     </div>
 
+    <!-- MODAL CASHOUT -->
     <div id="cashoutModal" class="modal">
         <div class="modal-content">
             <div class="modal-title">Registrar Cashout</div>
@@ -1095,6 +1212,7 @@
         let profiles = {};
         let sortColumn = null;
         let sortDirection = 'asc';
+        let fixedDate = null;
 
         // ✅ FUNÇÃO PARA CALCULAR STATUS DO TORNEIO EM TEMPO REAL
         function calculateTournamentStatus(tournament) {
@@ -1102,22 +1220,33 @@
             const [year, month, day] = tournament.date.split('-');
             const [hours, minutes] = tournament.time.split(':');
             
-            // Criar data e hora do torneio
             const tournamentDateTime = new Date(year, parseInt(month) - 1, parseInt(day), parseInt(hours), parseInt(minutes));
             
-            // Se o torneio já começou (data/hora passada)
             if (tournamentDateTime <= now) {
                 return 'Fechado';
             }
             
-            // Se faltam menos de 30 minutos, ativa late reg
-            const timeUntilStart = (tournamentDateTime - now) / (1000 * 60); // em minutos
+            const timeUntilStart = (tournamentDateTime - now) / (1000 * 60);
             if (timeUntilStart <= 30) {
                 return 'Late Reg';
             }
             
-            // Torneio aberto normalmente
             return 'Aberto';
+        }
+
+        // ✅ TOGGLE SECTIONS
+        function toggleSection(element) {
+            element.classList.toggle('collapsed');
+            const content = element.nextElementSibling;
+            content.classList.toggle('collapsed');
+        }
+
+        // ✅ TOGGLE SIDEBAR
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            sidebar.classList.toggle('open');
+            mainContent.classList.toggle('sidebar-open');
         }
 
         function loadProfiles() {
@@ -1341,12 +1470,6 @@
 
             document.getElementById('applyFilters').addEventListener('click', applyFilters);
             
-            document.getElementById('hideClosed').addEventListener('click', () => {
-                document.getElementById('status-fechado').checked = false;
-                applyFilters();
-                showNotification('✅ Filtrado', 'Torneios fechados ocultados', 'success');
-            });
-
             document.getElementById('reloadAPI').addEventListener('click', async () => {
                 console.log('🔄 Recarregando API...');
                 allTournamentsData = await loadTournamentsFromAPI();
@@ -1356,6 +1479,8 @@
             });
 
             document.getElementById('saveProfile').addEventListener('click', saveCurrentProfile);
+
+            document.getElementById('fixedDate').addEventListener('change', applyFilters);
 
             document.querySelectorAll('.room-filter, .type-filter, .priority-filter, .status-filter').forEach(el => {
                 el.addEventListener('change', applyFilters);
@@ -1393,11 +1518,13 @@
             const maxBuyin = parseInt(document.getElementById('maxBuyin').value) || 999999;
             const minGuaranteed = parseInt(document.getElementById('minGuaranteed').value) || 0;
             const maxGuaranteed = parseInt(document.getElementById('maxGuaranteed').value) || 999999;
+            const fixedDateValue = document.getElementById('fixedDate').value;
 
             filteredTournaments = allTournamentsData.filter(t => {
-                // Recalcular status em tempo real
                 const currentStatus = calculateTournamentStatus(t);
-                t.status = currentStatus; // Atualizar status do torneio
+                t.status = currentStatus;
+                
+                const matchDate = !fixedDateValue || t.date === fixedDateValue;
                 
                 return rooms.includes(t.site) &&
                     types.includes(t.type) &&
@@ -1407,11 +1534,12 @@
                     t.buyin <= maxBuyin &&
                     t.guaranteed >= minGuaranteed &&
                     t.guaranteed <= maxGuaranteed &&
-                    selectedDays.has(t.day);
+                    selectedDays.has(t.day) &&
+                    matchDate;
             });
 
+            // ✅ ORDENAÇÃO PADRÃO: Por Data + Hora (intercalado, sem agrupar por tipo)
             if (sortColumn && sortColumn !== 'time' && sortColumn !== 'date') {
-                // Se o usuário clicou em outra coluna
                 filteredTournaments.sort((a, b) => {
                     let aVal = a[sortColumn];
                     let bVal = b[sortColumn];
@@ -1422,12 +1550,10 @@
                     if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
                     if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
                     
-                    // Desempate: por data + hora
                     if (a.date !== b.date) return a.date.localeCompare(b.date);
                     return a.time.localeCompare(b.time);
                 });
             } else if (sortColumn === 'time') {
-                // Ordenar por hora, depois por data
                 filteredTournaments.sort((a, b) => {
                     if (a.time !== b.time) {
                         return sortDirection === 'asc' ? 
@@ -1439,7 +1565,6 @@
                         b.date.localeCompare(a.date);
                 });
             } else if (sortColumn === 'date') {
-                // Ordenar por data, depois por hora
                 filteredTournaments.sort((a, b) => {
                     if (a.date !== b.date) {
                         return sortDirection === 'asc' ? 
@@ -1451,14 +1576,14 @@
                         b.time.localeCompare(a.time);
                 });
             } else {
-                // ✅ PADRÃO: Sempre por Data + Hora (sequencial, intercalado)
                 filteredTournaments.sort((a, b) => {
                     if (a.date !== b.date) {
                         return a.date.localeCompare(b.date);
                     }
                     return a.time.localeCompare(b.time);
                 });
-            }    
+            }
+
             renderTable();
             updateControlDashboard();
         }
@@ -1483,8 +1608,6 @@
                 };
 
                 const statusBadgeClass = `badge-status badge-status-${t.status.toLowerCase().replace(' ', '-')}`;
-
-                // ✅ Normalizar tipo para CSS class
                 const typeClass = t.type.toLowerCase().replace(' ', '-');
 
                 return `
