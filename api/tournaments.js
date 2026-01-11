@@ -48,8 +48,6 @@ function generateDatesForJanuary() {
   return dates;
 }
 
-// ✅ YAPOKER - Torneios de Segunda a Sábado (estrutura idêntica)
-
 // ✅ GGPOKER - Templates diários
 
 
@@ -1189,6 +1187,23 @@ sundays.forEach(dateStr => {
       buyin: special.buyin,
       guaranteed: special.guaranteed,
       priority: special.priority || "medium",
+      status: "Aberto"
+    });
+  });
+sundays.forEach(dateStr => {
+  [
+    { time: "10:00", name: "Sunday Big $10", buyin: 10, guaranteed: 5000 },  
+  ].forEach(special => {
+    tournaments.push({
+      id: id++,
+      date: dateStr,
+      time: special.time,
+      site: "GGPoker",
+      name: special.name,
+      type: special.type || "REG",
+      buyin: special.buyin,
+      guaranteed: special.guaranteed,
+      priority: special.priority || "VERY HIGH",
       status: "Aberto"
     });
   });
