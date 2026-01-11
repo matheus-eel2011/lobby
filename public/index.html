@@ -508,15 +508,34 @@
         }
 
         .badge-status-late {
-            background: rgba(201, 169, 97, 0.3);
-            color: var(--warning);
-            border: 1px solid var(--warning);
+            background: rgba(201, 169, 97, 0.5);
+            color: #FFD700;
+            border: 2px solid #FFD700;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
         }
 
         .badge-status-fechado {
             background: rgba(139, 73, 73, 0.3);
             color: var(--danger);
             border: 1px solid var(--danger);
+        }
+
+        .countdown {
+            display: inline-block;
+            margin-left: 5px;
+            padding: 3px 8px;
+            background: rgba(255, 215, 0, 0.2);
+            border: 1px solid #FFD700;
+            border-radius: 2px;
+            color: #FFD700;
+            font-size: 10px;
+            font-weight: 700;
+            animation: pulse 1s infinite;
         }
 
         .badge-priority {
@@ -1213,8 +1232,9 @@
         let sortColumn = null;
         let sortDirection = 'asc';
         let fixedDate = null;
+        let updateInterval = null;
 
-        // ✅ FUNÇÃO PARA CALCULAR STATUS DO TORNEIO EM TEMPO REAL
+        // ✅ FUNÇÃO PARA CALCULAR STATUS E TEMPO DE LATE REG EM TEMPO REAL
         function calculateTournamentStatus(tournament) {
             const now = new Date();
             const [year, month, day] = tournament.date.split('-');
@@ -1223,15 +1243,34 @@
             const tournamentDateTime = new Date(year, parseInt(month) - 1, parseInt(day), parseInt(hours), parseInt(minutes));
             
             if (tournamentDateTime <= now) {
-                return 'Fechado';
+                return { status: 'Fechado', timeRemaining: null };
             }
             
-            const timeUntilStart = (tournamentDateTime - now) / (1000 * 60);
-            if (timeUntilStart <= 30) {
-                return 'Late Reg';
+            const timeUntilStart = (tournamentDateTime - now) / 1000; // em segundos
+            const lateRegWindow = tournament.lateReg * 60; // convertendo minutos para segundos
+            const timeUntilLateRegClose = timeUntilStart - lateRegWindow;
+            
+            if (timeUntilLateRegClose <= 0) {
+                // Está em Late Reg
+                return { status: 'Late Reg', timeRemaining: Math.max(0, timeUntilStart) };
             }
             
-            return 'Aberto';
+            return { status: 'Aberto', timeRemaining: null };
+        }
+
+        // ✅ FORMATAR TEMPO REGRESSIVO (HH:MM:SS)
+        function formatCountdown(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = Math.floor(seconds % 60);
+            
+            if (hours > 0) {
+                return `${hours}h ${minutes}m`;
+            } else if (minutes > 0) {
+                return `${minutes}m ${secs}s`;
+            } else {
+                return `${secs}s`;
+            }
         }
 
         // ✅ TOGGLE SECTIONS
@@ -1441,6 +1480,13 @@
             renderTable();
             setupEventListeners();
             updateControlDashboard();
+            
+            // ✅ ATUALIZAR CONTADORES A CADA SEGUNDO
+            if (updateInterval) clearInterval(updateInterval);
+            updateInterval = setInterval(() => {
+                renderTable();
+                updateControlDashboard();
+            }, 1000);
         }
 
         function setupEventListeners() {
@@ -1521,15 +1567,16 @@
             const fixedDateValue = document.getElementById('fixedDate').value;
 
             filteredTournaments = allTournamentsData.filter(t => {
-                const currentStatus = calculateTournamentStatus(t);
-                t.status = currentStatus;
+                const statusInfo = calculateTournamentStatus(t);
+                t.status = statusInfo.status;
+                t.timeRemaining = statusInfo.timeRemaining;
                 
                 const matchDate = !fixedDateValue || t.date === fixedDateValue;
                 
                 return rooms.includes(t.site) &&
                     types.includes(t.type) &&
                     priorities.includes(t.priority) &&
-                    statuses.includes(currentStatus) &&
+                    statuses.includes(statusInfo.status) &&
                     t.buyin >= minBuyin &&
                     t.buyin <= maxBuyin &&
                     t.guaranteed >= minGuaranteed &&
@@ -1609,6 +1656,12 @@
 
                 const statusBadgeClass = `badge-status badge-status-${t.status.toLowerCase().replace(' ', '-')}`;
                 const typeClass = t.type.toLowerCase().replace(' ', '-');
+                
+                // ✅ MOSTRAR CONTADOR SE ESTIVER EM LATE REG
+                let statusContent = t.status;
+                if (t.status === 'Late Reg' && t.timeRemaining !== null) {
+                    statusContent = `Late Reg<span class="countdown">${formatCountdown(t.timeRemaining)}</span>`;
+                }
 
                 return `
                     <tr class="${registered.has(t.id) ? 'registered' : ''}">
@@ -1622,7 +1675,7 @@
                         <td>${t.field}</td>
                         <td>${t.lateReg} min</td>
                         <td><span class="badge badge-priority badge-${t.priority}">${priorityLabels[t.priority]}</span></td>
-                        <td><span class="${statusBadgeClass}">${t.status}</span></td>
+                        <td><span class="${statusBadgeClass}">${statusContent}</span></td>
                         <td><button class="btn-register ${registered.has(t.id) ? 'active' : ''}" data-id="${t.id}">${registered.has(t.id) ? '✅ Registrado' : 'Registrar'}</button></td>
                         <td><button class="btn-cashout ${!registered.has(t.id) ? 'disabled' : ''}" onclick="openCashoutModal(${t.id})" ${!registered.has(t.id) ? 'disabled' : ''}>💰 Cashout</button></td>
                     </tr>
