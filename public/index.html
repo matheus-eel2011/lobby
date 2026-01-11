@@ -1403,11 +1403,32 @@
                 let tournaments = Array.isArray(data) ? data : data.tournaments || data.data || [];
                 if (tournaments.length === 0) throw new Error('Nenhum torneio encontrado na resposta');
 
+                // ✅ FUNÇÃO PARA CALCULAR SE ESTÁ NO FUTURO
+                const isFutureTournament = (dateStr, timeStr) => {
+                    const [year, month, day] = dateStr.split('-');
+                    const [hours, minutes] = timeStr.split(':');
+                    const tourneyTime = new Date(year, parseInt(month) - 1, parseInt(day), parseInt(hours), parseInt(minutes));
+                    const now = new Date();
+                    return tourneyTime > now;
+                };
+
+                // ✅ FILTRAR APENAS TORNEIOS FUTUROS
+                const totalAntes = tournaments.length;
+                tournaments = tournaments.filter(t => {
+                    const isFuture = isFutureTournament(t.date || '1970-01-01', t.time || '00:00');
+                    if (!isFuture) {
+                        console.log(`⏭️ Ignorando torneio passado: ${t.name} em ${t.date} ${t.time}`);
+                    }
+                    return isFuture;
+                });
+        
+                console.log(`✅ Filtrados: ${totalAntes} → ${tournaments.length} torneios futuros`);
+
                 tournaments = tournaments.map((t, idx) => {
                     const [year, month, day] = t.date.split('-');
                     const dateObj = new Date(year, parseInt(month) - 1, parseInt(day));
                     const dayOfWeek = dateObj.getDay();
-                    
+            
                     return {
                         id: t.id || idx + 1,
                         time: t.time || '00:00',
@@ -1425,16 +1446,17 @@
                     };
                 });
 
-                console.log('✅ Torneios carregados da API:', tournaments.length);
+                console.log('✅ Torneios processados:', tournaments.length);
                 updateAPIStatus(true);
                 return tournaments;
+
             } catch (error) {
                 console.error('❌ Erro ao carregar API:', error.message);
                 updateAPIStatus(false, error.message);
                 showNotification('⚠️ Aviso', 'Usando dados padrão. ' + error.message, 'warning');
                 return getMockTournaments();
             }
-        }
+        }       
 
         function updateAPIStatus(online, message = '') {
             apiOnline = online;
