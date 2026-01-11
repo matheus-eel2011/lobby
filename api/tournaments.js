@@ -1103,6 +1103,183 @@ dates.forEach(date => {
   }
 });
 
+// ✅ Adicionar GGPoker Sunday Specials
+function getTournaments(req, res) {
+  const tournaments = [];
+  let id = 1;
+
+  const sundays = [
+    "2026-01-04",
+    "2026-01-11",
+    "2026-01-18",
+    "2026-01-25"
+  ];
+  // ✅ BLOCO 1: GGPoker Bounty Hunters
+  sundays.forEach(dateStr => {
+    [
+      { time: "12:00", name: "$125 Sunday Winter KICK-OFF", buyin: 125, guaranteed: 100000 },
+      { time: "03:30", name: "Bounty Hunters Sunday Special $10.80", buyin: 10.80, guaranteed: 18000 },
+      { time: "03:45", name: "Bounty Hunters Sunday Hyper Special $54", buyin: 54.00, guaranteed: 7500 },
+      { time: "04:30", name: "Bounty Hunters Sunday Special $54", buyin: 54.00, guaranteed: 20000 },
+      { time: "04:30", name: "Bounty Hunters Sunday Special $5.40", buyin: 5.40, guaranteed: 7500 },
+      { time: "04:30", name: "Bounty Hunters Sunday Special $1.08", buyin: 1.08, guaranteed: 2000 },
+      { time: "05:30", name: "Bounty Hunters Sunday Special $215", buyin: 215.00, guaranteed: 10000 },
+      { time: "05:30", name: "Bounty Hunters Sunday Special $32", buyin: 32.00, guaranteed: 20000 },
+      { time: "05:30", name: "Bounty Hunters Sunday Special $3.20", buyin: 3.20, guaranteed: 6500 },
+      { time: "05:45", name: "Bounty Hunters Sunday Hyper Special $2.50", buyin: 2.50, guaranteed: 2500 },
+      { time: "05:45", name: "Bounty Hunters Sunday Hyper Special $21.60", buyin: 21.60, guaranteed: 8000 },
+      { time: "06:30", name: "Bounty Hunters Sunday Special $108", buyin: 108.00, guaranteed: 12500 },
+      { time: "06:30", name: "Bounty Hunters Sunday Special $10.80", buyin: 10.80, guaranteed: 25000 },
+      { time: "06:30", name: "Bounty Hunters Sunday Big One $1.08", buyin: 1.08, guaranteed: 3000 },
+      { time: "07:30", name: "Bounty Hunters Sunday Special $88", buyin: 88.00, guaranteed: 12500 },
+      { time: "07:30", name: "Bounty Hunters Sunday Special $8.88", buyin: 8.88, guaranteed: 15000 },
+      { time: "07:45", name: "Bounty Hunters Sunday Hyper Special $3.20", buyin: 3.20, guaranteed: 4000 },
+      { time: "08:30", name: "Bounty Hunters Sunday Special $15 [7-Max]", buyin: 15.00, guaranteed: 40000 },
+      { time: "08:30", name: "Bounty Hunters Sunday Special $2.50 [7-Max]", buyin: 2.50, guaranteed: 4500 },
+      { time: "08:30", name: "Bounty Hunters Sunday Special $108 [7-Max]", buyin: 108.00, guaranteed: 10000 },
+      { time: "09:30", name: "Bounty Hunters Sunday Special $2.50", buyin: 2.50, guaranteed: 10000 },
+      { time: "09:30", name: "Bounty Hunters Sunday Special $215", buyin: 215.00, guaranteed: 20000 },
+      { time: "09:30", name: "Bounty Hunters Sunday Special $21.60", buyin: 21.60, guaranteed: 50000 },
+      { time: "10:30", name: "Bounty Hunters Sunday Special $108", buyin: 108.00, guaranteed: 25000 },
+      { time: "10:30", name: "Bounty Hunters Sunday Special $10.80", buyin: 10.80, guaranteed: 50000 },
+      { time: "11:30", name: "Bounty Hunters Sunday Special $88", buyin: 88.00, guaranteed: 75000 },
+      { time: "11:30", name: "Bounty Hunters Sunday Special $8.88", buyin: 8.88, guaranteed: 35000 },
+      { time: "12:30", name: "Bounty Hunters Sunday Special $150", buyin: 150.00, guaranteed: 50000 },
+      { time: "12:30", name: "Bounty Hunters Sunday Special $10.80", buyin: 10.80, guaranteed: 100000 },
+      { time: "12:30", name: "Bounty Hunters Sunday Big One $1.08", buyin: 1.08, guaranteed: 5000 },
+      { time: "12:35", name: "Bounty Hunters Sunday Forty Stack $44", buyin: 44.00, guaranteed: 200000 },
+      { time: "13:10", name: "Speed Racer Bounty $2.50 [10 BB]", buyin: 2.50, guaranteed: 3000 },
+      { time: "13:10", name: "Speed Racer Bounty $21.60 [10 BB]", buyin: 21.60, guaranteed: 7500 },
+      { time: "13:30", name: "Bounty Hunters Sunday Main Event $54", buyin: 54.00, guaranteed: 750000 },
+      { time: "13:40", name: "Bounty Hunters Sunday Special $5.40", buyin: 5.40, guaranteed: 40000 },
+      { time: "14:10", name: "Speed Racer Bounty $54 [10 BB]", buyin: 54.00, guaranteed: 10000 },
+      { time: "14:10", name: "Speed Racer Bounty $5.40 [10 BB]", buyin: 5.40, guaranteed: 6000 },
+      { time: "14:15", name: "Bounty Hunters Deepstack Turbo $32", buyin: 32.00, guaranteed: 35000 },
+      { time: "14:15", name: "Bounty Hunters Deepstack Turbo $3.20", buyin: 3.20, guaranteed: 12500 },
+      { time: "14:30", name: "Bounty Hunters Sunday Big Game $215", buyin: 215.00, guaranteed: 250000 },
+      { time: "14:30", name: "Bounty Hunters Sunday Big Game $21.60", buyin: 21.60, guaranteed: 150000 },
+      { time: "15:10", name: "Speed Racer Bounty $10.80 [10 BB]", buyin: 10.80, guaranteed: 8000 },
+      { time: "15:30", name: "Bounty Hunters Hundred Grand $108", buyin: 108.00, guaranteed: 125000 },
+      { time: "15:30", name: "Bounty Hunters 50 Grand $10.80", buyin: 10.80, guaranteed: 50000 },
+      { time: "16:30", name: "Sunday Bounty King $32", buyin: 32.00, guaranteed: 100000 },
+      { time: "16:30", name: "Sunday Bounty King Jr $3.20", buyin: 3.20, guaranteed: 12500 },
+      { time: "16:45", name: "Bounty Hunters Sunday Hyper Special $2.50", buyin: 2.50, guaranteed: 4000 },
+      { time: "17:05", name: "Mini Sunday Showdown $10.80 [Bounty]", buyin: 10.80, guaranteed: 50000 },
+      { time: "17:40", name: "Bounty Hunters Sunday Encore $54", buyin: 54.00, guaranteed: 45000 },
+      { time: "17:40", name: "Bounty Hunters Mini Encore $5.40", buyin: 5.40, guaranteed: 10000 },
+      { time: "17:45", name: "Bounty Hunters Sunday Hyper Special $108", buyin: 108.00, guaranteed: 10000 },
+      { time: "17:45", name: "Bounty Hunters Sunday Hyper Special $10.80", buyin: 10.80, guaranteed: 15000 },
+      { time: "18:05", name: "Sunday Mini Heater $2.50 [Bounty Turbo]", buyin: 2.50, guaranteed: 7000 },
+      { time: "18:05", name: "Sunday Heater $215 [Bounty Turbo]", buyin: 215.00, guaranteed: 100000 },
+      { time: "18:05", name: "Sunday Heater $25 [Bounty Turbo]", buyin: 25.00, guaranteed: 70000 },
+      { time: "18:30", name: "Bounty Hunters Sunday Special $88", buyin: 88.00, guaranteed: 10000 },
+      { time: "18:30", name: "Bounty Hunters Sunday Special $8.88", buyin: 8.88, guaranteed: 8000 },
+      { time: "19:30", name: "Bounty Hunters Sunday Closer $108", buyin: 108.00, guaranteed: 10000 },
+      { time: "19:30", name: "Bounty Hunters Sunday Closer $10.80", buyin: 10.80, guaranteed: 5000 },
+      { time: "19:45", name: "Bounty Hunters Sunday Hyper Special $54", buyin: 54.00, guaranteed: 20000 },
+      { time: "19:45", name: "Bounty Hunters Sunday Hyper Special $5.40", buyin: 5.40, guaranteed: 4000 },
+      { time: "20:30", name: "Sunday Last Call $215 [Bounty Hyper]", buyin: 215.00, guaranteed: 30000 },
+      { time: "20:30", name: "Sunday Last Call $21.60 [Bounty Hyper]", buyin: 21.60, guaranteed: 15000 },
+    ].forEach(special => {
+      tournaments.push({
+        id: id++,
+        date: dateStr,
+        time: special.time,
+        site: "GGPoker",
+        name: special.name,
+        type: special.name.includes("Hyper") ? "HYPER" : "REG KO",
+        buyin: special.buyin,
+        guaranteed: special.guaranteed,
+        priority: special.priority || "medium",
+        status: "Aberto"
+      });
+    });
+  }); 
+  // ✅ BLOCO 2: GGPoker Hypers e REG
+  sundays.forEach(dateStr => {
+    [
+      { time: "10:00", name: "Sunday Big $10", buyin: 10, guaranteed: 5000 },
+      { time: "20:45", name: "Mini Hypersonic $5", buyin: 5.00, guaranteed: 2000 },
+      { time: "21:05", name: "Daily Special $250", buyin: 250.00, guaranteed: 5000 },
+      { time: "21:05", name: "Mini Midnight Madness $8.88 [Hyper]", buyin: 8.88, guaranteed: 5000 },
+      { time: "21:05", name: "Daily Special $50", buyin: 50.00, guaranteed: 6000 },
+      { time: "21:05", name: "Micro Madness $1.88 [Hyper]", buyin: 1.88, guaranteed: 1000 },
+      { time: "21:05", name: "Midnight Madness $88 [Hyper]", buyin: 88.00, guaranteed: 10000 },
+      { time: "22:05", name: "Midnight Madness II $8.88 [Hyper]", buyin: 8.88, guaranteed: 4000 },
+      { time: "22:05", name: "Midnight Madness II $88 [Hyper]", buyin: 88.00, guaranteed: 7500 },
+      { time: "23:05", name: "Midnight Madness III $8.88 [Hyper]", buyin: 8.88, guaranteed: 2500 },
+      { time: "23:05", name: "Midnight Madness III $88 [Hyper]", buyin: 88.00, guaranteed: 6000 },
+      { time: "00:05", name: "Daily Special $88", buyin: 88.00, guaranteed: 3000 },
+      { time: "00:05", name: "Daily Special $10", buyin: 10.00, guaranteed: 3000 },
+      { time: "01:05", name: "Daily Special $3", buyin: 3.00, guaranteed: 1000 },
+      { time: "01:05", name: "Daily Special $30", buyin: 30.00, guaranteed: 2500 },
+      { time: "01:15", name: "Superstack Turbo Special $8.80", buyin: 8.80, guaranteed: 3500 },
+      { time: "02:05", name: "Daily Monster Stack $5", buyin: 5.00, guaranteed: 2500 },
+      { time: "02:05", name: "Daily Monster Stack $50", buyin: 50.00, guaranteed: 10000 },
+      { time: "03:05", name: "Daily Special $25", buyin: 25.00, guaranteed: 4000 },
+      { time: "03:05", name: "Daily Special $2.50", buyin: 2.50, guaranteed: 1500 },
+      { time: "03:05", name: "Daily Special $250", buyin: 250.00, guaranteed: 7500 },
+      { time: "04:05", name: "Sunday Special $15", buyin: 15.00, guaranteed: 4000 },
+      { time: "04:05", name: "Sunday Special $125", buyin: 125.00, guaranteed: 5000 },
+      { time: "04:15", name: "Mini Superstack Turbo $2.50", buyin: 2.50, guaranteed: 2250 },
+      { time: "05:05", name: "Sunday Special $30", buyin: 30.00, guaranteed: 5000 },
+      { time: "06:05", name: "Sunday Fifty Stack $55", buyin: 55.00, guaranteed: 20000 },
+      { time: "06:05", name: "Sunday Fifty Stack $5.50", buyin: 5.50, guaranteed: 5000 },
+      { time: "07:05", name: "Sunday Special $4", buyin: 4.00, guaranteed: 2500 },
+      { time: "07:05", name: "Sunday Special $40", buyin: 40.00, guaranteed: 7500 },
+      { time: "07:15", name: "Superstack Turbo Special $30", buyin: 30.00, guaranteed: 6000 },
+      { time: "07:15", name: "Mini Superstack Turbo $3", buyin: 3.00, guaranteed: 2500 },
+      { time: "08:05", name: "Sunday Superstack $88", buyin: 88.00, guaranteed: 25000 },
+      { time: "08:05", name: "Sunday Superstack $8.88", buyin: 8.88, guaranteed: 10000 },
+      { time: "09:05", name: "Sunday Special $30", buyin: 30.00, guaranteed: 17500 },
+      { time: "09:05", name: "Sunday Kick-Off $125", buyin: 125.00, guaranteed: 75000 },
+      { time: "09:05", name: "Sunday Special $3", buyin: 3.00, guaranteed: 3000 },
+      { time: "10:05", name: "Sunday Monster Stack $25", buyin: 25.00, guaranteed: 50000 },
+      { time: "10:05", name: "Sunday Monster Stack $250", buyin: 250.00, guaranteed: 100000 },
+      { time: "10:05", name: "Sunday Monster Stack $2.50", buyin: 2.50, guaranteed: 7500 },
+      { time: "11:05", name: "Sunday Mini Marathon $5", buyin: 5.00, guaranteed: 10000 },
+      { time: "11:05", name: "Sunday Marathon $30", buyin: 30.00, guaranteed: 40000 },
+      { time: "11:05", name: "Sunday Marathon $300", buyin: 300.00, guaranteed: 75000 },
+      { time: "11:45", name: "Mini Hypersonic $2.50", buyin: 2.50, guaranteed: 2000 },
+      { time: "12:05", name: "Grand Prix Europe $125", buyin: 125.00, guaranteed: 200000 },
+      { time: "12:05", name: "Mini Grand Prix $25", buyin: 25.00, guaranteed: 85000 },
+      { time: "13:05", name: "Sunday Mini CRAZY EIGHTS $8.88", buyin: 8.88, guaranteed: 20000 },
+      { time: "13:05", name: "Sunday CRAZY EIGHTS $88", buyin: 88.00, guaranteed: 100000 },
+      { time: "15:00", name: "Sunday Hundred Grand $15, $100K", buyin: 15.00, guaranteed: 100000 },
+      { time: "15:05", name: "Sunday Fifty Stack $5.50", buyin: 5.50, guaranteed: 7500 },
+      { time: "15:05", name: "Sunday Fifty Stack $55", buyin: 55.00, guaranteed: 50000 },
+      { time: "15:45", name: "Sunday Hypersonic $20", buyin: 20.00, guaranteed: 25000 },
+      { time: "15:45", name: "Mini Hypersonic $2.50", buyin: 2.50, guaranteed: 3000 },
+      { time: "16:05", name: "Sunday Main Event $250", buyin: 250.00, guaranteed: 125000 },
+      { time: "16:05", name: "Sunday Mini Main $25", buyin: 25.00, guaranteed: 60000 },
+      { time: "18:45", name: "Mini Hypersonic $2.50", buyin: 2.50, guaranteed: 2500 },
+      { time: "18:45", name: "Sunday Hypersonic $20", buyin: 20.00, guaranteed: 30000 },
+      { time: "19:05", name: "Sunday SUPER SIX Bounty Turbo $66", buyin: 66.00, guaranteed: 50000 },
+      { time: "19:15", name: "Sunday Mini LUCKY SEVENS Turbo $7.77 [7-Max]", buyin: 7.77, guaranteed: 10000 },
+      { time: "19:15", name: "Sunday LUCKY SEVENS Turbo $77 [7-Max]", buyin: 77.00, guaranteed: 40000 },
+      { time: "20:05", name: "Sunday Saver $250 [Hyper]", buyin: 250.00, guaranteed: 50000 },
+      { time: "20:05", name: "Mini Saver $10 [Hyper]", buyin: 10.00, guaranteed: 10000 },
+      { time: "20:05", name: "Sunday Saver $50 [Hyper]", buyin: 50.00, guaranteed: 40000 },
+      { time: "20:45", name: "Mini Hypersonic $5", buyin: 5.00, guaranteed: 2500 },
+      { time: "20:45", name: "Sunday Hypersonic $50", buyin: 50.00, guaranteed: 15000 },  
+    ].forEach(special => {
+      tournaments.push({
+        id: id++,
+        date: dateStr,
+        time: special.time,
+        site: "GGPoker",
+        name: special.name,
+        type: special.name.includes("Hyper") ? "HYPER" : "REG",
+        buyin: special.buyin,
+        guaranteed: special.guaranteed,
+        priority: special.priority || "very-high",
+        status: "Aberto"
+      });
+    });
+  });
+  res.status(200).json(tournaments);
+}
+
 res.status(200).json(tournaments);
 
 }
