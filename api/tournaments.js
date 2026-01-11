@@ -1269,10 +1269,10 @@ function getTournaments(req, res) {
         time: special.time,
         site: "GGPoker",
         name: special.name,
-        type: ("Hyper") ? "HYPER" : "REG",
+        type: special.name.includes("Hyper") ? "HYPER" : "REG",
         buyin: special.buyin,
         guaranteed: special.guaranteed,
-        priority: special.priority || "VERY HIGH",
+        priority: special.priority || "very-high",
         status: "Aberto"
       });
     });
