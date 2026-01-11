@@ -235,7 +235,7 @@ dates.forEach(date => {
     { time: "18:15", name: "Daily Turbo $80", buyin: 80, guaranteed: 1000 },
     { time: "19:15", name: "Daily Turbo $8", buyin: 8, guaranteed: 1500 },
     { time: "19:15", name: "Daily Turbo $150", buyin: 150, guaranteed: 1500 },
-    { time: "19:15", name: "Daily Turbo $50", buyin: 50, guaranteed: 1250 },
+    { time: "19:15", name: "Dailsy Turbo $50", buyin: 50, guaranteed: 1250 },
     { time: "19:15", name: "Daily Turbo $1", buyin: 1, guaranteed: 600 },
     { time: "20:15", name: "Daily Turbo $30", buyin: 30, guaranteed: 1250 },
     { time: "20:15", name: "Daily Turbo $100", buyin: 100, guaranteed: 1500 },
@@ -264,12 +264,10 @@ dates.forEach(date => {
       status: "Aberto"
     });
   });
-  
   [
-    { time: "00:15", name: "Daily master $10", buyin: 10, guaranteed: 600 },
-    { time: "01:15", name: "Daily master $20", buyin: 20, guaranteed: 500 },
-    { time: "02:15", name: "Daily master $40", buyin: 40, guaranteed: 500 },
-    { time: "03:15", name: "Daily master $5", buyin: 5, guaranteed: 400 },
+    { time: "11:00", name: "GGMasters Asia", buyin: 25, guaranteed: 40000 },
+    { time: "13:00", name: "GGMasters Double Stack", buyin: 25, guaranteed: 40000 },
+    { time: "17:00", name: "GGMasters Classic", buyin: 25, guaranteed: 50000 },
   ].forEach(template => {
     tournaments.push({
       id: id++,
@@ -284,6 +282,25 @@ dates.forEach(date => {
       status: "Aberto"
     });
   });
+  [
+    { time: "15:00", name: "GGMasters Bounty Warm-up", buyin: 25, guaranteed: 100000 },
+    { time: "19:00", name: "GGMasters Bounty", buyin: 25, guaranteed: 50000 },
+    { time: "21:00", name: "GGMasters Bounty Turbo", buyin: 25, guaranteed: 40000 }
+  ].forEach(template => {
+    tournaments.push({
+      id: id++,
+      date: formatDateString(date),
+      time: template.time,
+      site: "GGPoker",
+      name: template.name,
+      type: "REG KO",
+      buyin: template.buyin,
+      guaranteed: template.guaranteed,
+      priority: "medium",
+      status: "Aberto"
+    });
+  }); 
+
 });
 
 
