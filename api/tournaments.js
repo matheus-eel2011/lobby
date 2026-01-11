@@ -54,6 +54,12 @@ function generateDatesForJanuary() {
 const tournaments = [];
 const dates = generateDatesForJanuary();
 let id = 1;
+const sundays = [
+  "2026-01-04",
+  "2026-01-11",
+  "2026-01-18",
+  "2026-01-25"
+];
 
 // Adicionar Main Event Series
 tournaments.push(...[
@@ -1104,18 +1110,8 @@ dates.forEach(date => {
 });
 
 // ✅ Adicionar GGPoker Sunday Specials
-function getTournaments(req, res) {
-  const tournaments = [];
-  let id = 1;
-
-  const sundays = [
-    "2026-01-04",
-    "2026-01-11",
-    "2026-01-18",
-    "2026-01-25"
-  ];
-  // ✅ BLOCO 1: GGPoker Bounty Hunters
-  sundays.forEach(dateStr => {
+// ✅ BLOCO 1: GGPoker Bounty Hunters
+sundays.forEach(dateStr => {
     [
       { time: "12:00", name: "$125 Sunday Winter KICK-OFF", buyin: 125, guaranteed: 100000 },
       { time: "03:30", name: "Bounty Hunters Sunday Special $10.80", buyin: 10.80, guaranteed: 18000 },
@@ -1277,9 +1273,6 @@ function getTournaments(req, res) {
       });
     });
   });
-  res.status(200).json(tournaments);
-}
 
 res.status(200).json(tournaments);
-
 }
