@@ -308,7 +308,8 @@ export default function handler(req, res) {
         { time: "22:45", name: "Daily Hyper $80", buyin: 80, guaranteed: 3000, lateReg: 50 },
         { time: "23:45", name: "Daily Hyper $100", buyin: 100, guaranteed: 2000, lateReg: 50 },
         { time: "23:45", name: "Daily Hyper $30", buyin: 30, guaranteed: 2500, lateReg: 50 },
-        { time: "23:45", name: "Daily Hyper $2", buyin: 2, guaranteed: 600, lateReg: 50 }
+        { time: "23:45", name: "Daily Hyper $2", buyin: 2, guaranteed: 600, lateReg: 50 },
+      ],
       //✅ Big diários
       bigDailies: [
         { time: "21:00", name: "Daily Big $20", buyin: 20, guaranteed: 750, lateReg: 90 },
