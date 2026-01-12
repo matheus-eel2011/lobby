@@ -1,12 +1,20 @@
 export default function handler(req, res) {
 
-res.setHeader("Cache-Control", "s-maxage=30, stale-while-revalidate=300");
+  res.setHeader("Cache-Control", "s-maxage=30, stale-while-revalidate=300");
+
+  const LATE_REG_DEFAULTS = {
+    'REG': 60,           // Torneios regulares = 60 min
+    'TURBO': 30,         // Turbo = 30 min
+    'HYPER': 15,         // Hyper = 15 min
+    'REG KO': 45,        // Reg KO = 45 min
+    'TURBO KO': 20,      // Turbo KO = 20 min
+    'MYSTERY': 45,       // Mystery = 45 min
+  };
 
 // ✅ FUNÇÃO: Determinar prioridade para torneios YaPoker
 const getYaPriority = (tournamentName) => {
   const nameLower = tournamentName.toLowerCase();
-  
-  // Torneios regulares = HIGH
+    // Torneios regulares = HIGH
   if (nameLower.includes('mega stack') || nameLower.includes('deep') || 
       nameLower.includes('freezeout') || nameLower.includes('special') || 
       nameLower.includes('daily double') || nameLower.includes('loncar') ||
@@ -1273,6 +1281,11 @@ sundays.forEach(dateStr => {
       });
     });
   });
-
+// Garantir que todo torneio tem lateReg
+    tournaments.forEach(t => {
+        if (!t.lateReg || t.lateReg === 0) {
+            t.lateReg = LATE_REG_DEFAULTS[t.type] || 30;
+        }
+    });
 res.status(200).json(tournaments);
 }
