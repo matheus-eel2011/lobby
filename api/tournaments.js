@@ -966,9 +966,9 @@ export default function handler(req, res) {
       });
     });
     [
-      { time: "11:00", name: "GGMasters Asia", buyin: 25, guaranteed: 40000 },
+      { time: "11:00", name: "GGMasters Asia", buyin: 25, guaranteed: 40000, lateReg: 195 },
       { time: "13:00", name: "GGMasters Double Stack", buyin: 25, guaranteed: 40000, lateReg: 195 },
-      { time: "17:00", name: "GGMasters Classic", buyin: 25, guaranteed: 50000 },
+      { time: "17:00", name: "GGMasters Classic", buyin: 25, guaranteed: 50000, lateReg: 195 },
     ].forEach(template => {
       tournaments.push({
         id: id++,
@@ -981,7 +981,7 @@ export default function handler(req, res) {
         guaranteed: template.guaranteed,
         priority: "medium",
         status: "Aberto",
-        lateReg: config.lateReg
+        lateReg: template.lateReg
       });
     });
     [
@@ -1050,7 +1050,6 @@ export default function handler(req, res) {
         guaranteed: template.guaranteed,
         priority: "very-high",
         status: "Aberto",
-        lateReg: config.lateReg
       });
     });  
 
