@@ -1249,7 +1249,13 @@
 
         const tournamentDateTime = new Date(year, parseInt(month) - 1, parseInt(day), parseInt(hours), parseInt(minutes));
 
-        if (tournamentDateTime < now) {
+        // ✅ CORREÇÃO: Calcular quando Late Reg termina
+        // Late Reg dura `tournament.lateReg` minutos APÓS o início
+        const lateRegDurationMs = (tournament.lateReg || 30) * 60 * 1000;
+        const lateRegEndsAt = new Date(tournamentDateTime.getTime() + lateRegDurationMs);
+
+        // ✅ Se passou do fim de late reg → Fechado
+        if (lateRegEndsAt < now) {
             return {
                 status: 'Fechado',
                 timeRemaining: null,
@@ -1258,25 +1264,27 @@
         }
 
         const timeUntilStart = (tournamentDateTime - now) / 1000;
-        const lateRegWindow = tournament.lateReg * 60;
-        const timeUntilLateRegClose = timeUntilStart - lateRegWindow;
+        const timeUntilLateRegClose = (lateRegEndsAt - now) / 1000;
 
-        const countdownText = formatCountdown(timeUntilStart);
-
-        if (timeUntilStart > 0 && timeUntilLateRegClose <= 0) {
+        // ✅ Se começou MAS ainda está em late reg
+        if (timeUntilStart <= 0 && timeUntilLateRegClose > 0) {
+            const countdownText = formatCountdown(timeUntilLateRegClose);
             return {
                 status: 'Late Reg',
-                timeRemaining: Math.max(0, timeUntilStart),
+                timeRemaining: Math.max(0, timeUntilLateRegClose),
                 countdownText
             };
         }
 
+        // ✅ Ainda não começou (Aberto)
+        const countdownText = formatCountdown(timeUntilStart);
         return {
             status: 'Aberto',
             timeRemaining: null,
             countdownText
         };
     }
+
 
     function formatCountdown(seconds) {
         const s = Math.max(0, Math.floor(seconds));
