@@ -1149,7 +1149,6 @@
                             <th data-column="buyin">Buy-in</th>
                             <th data-column="guaranteed">GTD</th>
                             <th data-column="field">Field</th>
-                            <th data-column="lateReg">Late Reg</th>
                             <th data-column="priority">⭐ Prioridade</th>
                             <th data-column="status">Status</th>
                             <th>Registrado</th>
@@ -1264,7 +1263,7 @@
 
         const countdownText = formatCountdown(timeUntilStart);
 
-        if (timeUntilLateRegClose <= 0) {
+        if (timeUntilStart > 0 && timeUntilLateRegClose <= 0) {
             return {
                 status: 'Late Reg',
                 timeRemaining: Math.max(0, timeUntilStart),
@@ -1425,17 +1424,22 @@
             let tournaments = Array.isArray(data) ? data : data.tournaments || data.data || [];
             if (tournaments.length === 0) throw new Error('Nenhum torneio encontrado na resposta');
 
-            const isFutureTournament = (dateStr, timeStr) => {
+            // ✅ FILTRO: Apenas torneios de HOJE EM DIANTE
+            const isFutureOrToday = (dateStr) => {
                 const [year, month, day] = dateStr.split('-');
-                const [hours, minutes] = timeStr.split(':');
-                const tourneyTime = new Date(year, parseInt(month) - 1, parseInt(day), parseInt(hours), parseInt(minutes));
                 const now = new Date();
-                return tourneyTime > now;
+                
+                // Pegar data de hoje (sem hora)
+                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                const tourneyDateOnly = new Date(year, parseInt(month) - 1, parseInt(day));
+                
+                // Retorna true se for hoje OU depois de hoje
+                return tourneyDateOnly >= today;
             };
-
+            
             const totalAntes = tournaments.length;
             tournaments = tournaments.filter(t => {
-                return isFutureTournament(t.date || '1970-01-01', t.time || '00:00');
+                return isFutureOrToday(t.date || '1970-01-01');
             });
 
             tournaments = tournaments.map((t, idx) => {
@@ -1674,7 +1678,6 @@
                     <td>$${t.buyin}</td>
                     <td>$${(t.guaranteed / 1000).toFixed(0)}K</td>
                     <td>${t.field}</td>
-                    <td>${t.lateReg} min</td>
                     <td><span class="badge badge-priority badge-${t.priority}">${priorityLabels[t.priority]}</span></td>
                     <td data-status-cell>${renderStatusWithCountdown(t)}</td>
                     <td><button class="btn-register ${registered.has(t.id) ? 'active' : ''}" data-id="${t.id}">${registered.has(t.id) ? '✅ Registrado' : 'Registrar'}</button></td>
