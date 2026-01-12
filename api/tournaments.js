@@ -410,6 +410,22 @@ export default function handler(req, res) {
         });
       });
 
+      // Big Dailies
+      ggPokerConfig.bigDailies.forEach(template => {
+        tournaments.push({
+          id: id++,
+          date: dateStr,
+          time: template.time,
+          site: "GGPoker",
+          name: template.name,
+          type: "REG",
+          buyin: template.buyin,
+          guaranteed: template.guaranteed,
+          priority: "very-high",
+          status: "Aberto",
+          lateReg: template.lateReg,
+        });
+      });
       // Hyper Dailies
       ggPokerConfig.hyperDailies.forEach(template => {
         tournaments.push({
