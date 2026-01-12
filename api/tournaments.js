@@ -966,9 +966,9 @@ export default function handler(req, res) {
       });
     });
     [
-      { time: "11:00", name: "GGMasters Asia", buyin: 25, guaranteed: 40000, lateReg: 195 },
-      { time: "13:00", name: "GGMasters Double Stack", buyin: 25, guaranteed: 40000, lateReg: 195 },
-      { time: "17:00", name: "GGMasters Classic", buyin: 25, guaranteed: 50000, lateReg: 195 },
+      { time: "08:00", name: "GGMasters Asia", buyin: 25, guaranteed: 40000, lateReg: 195 },
+      { time: "10:00", name: "GGMasters Double Stack", buyin: 25, guaranteed: 40000, lateReg: 195 },
+      { time: "14:00", name: "GGMasters Classic", buyin: 25, guaranteed: 50000, lateReg: 195 },
     ].forEach(template => {
       tournaments.push({
         id: id++,
@@ -985,9 +985,9 @@ export default function handler(req, res) {
       });
     });
     [
-      { time: "15:00", name: "GGMasters Bounty Warm-up", buyin: 25, guaranteed: 100000 },
-      { time: "19:00", name: "GGMasters Bounty", buyin: 25, guaranteed: 50000 },
-      { time: "21:00", name: "GGMasters Bounty Turbo", buyin: 25, guaranteed: 40000 }
+      { time: "12:00", name: "GGMasters Bounty Warm-up", buyin: 25, guaranteed: 100000 },
+      { time: "16:00", name: "GGMasters Bounty", buyin: 25, guaranteed: 50000 },
+      { time: "18:00", name: "GGMasters Bounty Turbo", buyin: 25, guaranteed: 40000 }
     ].forEach(template => {
       tournaments.push({
         id: id++,
