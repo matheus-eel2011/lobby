@@ -4,7 +4,7 @@ export default function handler(req, res) {
 
   const LATE_REG_DEFAULTS = {
     'REG': 60,           // Torneios regulares = 60 min
-    'TURBO': 30,         // Turbo = 30 min
+    'TURBO': 70,         // Turbo = 30 min
     'HYPER': 15,         // Hyper = 15 min
     'REG KO': 45,        // Reg KO = 45 min
     'TURBO KO': 20,      // Turbo KO = 20 min
