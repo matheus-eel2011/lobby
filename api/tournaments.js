@@ -6,8 +6,8 @@ export default function handler(req, res) {
     'REG': 60,           // Torneios regulares = 60 min
     'TURBO': 70,         // Turbo = 30 min
     'HYPER': 15,         // Hyper = 15 min
-    'REG KO': 45,        // Reg KO = 45 min
-    'TURBO KO': 20,      // Turbo KO = 20 min
+    'REG KO': 125,        // Reg KO = 45 min
+    'TURBO KO': 105,      // Turbo KO = 20 min
     'MYSTERY': 45,       // Mystery = 45 min
   };
 
@@ -967,7 +967,7 @@ export default function handler(req, res) {
     });
     [
       { time: "11:00", name: "GGMasters Asia", buyin: 25, guaranteed: 40000 },
-      { time: "13:00", name: "GGMasters Double Stack", buyin: 25, guaranteed: 40000 },
+      { time: "13:00", name: "GGMasters Double Stack", buyin: 25, guaranteed: 40000, lateReg: 195 },
       { time: "17:00", name: "GGMasters Classic", buyin: 25, guaranteed: 50000 },
     ].forEach(template => {
       tournaments.push({
@@ -980,7 +980,8 @@ export default function handler(req, res) {
         buyin: template.buyin,
         guaranteed: template.guaranteed,
         priority: "medium",
-        status: "Aberto"
+        status: "Aberto",
+        lateReg: config.lateReg
       });
     });
     [
@@ -1000,7 +1001,58 @@ export default function handler(req, res) {
         priority: "medium",
         status: "Aberto"
       });
-    }); 
+    });
+    [
+      { time: "00:00", name: "Daily Big $20", buyin: 20, guaranteed: 750 },
+      { time: "00:00", name: "Daily Big $2", buyin: 2, guaranteed: 350 },
+      { time: "01:00", name: "Daily Big $30", buyin: 30, guaranteed: 600 },
+      { time: "01:00", name: "Daily Big $10", buyin: 10, guaranteed: 600 },
+      { time: "02:00", name: "Daily Big $3", buyin: 3, guaranteed: 250 },
+      { time: "04:00", name: "Daily Big $2", buyin: 2, guaranteed: 200 },
+      { time: "05:00", name: "Daily Big $3", buyin: 3, guaranteed: 300 },
+      { time: "05:00", name: "Daily Big $20", buyin: 20, guaranteed: 500 },
+      { time: "06:00", name: "Daily Big $15", buyin: 15, guaranteed: 600 },
+      { time: "07:00", name: "Daily Big $3", buyin: 3, guaranteed: 600 },
+      { time: "08:00", name: "Daily Big $40", buyin: 40, guaranteed: 800 },
+      { time: "08:00", name: "Daily Big $4", buyin: 4, guaranteed: 500 },
+      { time: "09:00", name: "Daily Big $3", buyin: 3, guaranteed: 600 },
+      { time: "10:00", name: "Daily Big $50", buyin: 50, guaranteed: 800 },
+      { time: "11:00", name: "Daily Big $2", buyin: 2, guaranteed: 500 },
+      { time: "11:00", name: "Daily Big $20", buyin: 20, guaranteed: 1000 },
+      { time: "12:00", name: "Daily Big $5", buyin: 5, guaranteed: 1000 },
+      { time: "13:00", name: "Daily Big $40", buyin: 40, guaranteed: 1000 },
+      { time: "13:00", name: "Daily Big $3", buyin: 3, guaranteed: 1000 },
+      { time: "14:00", name: "Daily Big $2", buyin: 2, guaranteed: 750 },
+      { time: "15:00", name: "Daily Big $5", buyin: 5, guaranteed: 1500 },
+      { time: "15:00", name: "Daily Big $15", buyin: 15, guaranteed: 2500 },
+      { time: "16:00", name: "Daily Big $3", buyin: 3, guaranteed: 1250 },
+      { time: "17:00", name: "Daily Big $20", buyin: 20, guaranteed: 4000 },
+      { time: "17:00", name: "Daily Big $1", buyin: 1, guaranteed: 1000 },
+      { time: "18:00", name: "Daily Big $2", buyin: 2, guaranteed: 1000 },
+      { time: "18:00", name: "Daily Big $10", buyin: 10, guaranteed: 3000 },
+      { time: "19:00", name: "Daily Big $3", buyin: 3, guaranteed: 1000 },
+      { time: "20:00", name: "Daily Big $5", buyin: 5, guaranteed: 1250 },
+      { time: "20:00", name: "Daily Big $30", buyin: 30, guaranteed: 1500 },
+      { time: "21:00", name: "Daily Big $50", buyin: 50, guaranteed: 1000 },
+      { time: "21:00", name: "Daily Big $3", buyin: 3, guaranteed: 750 },
+      { time: "22:00", name: "Daily Big $20", buyin: 20, guaranteed: 800 },
+      { time: "23:00", name: "Daily Big $1", buyin: 1, guaranteed: 250 },
+      { time: "23:00", name: "Daily Big $10", buyin: 10, guaranteed: 1000 },
+    ].forEach(template => {
+      tournaments.push({
+        id: id++,
+        date: formatDateString(date),
+        time: template.time,
+        site: "GGPoker",
+        name: template.name,
+        type: "REG",
+        buyin: template.buyin,
+        guaranteed: template.guaranteed,
+        priority: "very-high",
+        status: "Aberto",
+        lateReg: config.lateReg
+      });
+    });  
 
   });
 
