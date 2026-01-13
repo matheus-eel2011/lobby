@@ -707,7 +707,7 @@ export default function handler(req, res) {
         { id: 248, date: "2026-01-20", time: "21:05", name: "The Super $109: $5,000 Gtd", type: "REG", buyin: 109, guaranteed: 5000, priority: "medium", lateReg: 80 },
         { id: 249, date: "2026-01-20", time: "22:05", name: "Daily Legends 7-Max PKO: $1K Gtd", type: "REG KO", buyin: 33, guaranteed: 1000, priority: "high", lateReg: 80 },
       ],
-
+    };
     // ✅ Adicionar Main Event Series (fixos, com datas)
     partypokerConfig.mainSeries.forEach(tournament => {
       tournaments.push({
@@ -723,7 +723,9 @@ export default function handler(req, res) {
         status: "Aberto",
         lateReg: tournament.lateReg || LATE_REG_DEFAULTS[tournament.type] || 30,
       });
-    });      
+    });
+    return tournaments;
+  }        
   /**
    * ✅ FUNÇÃO: Adicionar torneios PokerStars
    * Template para PokerStars (expandir conforme necessário)
