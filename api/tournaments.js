@@ -897,6 +897,7 @@ export default function handler(req, res) {
   id = addYaPokerTournaments(tournaments, id);
   id = add888PokerTournaments(tournaments, id);
   id = addChampionTournaments(tournaments, id);
+  id = addpartypokerTournaments(tournaments, id);
 
   res.json(tournaments);
 }
