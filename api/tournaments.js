@@ -457,7 +457,6 @@ export default function handler(req, res) {
     // ✅ CONFIG: Templates de GGPoker com lateReg explícito
     const partypokerConfig = {
       mainSeries: [
-        // ===== TERÇA 13 JAN 2026 ====
         { id: 1, date: "2026-01-13", time: "06:00", name: "Bounty Hunter 8-Max: $1K Gtd", type: "KO", buyin: 109, guaranteed: 1000, priority: "high", lateReg: 80 },
         { id: 2, date: "2026-01-13", time: "06:05", name: "Daily Legends 8-Max PKO: $1.5K Gtd", type: "PKO", buyin: 33, guaranteed: 1500, priority: "high", lateReg: 80 },
         { id: 3, date: "2026-01-13", time: "07:30", name: "Daily Legends 7-Max Early Mystery Turbo: $1K Gtd", type: "TURBO", buyin: 11, guaranteed: 1000, priority: "medium", lateReg: 80 },
@@ -507,8 +506,6 @@ export default function handler(req, res) {
         { id: 47, date: "2026-01-13", time: "19:05", name: "Daily Legends 6-Max PKO Turbo: $4K Gtd", type: "PKO", buyin: 55, guaranteed: 4000, priority: "high", lateReg: 80 },
         { id: 48, date: "2026-01-13", time: "19:30", name: "8-Max: $1K Gtd", type: "REG", buyin: 11, guaranteed: 1000, priority: "medium", lateReg: 80 },
         { id: 49, date: "2026-01-13", time: "19:45", name: "Bounty Hunter 6-Max Hyper: $1K Gtd", type: "HYPER", buyin: 33, guaranteed: 1000, priority: "low", lateReg: 80 },
-
-        // ===== QUARTA 14 JAN 2026 =====
         { id: 50, date: "2026-01-14", time: "20:00", name: "Bounty Hunter 8-Max: $1K Gtd", type: "KO", buyin: 11, guaranteed: 1000, priority: "high", lateReg: 80 },
         { id: 51, date: "2026-01-14", time: "20:05", name: "Daily Legends 6-Max Deepstack Hyper: $2K Gtd", type: "HYPER", buyin: 55, guaranteed: 2000, priority: "low", lateReg: 96 },
         { id: 52, date: "2026-01-14", time: "20:15", name: "Bounty Hunter 7-Max Turbo: $1K Gtd", type: "TURBO", buyin: 22, guaranteed: 1000, priority: "medium", lateReg: 80 },
@@ -543,8 +540,6 @@ export default function handler(req, res) {
         { id: 81, date: "2026-01-14", time: "18:30", name: "Daily Legends 6-Max Deepstack: $3K Gtd", type: "REG", buyin: 33, guaranteed: 3000, priority: "high", lateReg: 96 },
         { id: 82, date: "2026-01-14", time: "19:05", name: "Daily Legends 6-Max PKO Turbo: $2K Gtd", type: "PKO", buyin: 11, guaranteed: 2000, priority: "high", lateReg: 80 },
         { id: 83, date: "2026-01-14", time: "19:05", name: "Daily Legends 6-Max PKO Turbo: $4K Gtd", type: "PKO", buyin: 55, guaranteed: 4000, priority: "high", lateReg: 80 },
-
-        // ===== QUINTA 15 JAN 2026 =====
         { id: 84, date: "2026-01-15", time: "20:05", name: "Daily Legends 6-Max Deepstack Hyper: $2K Gtd", type: "HYPER", buyin: 55, guaranteed: 2000, priority: "low", lateReg: 96 },
         { id: 85, date: "2026-01-15", time: "21:05", name: "The Super $22: $3,000 Gtd", type: "REG", buyin: 22, guaranteed: 3000, priority: "medium", lateReg: 80 },
         { id: 86, date: "2026-01-15", time: "21:05", name: "The Super $5.50: $2,000 Gtd", type: "REG", buyin: 5.5, guaranteed: 2000, priority: "medium", lateReg: 80 },
@@ -575,8 +570,6 @@ export default function handler(req, res) {
         { id: 111, date: "2026-01-15", time: "18:30", name: "Daily Legends 6-Max Deepstack: $3K Gtd", type: "REG", buyin: 33, guaranteed: 3000, priority: "high", lateReg: 96 },
         { id: 112, date: "2026-01-15", time: "19:05", name: "Daily Legends 6-Max PKO Turbo: $2K Gtd", type: "PKO", buyin: 11, guaranteed: 2000, priority: "high", lateReg: 80 },
         { id: 113, date: "2026-01-15", time: "19:05", name: "Daily Legends 6-Max PKO Turbo: $4K Gtd", type: "PKO", buyin: 55, guaranteed: 4000, priority: "high", lateReg: 80 },
-
-        // ===== SEXTA 16 JAN 2026 =====
         { id: 114, date: "2026-01-16", time: "20:05", name: "Daily Legends 6-Max Deepstack Hyper: $2K Gtd", type: "HYPER", buyin: 55, guaranteed: 2000, priority: "low", lateReg: 96 },
         { id: 115, date: "2026-01-16", time: "21:05", name: "The Super $22: $3,000 Gtd", type: "REG", buyin: 22, guaranteed: 3000, priority: "medium", lateReg: 80 },
         { id: 116, date: "2026-01-16", time: "21:05", name: "The Super $5.50: $2,000 Gtd", type: "REG", buyin: 5.5, guaranteed: 2000, priority: "medium", lateReg: 80 },
@@ -606,8 +599,6 @@ export default function handler(req, res) {
         { id: 140, date: "2026-01-16", time: "18:30", name: "Daily Legends 6-Max Deepstack: $3K Gtd", type: "REG", buyin: 33, guaranteed: 3000, priority: "high", lateReg: 96 },
         { id: 141, date: "2026-01-16", time: "19:05", name: "Daily Legends 6-Max PKO Turbo: $2K Gtd", type: "PKO", buyin: 11, guaranteed: 2000, priority: "high", lateReg: 80 },
         { id: 142, date: "2026-01-16", time: "19:05", name: "Daily Legends 6-Max PKO Turbo: $4K Gtd", type: "PKO", buyin: 55, guaranteed: 4000, priority: "high", lateReg: 80 },
-
-        // ===== SÁBADO 17 JAN 2026 =====
         { id: 143, date: "2026-01-17", time: "20:05", name: "Daily Legends 6-Max Deepstack Hyper: $2K Gtd", type: "HYPER", buyin: 55, guaranteed: 2000, priority: "low", lateReg: 96 },
         { id: 144, date: "2026-01-17", time: "21:05", name: "The Super $22: $3,000 Gtd", type: "REG", buyin: 22, guaranteed: 3000, priority: "medium", lateReg: 80 },
         { id: 145, date: "2026-01-17", time: "21:05", name: "The Super $5.50: $2,000 Gtd", type: "REG", buyin: 5.5, guaranteed: 2000, priority: "medium", lateReg: 80 },
@@ -638,8 +629,6 @@ export default function handler(req, res) {
         { id: 170, date: "2026-01-17", time: "18:30", name: "Daily Legends 6-Max Deepstack: $2.5K Gtd", type: "REG", buyin: 33, guaranteed: 2500, priority: "high", lateReg: 96 },
         { id: 171, date: "2026-01-17", time: "19:05", name: "Daily Legends 6-Max PKO Turbo: $2K Gtd", type: "PKO", buyin: 11, guaranteed: 2000, priority: "high", lateReg: 80 },
         { id: 172, date: "2026-01-17", time: "19:05", name: "Daily Legends 6-Max PKO Turbo: $3K Gtd", type: "PKO", buyin: 55, guaranteed: 3000, priority: "high", lateReg: 80 },
-
-        // ===== DOMINGO 18 JAN 2026 =====
         { id: 173, date: "2026-01-18", time: "20:05", name: "Daily Legends 6-Max Deepstack Hyper: $2K Gtd", type: "HYPER", buyin: 55, guaranteed: 2000, priority: "low", lateReg: 96 },
         { id: 174, date: "2026-01-18", time: "21:05", name: "The Super $22: $3,000 Gtd", type: "REG", buyin: 22, guaranteed: 3000, priority: "medium", lateReg: 80 },
         { id: 175, date: "2026-01-18", time: "21:05", name: "The Super $5.50: $2,000 Gtd", type: "REG", buyin: 5.5, guaranteed: 2000, priority: "medium", lateReg: 80 },
@@ -682,8 +671,6 @@ export default function handler(req, res) {
         { id: 212, date: "2026-01-18", time: "18:30", name: "Daily Legends 6-Max Deepstack: $3K Gtd", type: "REG", buyin: 33, guaranteed: 3000, priority: "high", lateReg: 96 },
         { id: 213, date: "2026-01-18", time: "19:05", name: "Daily Legends 6-Max PKO Turbo: $2.5K Gtd", type: "PKO", buyin: 11, guaranteed: 2500, priority: "high", lateReg: 80 },
         { id: 214, date: "2026-01-18", time: "19:05", name: "Daily Legends 6-Max PKO Turbo: $6K Gtd", type: "PKO", buyin: 55, guaranteed: 6000, priority: "high", lateReg: 80 },
-
-        // ===== SEGUNDA 19 JAN 2026 =====
         { id: 215, date: "2026-01-19", time: "20:05", name: "Daily Legends 6-Max Deepstack Hyper: $4K Gtd", type: "HYPER", buyin: 55, guaranteed: 4000, priority: "low", lateReg: 96 },
         { id: 216, date: "2026-01-19", time: "21:05", name: "The Super $109: $6,000 Gtd", type: "REG", buyin: 109, guaranteed: 6000, priority: "medium", lateReg: 80 },
         { id: 217, date: "2026-01-19", time: "21:05", name: "The Super $5.50: $2,000 Gtd", type: "REG", buyin: 5.5, guaranteed: 2000, priority: "medium", lateReg: 80 },
@@ -714,25 +701,13 @@ export default function handler(req, res) {
         { id: 242, date: "2026-01-19", time: "18:30", name: "Daily Legends 6-Max Deepstack: $3K Gtd", type: "REG", buyin: 33, guaranteed: 3000, priority: "high", lateReg: 96 },
         { id: 243, date: "2026-01-19", time: "19:05", name: "Daily Legends 6-Max PKO Turbo: $2K Gtd", type: "PKO", buyin: 11, guaranteed: 2000, priority: "high", lateReg: 80 },
         { id: 244, date: "2026-01-19", time: "19:05", name: "Daily Legends 6-Max PKO Turbo: $4K Gtd", type: "PKO", buyin: 55, guaranteed: 4000, priority: "high", lateReg: 80 },
-
-        // ===== TERÇA 20 JAN 2026 =====
         { id: 245, date: "2026-01-20", time: "20:05", name: "Daily Legends 6-Max Deepstack Hyper: $2K Gtd", type: "HYPER", buyin: 55, guaranteed: 2000, priority: "low", lateReg: 96 },
         { id: 246, date: "2026-01-20", time: "21:05", name: "The Super $22: $3,000 Gtd", type: "REG", buyin: 22, guaranteed: 3000, priority: "medium", lateReg: 80 },
         { id: 247, date: "2026-01-20", time: "21:05", name: "The Super $5.50: $2,000 Gtd", type: "REG", buyin: 5.5, guaranteed: 2000, priority: "medium", lateReg: 80 },
         { id: 248, date: "2026-01-20", time: "21:05", name: "The Super $109: $5,000 Gtd", type: "REG", buyin: 109, guaranteed: 5000, priority: "medium", lateReg: 80 },
         { id: 249, date: "2026-01-20", time: "22:05", name: "Daily Legends 7-Max PKO: $1K Gtd", type: "PKO", buyin: 33, guaranteed: 1000, priority: "high", lateReg: 80 },
+      ],
 
-        // ===== EVENTOS ESPECIAIS / LIVE =====
-        { id: 250, date: "2026-01-25", time: "16:30", name: "Redtooth Malta 52 Sat: 1 x £1500 Package", type: "OTHER", buyin: 25, guaranteed: 1500, priority: "medium", lateReg: 80 },
-        { id: 251, date: "2026-01-27", time: "09:00", name: "PartyPoker Tour Sheffield #01 Mini Main Event - Day 1A", type: "OTHER", buyin: 150, guaranteed: 1650, priority: "high", lateReg: 80 },
-        { id: 252, date: "2026-01-28", time: "11:00", name: "PartyPoker Tour Sheffield #01 Mini Main Event - Day 1B", type: "OTHER", buyin: 150, guaranteed: 1500, priority: "high", lateReg: 80 },
-        { id: 253, date: "2026-01-29", time: "12:00", name: "PartyPoker Tour Sheffield #04 Main Event - Day 1A", type: "OTHER", buyin: 500, guaranteed: 3000, priority: "high", lateReg: 80 },
-        { id: 254, date: "2026-01-30", time: "09:00", name: "PartyPoker Tour Sheffield #04 Main Event - Day 1B", type: "OTHER", buyin: 500, guaranteed: 1500, priority: "high", lateReg: 80 },
-        { id: 255, date: "2026-01-30", time: "16:30", name: "Redtooth VEGAS100 Guest Qualifier", type: "OTHER", buyin: 11, guaranteed: 1650, priority: "medium", lateReg: 80 },
-        { id: 256, date: "2026-01-31", time: "20:15", name: "European Poker Days King's Qualifier", type: "OTHER", buyin: 250, guaranteed: 1750, priority: "medium", lateReg: 80 },
-        { id: 257, date: "2026-02-01", time: "13:00", name: "PartyPoker Tour Sheffield #13 NLH High Roller 7-Max", type: "OTHER", buyin: 1000, guaranteed: 1000, priority: "high", lateReg: 80 },
-        { id: 258, date: "2026-03-23", time: "17:05", name: "MILLIONS Online Main Event PKO Day 2", type: "OTHER", buyin: 320, guaranteed: 300000, priority: "high", lateReg: 80 },
-      ];
     // ✅ Adicionar Main Event Series (fixos, com datas)
     partypokerConfig.mainSeries.forEach(tournament => {
       tournaments.push({
