@@ -2119,6 +2119,75 @@
         const totalProfit = totalCashout - totalBuyin;
         const roi = totalBuyin > 0 ? (totalProfit / totalBuyin * 100) : 0;
 
+            // ===== LUCRO MÊS A MÊS =====
+        const monthly = {}; // chave: 'YYYY-MM' -> dados agregados
+
+        registeredTournaments.forEach(t => {
+            // data no formato 'YYYY-MM-DD'
+            const dateStr = t.date;
+            if (!dateStr) return;
+
+            const [year, month] = dateStr.split('-'); // '2026', '01'
+            const key = `${year}-${month}`;
+
+            if (!monthly[key]) {
+                monthly[key] = {
+                    buyin: 0,
+                    cashout: 0,
+                    count: 0
+                };
+            }
+
+            const buyin = t.buyin || 0;
+            const cash  = cashouts[t.id] ?? 0;
+
+            monthly[key].buyin   += buyin;
+            monthly[key].cashout += cash;
+            monthly[key].count   += 1;
+        });
+
+        const tbody = document.getElementById('bankrollMonthlyBody');
+        if (!tbody) return; // segurança
+
+        const keys = Object.keys(monthly);
+
+        if (keys.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" style="padding: 10px 0; text-align: center; color: var(--text-secondary);">
+                        Ainda não há dados suficientes (registre torneios com cashout).
+                    </td>
+                </tr>
+            `;
+        } else {
+            // ordenar por ano/mês crescente
+            keys.sort((a, b) => a.localeCompare(b)); // '2026-01', '2026-02', ...
+
+            const rowsHtml = keys.map(key => {
+                const data = monthly[key];
+                const profit = data.cashout - data.buyin;
+                const roiMonth = data.buyin > 0 ? (profit / data.buyin * 100) : 0;
+
+                const [y, m] = key.split('-');
+                const label = `${m}/${y}`; // ex: 01/2026
+
+                return `
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <td style="padding: 8px 0; color: var(--text-secondary);">${label}</td>
+                        <td style="padding: 8px 0; text-align: right;">${data.count}</td>
+                        <td style="padding: 8px 0; text-align: right;">$${data.buyin.toFixed(2)}</td>
+                        <td style="padding: 8px 0; text-align: right;">$${data.cashout.toFixed(2)}</td>
+                        <td style="padding: 8px 0; text-align: right; color: ${profit >= 0 ? 'var(--success)' : 'var(--danger)'};">
+                            $${profit.toFixed(2)}
+                        </td>
+                        <td style="padding: 8px 0; text-align: right;">${roiMonth.toFixed(2)}%</td>
+                    </tr>
+                `;
+            }).join('');
+
+            tbody.innerHTML = rowsHtml;
+        }
+
         const itmCount = registeredTournaments.filter(t => cashouts[t.id] > t.buyin).length;
         const itmPercent = totalTournaments > 0 ? (itmCount / totalTournaments * 100) : 0;
 
