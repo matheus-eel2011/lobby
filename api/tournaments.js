@@ -724,7 +724,6 @@ export default function handler(req, res) {
         lateReg: tournament.lateReg || LATE_REG_DEFAULTS[tournament.type] || 30,
       });
     });
-    return tournaments;
   }        
   /**
    * ✅ FUNÇÃO: Adicionar torneios PokerStars
