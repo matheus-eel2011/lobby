@@ -1509,7 +1509,12 @@
     async function initializeApp() {
         loadProfiles();
         allTournamentsData = await loadTournamentsFromAPI();
+        const today = new Date();
+        const todayFormatted = today.toISOString().split('T')[0]; // YYYY-MM-DD
+        document.getElementById('fixedDate').value = todayFormatted;
+  
         filteredTournaments = [...allTournamentsData];
+        applyFilters(); // ✅ Aplica filtro automático com a data de hoje
         renderTable();
         setupEventListeners();
         updateControlDashboard();
