@@ -346,8 +346,7 @@ export default function handler(req, res) {
         { id: 328, date: "2026-01-26", time: "19:00", name: "$66 Snowy Super Six [Bounty Turbo]", type: "REG KO", buyin: 66, guaranteed: 60000, priority: "medium", lateReg: 150 },
         { id: 329, date: "2026-01-26", time: "20:00", name: "$50 Winter Tick Tock BOOM [Levels Decrease]", type: "HYPER", buyin: 50, guaranteed: 25000, priority: "medium", lateReg: 60 },
       ],
-      ],
-          
+               
       // ✅ GGMasters (REG) - 3 torneios com tempos diferentes
       ggmasters: [
         { time: "08:00", name: "GGMasters Asia", type: "REG", buyin: 25, guaranteed: 40000, priority: "medium", lateReg: 170 },
