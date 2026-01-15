@@ -1325,13 +1325,35 @@
             <div id="modalTournamentName" style="padding: 12px; background: var(--bg-dark); border-radius: 2px; color: var(--secondary); font-weight: 600;"></div>
         </div>
         <div class="modal-field">
-            <label class="modal-label">Buy-in</label>
+            <label class="modal-label">Buy-in (valor base)</label>
             <div id="modalBuyin" style="padding: 12px; background: var(--bg-dark); border-radius: 2px; color: var(--text-secondary);"></div>
         </div>
+
+        <!-- NOVO: quantidade de rebuys -->
+        <div class="modal-field">
+            <label class="modal-label">Rebuys (quanto você comprou)</label>
+            <input type="number" id="rebuyCount" class="modal-input" placeholder="0" min="0" step="1" value="0"
+                   style="width: 100%; padding: 12px; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 2px; color: var(--text-primary); font-size: 14px;">
+            <small style="color: var(--text-secondary); font-size: 11px; display: block; margin-top: 4px;">
+                Ex: se você fez 2 rebuys além do buy-in inicial, digite 2
+            </small>
+        </div>
+
         <div class="modal-field">
             <label class="modal-label">Cashout</label>
-            <input type="number" id="cashoutInput" class="modal-input" placeholder="0" min="0" step="1">
+            <input type="number" id="cashoutInput" class="modal-input" placeholder="0" min="0" step="1"
+                   style="width: 100%; padding: 12px; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 2px; color: var(--text-primary); font-size: 14px;">
         </div>
+
+        <!-- NOVO: mostra total investido -->
+        <div style="background: rgba(201, 169, 97, 0.1); border: 1px solid var(--border); padding: 12px; border-radius: 2px; margin-bottom: 15px;">
+            <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 6px;">Total Investido</div>
+            <div id="modalTotalInvested" style="font-size: 18px; color: var(--secondary); font-weight: 600;">$0.00</div>
+            <small style="color: var(--text-secondary); font-size: 10px;">
+                (buy-in base) × (1 + rebuys)
+            </small>
+        </div>
+
         <div class="modal-buttons">
             <button class="modal-btn modal-btn-save" onclick="saveCashout()">Salvar</button>
             <button class="modal-btn modal-btn-cancel" onclick="closeCashoutModal()">Cancelar</button>
@@ -1339,12 +1361,14 @@
     </div>
 </div>
 
+
 <div id="notificationContainer"></div>
 
 <script>
     let allTournamentsData = [];
     let filteredTournaments = [];
     let registered = new Set();
+    let buyins = {};             // { tournamentId: { count: N, total: amount, buyIns: [10, 10, 5] } }
     let selectedDays = new Set([1, 2, 3, 4, 5, 6, 0]);
     let cashouts = {};
     let currentCashoutId = null;
@@ -1715,6 +1739,9 @@
         document.addEventListener('keydown', e => {
             if (e.key === 'Escape') closeCashoutModal();
         });
+        // No setupEventListeners():
+        document.getElementById('rebuyCount').addEventListener('input', updateInvestedAmount);
+    
     }
 
     function applyFilters() {
@@ -1846,7 +1873,10 @@
 
     function updateControlDashboard() {
         const registeredTournaments = Array.from(registered).map(id => filteredTournaments.find(t => t.id === id)).filter(t => t);
-        const totalBuyin = registeredTournaments.reduce((sum, t) => sum + t.buyin, 0);
+        const totalBuyin = registeredTournaments.reduce((sum, t) => {
+            const invested = buyins[t.id]?.totalInvested ?? t.buyin;
+            return sum + invested;
+        }, 0);
         const totalCashoutVal = registeredTournaments.reduce((sum, t) => sum + (cashouts[t.id] !== undefined ? cashouts[t.id] : t.buyin), 0);
         const profit = totalCashoutVal - totalBuyin;
         const roi = totalBuyin > 0 ? (profit / totalBuyin * 100).toFixed(1) : 0;
@@ -1911,30 +1941,70 @@
         }
     }
 
-    function openCashoutModal(id) {
-        const t = filteredTournaments.find(x => x.id === id);
-        if (!t) return;
-        currentCashoutId = id;
-        document.getElementById('modalTournamentName').textContent = t.name;
-        document.getElementById('modalBuyin').textContent = t.buyin;
-        document.getElementById('cashoutInput').value = cashouts[id] || t.buyin;
-        document.getElementById('cashoutModal').classList.add('active');
+function openCashoutModal(id) {
+    const t = filteredTournaments.find(x => x.id === id);
+    if (!t) return;
+
+    currentCashoutId = id;
+    document.getElementById('modalTournamentName').textContent = t.name;
+    document.getElementById('modalBuyin').textContent = '$' + t.buyin;
+
+    // Se já tem dados salvos, carrega
+    const existing = buyins[id] || {};
+    document.getElementById('rebuyCount').value = existing.rebuyCount ?? 0;
+    document.getElementById('cashoutInput').value = cashouts[id] ?? t.buyin;
+
+    updateInvestedAmount();
+    document.getElementById('cashoutModal').classList.add('active');
+}
+
+function updateInvestedAmount() {
+    const baseBuyin = parseFloat(document.getElementById('modalBuyin').textContent.replace('$', '')) || 0;
+    const rebuyCount = parseFloat(document.getElementById('rebuyCount').value) || 0;
+
+    const totalInvested = baseBuyin * (1 + rebuyCount);
+
+    document.getElementById('modalTotalInvested').textContent = '$' + totalInvested.toFixed(2);
+    document.getElementById('modalTotalInvested').dataset.total = totalInvested;
+}
+
+function closeCashoutModal() {
+    document.getElementById('cashoutModal').classList.remove('active');
+    currentCashoutId = null;
+}
+
+function saveCashout() {
+    if (currentCashoutId === null) return;
+
+    const baseBuyin = parseFloat(document.getElementById('modalBuyin').textContent.replace('$', '')) || 0;
+    const rebuyCount = parseInt(document.getElementById('rebuyCount').value) || 0;
+    const cashoutValue = parseFloat(document.getElementById('cashoutInput').value) || 0;
+
+    const totalInvested = baseBuyin * (1 + rebuyCount);
+
+    // Salvar na estrutura
+    buyins[currentCashoutId] = {
+        baseBuyin: baseBuyin,
+        rebuyCount: rebuyCount,
+        totalInvested: totalInvested
+    };
+
+    cashouts[currentCashoutId] = cashoutValue;
+
+    closeCashoutModal();
+    showNotification('💰 Cashout Registrado', 
+        `Valor $${cashoutValue} com ${rebuyCount} rebuy(s) salvo com sucesso`, 
+        'success');
+
+    renderTable();
+    updateControlDashboard();
+    if (typeof updateBankrollMetrics === 'function') {
+        updateBankrollMetrics();
     }
 
-    function closeCashoutModal() {
-        document.getElementById('cashoutModal').classList.remove('active');
-        currentCashoutId = null;
-    }
-
-    function saveCashout() {
-        if (currentCashoutId === null) return;
-        const value = parseFloat(document.getElementById('cashoutInput').value) || 0;
-        cashouts[currentCashoutId] = value;
-        closeCashoutModal();
-        showNotification('💰 Cashout Registrado', `Valor de $${value} salvo com sucesso`, 'success');
-        renderTable();
-        updateControlDashboard();
-    }
+    saveCurrentUserState();
+    saveUsersToStorage();
+}
 
     function exportCSV() {
         const registeredTournaments = Array.from(registered).map(id => filteredTournaments.find(t => t.id === id)).filter(t => t);
@@ -2095,6 +2165,7 @@
     let bankrollChart = null;
 
     function updateBankrollMetrics() {
+        // Pegar torneios registrados que já têm cashout
         const registeredTournaments = Array.from(registered)
             .map(id => filteredTournaments.find(t => t.id === id))
             .filter(t => t && cashouts[t.id] !== undefined);
@@ -2109,17 +2180,43 @@
             document.getElementById('bankrollCurrentBank').textContent = '$0.00';
             document.getElementById('bankrollIdealABI').textContent = '$0.00';
             updateBankrollChart([]);
+            
+            // Limpar tabela mensal
+            const tbody = document.getElementById('bankrollMonthlyBody');
+            if (tbody) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="padding: 10px 0; text-align: center; color: var(--text-secondary);">
+                            Ainda não há dados suficientes (registre torneios com cashout).
+                        </td>
+                    </tr>
+                `;
+            }
             return;
         }
 
+        // ===== CÁLCULOS PRINCIPAIS (considerando rebuys) =====
         const totalTournaments = registeredTournaments.length;
-        const totalBuyin = registeredTournaments.reduce((sum, t) => sum + t.buyin, 0);
+        
+        // Total investido (buy-in + rebuys)
+        let totalBuyin = 0;
+        registeredTournaments.forEach(t => {
+            const invested = buyins[t.id]?.totalInvested ?? t.buyin;
+            totalBuyin += invested;
+        });
+        
         const avgBuyin = totalBuyin / totalTournaments;
+        
+        // Total cashout
         const totalCashout = registeredTournaments.reduce((sum, t) => sum + (cashouts[t.id] || 0), 0);
+        
+        // Lucro total
         const totalProfit = totalCashout - totalBuyin;
+        
+        // ROI
         const roi = totalBuyin > 0 ? (totalProfit / totalBuyin * 100) : 0;
 
-            // ===== LUCRO MÊS A MÊS =====
+        // ===== LUCRO MÊS A MÊS (com rebuys) =====
         const monthly = {}; // chave: 'YYYY-MM' -> dados agregados
 
         registeredTournaments.forEach(t => {
@@ -2138,14 +2235,16 @@
                 };
             }
 
-            const buyin = t.buyin || 0;
-            const cash  = cashouts[t.id] ?? 0;
+            // ⬇️ CORRIGIDO: usar totalInvested em vez de só t.buyin
+            const invested = buyins[t.id]?.totalInvested ?? t.buyin;
+            const cash     = cashouts[t.id] ?? 0;
 
-            monthly[key].buyin   += buyin;
+            monthly[key].buyin   += invested;
             monthly[key].cashout += cash;
             monthly[key].count   += 1;
         });
 
+        // Renderizar tabela mensal
         const tbody = document.getElementById('bankrollMonthlyBody');
         if (!tbody) return; // segurança
 
@@ -2188,30 +2287,45 @@
             tbody.innerHTML = rowsHtml;
         }
 
-        const itmCount = registeredTournaments.filter(t => cashouts[t.id] > t.buyin).length;
-        const itmPercent = totalTournaments > 0 ? (itmCount / totalTournaments * 100) : 0;
-
-        const initialBank = parseFloat(document.getElementById('bankrollInitialBank').value) || 1000;
-        const safetyFactor = parseFloat(document.getElementById('bankrollSafetyFactor').value) || 400;
-        const idealABI = initialBank / safetyFactor;
-        const currentBank = initialBank + totalProfit;
-
+        // ===== ATUALIZAR MÉTRICAS NOS CAMPOS =====
+        
+        // Total de torneios
         document.getElementById('bankrollTotalTournaments').textContent = totalTournaments;
+        
+        // Avg buy-in (média de investimento)
         document.getElementById('bankrollAvgBuyin').textContent = '$' + avgBuyin.toFixed(2);
 
+        // Lucro total (com cores)
         const profitElement = document.getElementById('bankrollTotalProfit');
         profitElement.textContent = '$' + totalProfit.toFixed(2);
-        profitElement.style.color = totalProfit >= 0 ? '#8b7355' : '#8b4949';
+        profitElement.style.color = totalProfit >= 0 ? 'var(--success)' : 'var(--danger)';
 
+        // ROI
         document.getElementById('bankrollROI').textContent = roi.toFixed(2) + '%';
+
+        // ITM (In The Money)
+        const itmCount = registeredTournaments.filter(t => cashouts[t.id] > (buyins[t.id]?.totalInvested ?? t.buyin)).length;
+        const itmPercent = totalTournaments > 0 ? (itmCount / totalTournaments * 100) : 0;
         document.getElementById('bankrollITM').textContent = itmPercent.toFixed(2) + '%';
+
+        // Prize total (soma de cashouts)
         document.getElementById('bankrollPrizeTotal').textContent = '$' + totalCashout.toFixed(2);
+
+        // ===== CONFIGURAÇÃO DE BANCA =====
+        const initialBank = parseFloat(document.getElementById('bankrollInitialBank').value) || 1000;
+        const safetyFactor = parseFloat(document.getElementById('bankrollSafetyFactor').value) || 400;
+        
+        // ABI Ideal
+        const idealABI = initialBank / safetyFactor;
         document.getElementById('bankrollIdealABI').textContent = '$' + idealABI.toFixed(2);
 
+        // Banca Atual = Banca Inicial + Lucro Total
+        const currentBank = initialBank + totalProfit;
         const currentBankElement = document.getElementById('bankrollCurrentBank');
         currentBankElement.textContent = '$' + currentBank.toFixed(2);
-        currentBankElement.style.color = currentBank >= initialBank ? '#8b7355' : '#8b4949';
+        currentBankElement.style.color = currentBank >= initialBank ? 'var(--success)' : 'var(--danger)';
 
+        // Atualizar gráfico
         updateBankrollChart(registeredTournaments);
     }
 
@@ -2247,7 +2361,7 @@
                     fill: true,
                     tension: 0.4,
                     pointBackgroundColor: '#4bc0c0',
-                    pointBorderColor: 'var(--bg-card)',
+                    pointBorderColor: '#4bc0c0',
                     pointBorderWidth: 2,
                     pointRadius: 4,
                     pointHoverRadius: 6
