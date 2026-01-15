@@ -1422,11 +1422,1451 @@
 
 <div id="notificationContainer"></div>
 
-<script>
-window.createNewUser = function() {
-    alert('Teste: Função carregada!');
-};
+<script>   
+    let usersData = {};
+    let currentUser = null; 
+    const USERS_STORAGE_KEY = 'pegaBlinderUsers_v1';
+    
+    function createNewUser() {
+        const name = prompt('Nome do novo usuário:');
+        if (!name || name.trim() === '') return;
 
-window.logout = function() {
-    alert('Logout clicado!');
-};
+        if (usersData[name]) {
+            alert('❌ Já existe um usuário com esse nome.');
+            return;
+        }
+
+        // Criar novo usuário vazio
+        usersData[name] = {
+            registered: [],
+            cashouts: {},
+            buyins: {},
+            bankrollInitialBank: 1000,
+            bankrollSafetyFactor: 400
+        };
+
+        // Salvar e recarregar seletor
+        saveUsersToStorage();
+        updateUserSelect();
+        
+        // Mudar para o novo usuário
+        onUserChange(name);
+        
+        showNotification('✅ Novo usuário criado', name, 'success');
+    }
+
+    function onUserChange(name) {
+        // Salvar estado do usuário anterior
+        saveCurrentUserState();
+        saveUsersToStorage();
+
+        // Mudar para novo usuário
+        currentUser = name;
+        applyUserState();
+        
+        // Atualizar select visual
+        const select = document.getElementById('userSelect');
+        if (select) {
+            select.value = name;
+        }
+    
+        console.log('👤 Usuário alterado para:', name);
+    }
+
+    function updateUserSelect() {
+        const select = document.getElementById('userSelect');
+        if (!select) return;
+
+        const usernames = Object.keys(usersData);
+        select.innerHTML = '';
+
+        usernames.forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            select.appendChild(opt);
+        });
+
+        if (currentUser && usernames.includes(currentUser)) {
+            select.value = currentUser;
+        }
+    }
+    
+    function saveCurrentUserState() {
+        if (!currentUser || !usersData[currentUser]) return;
+
+        // Salvar dados de registro e cashout
+        usersData[currentUser].registered = Array.from(registered);
+        usersData[currentUser].cashouts   = cashouts;
+        usersData[currentUser].buyins     = buyins;
+
+        // Salvar configuração de banca
+        const bankEl   = document.getElementById('bankrollInitialBank');
+        const safetyEl = document.getElementById('bankrollSafetyFactor');
+
+        if (bankEl) {
+            usersData[currentUser].bankrollInitialBank = parseFloat(bankEl.value) || 1000;
+        }
+        if (safetyEl) {
+            usersData[currentUser].bankrollSafetyFactor = parseFloat(safetyEl.value) || 400;
+        }
+    }
+
+    function applyUserState() {
+        if (!currentUser) return;
+
+        const data = usersData[currentUser] || {
+            registered: [],
+            cashouts: {},
+            buyins: {},
+            bankrollInitialBank: 1000,
+            bankrollSafetyFactor: 400
+        };
+
+        // Aplicar registered/cashouts
+        registered = new Set(data.registered || []);
+        cashouts   = data.cashouts || {};
+        buyins     = data.buyins || {};
+
+        // Aplicar configuração de banca
+        const bankEl   = document.getElementById('bankrollInitialBank');
+        const safetyEl = document.getElementById('bankrollSafetyFactor');
+
+        if (bankEl)   bankEl.value   = data.bankrollInitialBank  ?? 1000;
+        if (safetyEl) safetyEl.value = data.bankrollSafetyFactor ?? 400;
+
+        // Redesenhar tudo
+        renderTable();
+        updateControlDashboard();
+        if (typeof updateBankrollMetrics === 'function') {
+            updateBankrollMetrics();
+        }
+    }
+
+    function initUserSystem() {
+        // Carregar usuários do localStorage
+        loadUsersFromStorage();
+
+        // Se não houver nenhum usuário, criar padrão
+        if (Object.keys(usersData).length === 0) {
+            const defaultName = 'Jogador 1';
+            usersData[defaultName] = {
+                registered: [],
+                cashouts: {},
+                buyins: {},
+                bankrollInitialBank: 1000,
+                bankrollSafetyFactor: 400
+            };
+            currentUser = defaultName;
+            saveUsersToStorage();
+        } else {
+            // Pegar primeiro usuário como padrão
+            currentUser = Object.keys(usersData)[0];
+        }
+
+        // Popular seletor
+        updateUserSelect();
+
+        // Aplicar estado do usuário atual
+        applyUserState();
+        
+        console.log('👤 Sistema de usuários inicializado. Usuário atual:', currentUser);
+    }
+    
+    async function logout() {
+        saveCurrentUserState();
+        await saveToBackend();
+        
+        console.log('🔓 Fazendo logout...');
+        
+        registered = new Set();
+        cashouts = {};
+        buyins = {};
+        currentUser = null;
+        usersData = {};
+        localStorage.removeItem(USERS_STORAGE_KEY);
+        
+        alert('✅ Você foi desconectado. A página será recarregada.');
+        window.location.reload();
+    }
+    
+    async function loadFromBackend() {
+        try {
+            const response = await fetch('/api/bankroll', {
+                method: 'GET',
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                console.warn('❌ Erro ao carregar do servidor (offline)');
+                loadUsersFromStorageLocal();
+                return;
+            }
+
+            const data = await response.json();
+
+            // ✅ DIFERENÇA IMPORTANTE: Valida currentUser PRIMEIRO
+            if (!currentUser) {
+                // Se não há usuário ativo, tenta pegar do servidor/sessão
+                const sessionRes = await fetch('/api/auth/session', {
+                    credentials: 'include'
+                });
+                const session = await sessionRes.json();
+                if (session?.user?.email) {
+                    currentUser = session.user.email;
+                } else {
+                    currentUser = 'User_' + Date.now();
+                }
+            }
+
+            // Agora currentUser está garantido ✅
+            if (!usersData[currentUser]) {
+                usersData[currentUser] = {
+                    registered: [],
+                    cashouts: {},
+                    buyins: {},
+                    bankrollInitialBank: 1000,
+                    bankrollSafetyFactor: 400
+                };
+            }
+
+            usersData[currentUser].registered = data.registered || [];
+            usersData[currentUser].cashouts = data.cashouts || {};
+            usersData[currentUser].buyins = data.buyins || {};
+            usersData[currentUser].bankrollInitialBank = data.bankrollInitialBank || 1000;
+            usersData[currentUser].bankrollSafetyFactor = data.bankrollSafetyFactor || 400;
+
+            console.log('✅ Dados carregados do servidor');
+            
+        } catch (e) {
+            console.error('⚠️ Erro ao carregar:', e);
+            loadUsersFromStorageLocal();
+        }
+    }
+
+
+    function loadUsersFromStorage() {
+        try {
+            const raw = localStorage.getItem(USERS_STORAGE_KEY);
+            usersData = raw ? JSON.parse(raw) : {};
+            console.log('✅ Usuários carregados do localStorage');  // ← LOG AQUI!
+        } catch (e) {
+            console.error('❌ Erro ao carregar usuários:', e);  // ← LOG AQUI!
+            usersData = {};
+        }
+    }
+
+    async function saveToBackend() {
+        if (!currentUser || !usersData[currentUser]) {
+            console.warn('⚠️ Nenhum usuário para salvar');  // ← LOG AQUI!
+            return;
+        }
+
+        const userData = usersData[currentUser];
+
+        try {
+            const response = await fetch('/api/bankroll', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    registered: Array.from(userData.registered),
+                    buyins: userData.buyins || {},
+                    cashouts: userData.cashouts || {},
+                    bankrollInitialBank: userData.bankrollInitialBank || 1000,
+                    bankrollSafetyFactor: userData.bankrollSafetyFactor || 400
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('HTTP ' + response.status);  // ← Throw ao invés de return
+            }
+
+            console.log('✅ Dados salvos no servidor');
+            localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(usersData));  // ← Salva também localmente
+            
+        } catch (e) {
+            console.error('⚠️ Erro ao salvar (offline, salvando localmente):', e);  // ← Log melhorado
+            localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(usersData));
+        }
+    }
+
+    
+    let allTournamentsData = [];
+    let filteredTournaments = [];
+    let buyins = {};             // { tournamentId: { count: N, total: amount, buyIns: [10, 10, 5] } }
+    let selectedDays = new Set([1, 2, 3, 4, 5, 6, 0]);
+    let cashouts = {};
+    let currentCashoutId = null;
+    let apiOnline = false;
+    let registered = new Set();
+    let profiles = {};
+    let sortColumn = null;
+    let sortDirection = 'asc';
+    let updateInterval = null;
+
+    async function persistData() {
+        await fetch('/api/bankroll', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+                registered: Array.from(registered),
+                buyins: buyins,
+                cashouts: cashouts,
+                document.getElementById('bankrollInitialBank')?.addEventListener('change', function() {
+                    updateBankrollMetrics();
+                    saveCurrentUserState();
+                    saveToBackend(); 
+                }),
+                document.getElementById('bankrollSafetyFactor')?.addEventListener('change', function() {
+                    updateBankrollMetrics();
+                    saveCurrentUserState();
+                    saveToBackend(); 
+                });
+            });
+        }).catch(e => {
+            // Se falhar, salva em localStorage como backup
+            localStorage.setItem('pegaBlinderData', JSON.stringify({
+                registered: Array.from(registered),
+                buyins,
+                cashouts
+            }));
+        });
+    }
+
+    function calculateTournamentStatus(tournament) {
+        const now = new Date();
+        const [year, month, day] = tournament.date.split('-');
+        const [hours, minutes] = tournament.time.split(':');
+
+        const tournamentDateTime = new Date(year, parseInt(month) - 1, parseInt(day), parseInt(hours), parseInt(minutes));
+
+        // ✅ CORREÇÃO: Calcular quando Late Reg termina
+        // Late Reg dura `tournament.lateReg` minutos APÓS o início
+        const lateRegDurationMs = (tournament.lateReg || 30) * 60 * 1000;
+        const lateRegEndsAt = new Date(tournamentDateTime.getTime() + lateRegDurationMs);
+
+        // ✅ Se passou do fim de late reg → Fechado
+        if (lateRegEndsAt < now) {
+            return {
+                status: 'Fechado',
+                timeRemaining: null,
+                countdownText: 'Fechado'
+            };
+        }
+
+        const timeUntilStart = (tournamentDateTime - now) / 1000;
+        const timeUntilLateRegClose = (lateRegEndsAt - now) / 1000;
+
+        // ✅ Se começou MAS ainda está em late reg
+        if (timeUntilStart <= 0 && timeUntilLateRegClose > 0) {
+            const countdownText = formatCountdown(timeUntilLateRegClose);
+            return {
+                status: 'Late Reg',
+                timeRemaining: Math.max(0, timeUntilLateRegClose),
+                countdownText
+            };
+        }
+
+        // ✅ Ainda não começou (Aberto)
+        const countdownText = formatCountdown(timeUntilStart);
+        return {
+            status: 'Aberto',
+            timeRemaining: null,
+            countdownText
+        };
+    }
+
+
+    function formatCountdown(seconds) {
+        const s = Math.max(0, Math.floor(seconds));
+        const hours = Math.floor(s / 3600);
+        const minutes = Math.floor((s % 3600) / 60);
+        const secs = s % 60;
+
+        if (hours > 0) {
+            return `${hours}h ${minutes}m`;
+        } else if (minutes > 0) {
+            return `${minutes}m ${secs}s`;
+        } else {
+            return `${secs}s`;
+        }
+    }
+
+    function renderStatusWithCountdown(tournament) {
+        const info = calculateTournamentStatus(tournament);
+        const cls = `status-${info.status.toLowerCase().replace(' ', '-')}`;
+        return `
+            <div class="countdown-container">
+                <span class="status-badge ${cls}">${info.status}</span>
+                <span class="countdown-badge">⏱️ ${info.countdownText}</span>
+            </div>
+        `;
+    }
+
+    function toggleSection(element) {
+        element.classList.toggle('collapsed');
+        const content = element.nextElementSibling;
+        content.classList.toggle('collapsed');
+    }
+
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        sidebar.classList.toggle('open');
+        mainContent.classList.toggle('sidebar-open');
+    }
+
+
+    function renderProfilesList() {
+        const container = document.getElementById('profilesList');
+        if (Object.keys(profiles).length === 0) {
+            container.innerHTML = '<div style="font-size: 11px; color: var(--text-secondary); text-align: center; padding: 10px;">Nenhum perfil salvo</div>';
+            return;
+        }
+
+        container.innerHTML = Object.keys(profiles).map(name => `
+            <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+                <button class="btn-primary" onclick="loadProfile('${name}')" style="flex: 1; padding: 6px; font-size: 11px; margin-top: 0;">📂 ${name}</button>
+                <button class="btn-primary" onclick="deleteProfile('${name}')" style="flex: 0; width: auto; padding: 6px 8px; background: var(--danger); margin-top: 0;">❌</button>
+            </div>
+        `).join('');
+    }
+
+    function saveCurrentProfile() {
+        const name = document.getElementById('profileName').value.trim();
+        if (!name) {
+            showNotification('⚠️ Aviso', 'Digite um nome para o perfil', 'warning');
+            return;
+        }
+
+        if (profiles[name]) {
+            showNotification('⚠️ Aviso', 'Perfil com este nome já existe', 'warning');
+            return;
+        }
+
+        profiles[name] = {
+            days: Array.from(selectedDays),
+            rooms: Array.from(document.querySelectorAll('.room-filter:checked')).map(e => e.value),
+            types: Array.from(document.querySelectorAll('.type-filter:checked')).map(e => e.value),
+            priorities: Array.from(document.querySelectorAll('.priority-filter:checked')).map(e => e.value),
+            statuses: Array.from(document.querySelectorAll('.status-filter:checked')).map(e => e.value),
+            minBuyin: document.getElementById('minBuyin').value,
+            maxBuyin: document.getElementById('maxBuyin').value,
+            minGuaranteed: document.getElementById('minGuaranteed').value,
+            maxGuaranteed: document.getElementById('maxGuaranteed').value
+        };
+
+        saveProfilesToStorage();
+        renderProfilesList();
+        document.getElementById('profileName').value = '';
+        showNotification('✅ Salvo!', `Perfil "${name}" salvo com sucesso`, 'success');
+    }
+
+    function loadProfile(name) {
+        const profile = profiles[name];
+        if (!profile) return;
+
+        selectedDays = new Set(profile.days);
+        document.querySelectorAll('.weekday-btn').forEach(btn => {
+            const day = parseInt(btn.dataset.day);
+            if (selectedDays.has(day)) btn.classList.add('active');
+            else btn.classList.remove('active');
+        });
+
+        document.querySelectorAll('.room-filter').forEach(el => {
+            el.checked = profile.rooms.includes(el.value);
+        });
+        document.querySelectorAll('.type-filter').forEach(el => {
+            el.checked = profile.types.includes(el.value);
+        });
+        document.querySelectorAll('.priority-filter').forEach(el => {
+            el.checked = profile.priorities.includes(el.value);
+        });
+        document.querySelectorAll('.status-filter').forEach(el => {
+            el.checked = (profile.statuses || []).includes(el.value);
+        });
+
+        document.getElementById('minBuyin').value = profile.minBuyin || 0;
+        document.getElementById('maxBuyin').value = profile.maxBuyin || 500;
+        document.getElementById('minGuaranteed').value = profile.minGuaranteed || 0;
+        document.getElementById('maxGuaranteed').value = profile.maxGuaranteed || 999999;
+
+        applyFilters();
+        showNotification('📂 Carregado!', `Perfil "${name}" carregado com sucesso`, 'success');
+    }
+
+    function deleteProfile(name) {
+        if (confirm(`Tem certeza que deseja deletar o perfil "${name}"?`)) {
+            delete profiles[name];
+            saveProfilesToStorage();
+            renderProfilesList();
+            showNotification('🗑️ Deletado', `Perfil "${name}" foi removido`, 'warning');
+        }
+    }
+
+    async function loadTournamentsFromAPI() {
+        try {
+            const response = await fetch('/api/tournaments');
+            if (!response.ok) throw new Error(`Erro HTTP ${response.status}`);
+
+            const data = await response.json();
+
+            let tournaments = Array.isArray(data) ? data : data.tournaments || data.data || [];
+            if (tournaments.length === 0) throw new Error('Nenhum torneio encontrado na resposta');
+
+            // ✅ FILTRO: Apenas torneios de HOJE EM DIANTE
+            const isFutureOrToday = (dateStr) => {
+                const [year, month, day] = dateStr.split('-');
+                const now = new Date();
+                
+                // Pegar data de hoje (sem hora)
+                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                const tourneyDateOnly = new Date(year, parseInt(month) - 1, parseInt(day));
+                
+                // Retorna true se for hoje OU depois de hoje
+                return tourneyDateOnly >= today;
+            };
+            
+            const totalAntes = tournaments.length;
+            tournaments = tournaments.filter(t => {
+                return isFutureOrToday(t.date || '1970-01-01');
+            });
+
+            tournaments = tournaments.map((t, idx) => {
+                const [year, month, day] = t.date.split('-');
+                const dateObj = new Date(year, parseInt(month) - 1, parseInt(day));
+                const dayOfWeek = dateObj.getDay();
+
+                return {
+                    id: t.id || idx + 1,
+                    time: t.time || '00:00',
+                    date: t.date,
+                    site: t.site || 'GGPoker',
+                    name: t.name || 'Torneio',
+                    type: (t.type || 'REG').toUpperCase(),
+                    buyin: parseFloat(t.buyin) || 0,
+                    guaranteed: parseFloat(t.guaranteed) || 0,
+                    field: parseInt(t.field) || 0,
+                    lateReg: parseInt(t.lateReg) || 0,
+                    status: t.status || 'Aberto',
+                    priority: t.priority || 'medium',
+                    day: dayOfWeek
+                };
+            });
+
+            updateAPIStatus(true);
+            return tournaments;
+        } catch (error) {
+            updateAPIStatus(false, error.message);
+            showNotification('⚠️ Aviso', 'Usando dados padrão. ' + error.message, 'warning');
+            return getMockTournaments();
+        }
+    }
+
+    function updateAPIStatus(online, message = '') {
+        apiOnline = online;
+        const statusEl = document.getElementById('apiStatus');
+        if (online) {
+            statusEl.className = 'api-status online';
+            statusEl.textContent = '✅ Online';
+        } else {
+            statusEl.className = 'api-status offline';
+            statusEl.textContent = '❌ Offline - ' + (message || 'Erro desconhecido');
+        }
+    }
+
+    function getMockTournaments() {
+        const now = new Date();
+        const todayStr = now.toISOString().slice(0,10);
+        const tomorrow = new Date(now); tomorrow.setDate(now.getDate() + 1);
+        const tomorrowStr = tomorrow.toISOString().slice(0,10);
+
+        return [
+            { id: 1, time: '20:30', date: todayStr, site: 'GGPoker', name: 'Daily Hyper $20', type: 'HYPER', buyin: 20, guaranteed: 7000, field: 0, lateReg: 30, status: 'Aberto', priority: 'medium', day: now.getDay() },
+            { id: 2, time: '21:00', date: todayStr, site: 'GGPoker', name: 'Bounty $50', type: 'TURBO KO', buyin: 50, guaranteed: 30000, field: 0, lateReg: 45, status: 'Aberto', priority: 'high', day: now.getDay() },
+            { id: 3, time: '19:30', date: tomorrowStr, site: 'PokerStars', name: 'Sunday Special', type: 'REG', buyin: 11, guaranteed: 10000, field: 0, lateReg: 60, status: 'Aberto', priority: 'very-high', day: tomorrow.getDay() },
+        ];
+    }
+
+      
+
+    async function initializeApp() {
+        // Carregar dados do servidor (novo)
+        initUserSystem();
+        await loadFromBackend();
+        loadProfiles();
+        allTournamentsData = await loadTournamentsFromAPI();
+        const today = new Date();
+        const todayFormatted = today.toISOString().split('T')[0]; // YYYY-MM-DD
+        document.getElementById('fixedDate').value = todayFormatted;
+  
+        filteredTournaments = [...allTournamentsData];
+        applyFilters(); // ✅ Aplica filtro automático com a data de hoje
+        renderTable();
+        setupEventListeners();
+        updateControlDashboard();
+        
+        if (updateInterval) clearInterval(updateInterval);
+        updateInterval = setInterval(() => {
+            document.querySelectorAll('tr[data-tournament-row-id]').forEach(row => {
+                const id = parseInt(row.dataset.tournamentRowId);
+                const t = filteredTournaments.find(x => x.id === id);
+                if (!t) return;
+                const statusCell = row.querySelector('[data-status-cell]');
+                if (statusCell) statusCell.innerHTML = renderStatusWithCountdown(t);
+            });
+        }, 1000);
+    }
+
+    function setupEventListeners() {
+        document.querySelectorAll('.weekday-btn').forEach(btn => {
+            btn.addEventListener('click', e => {
+                const day = parseInt(e.target.dataset.day);
+                if (selectedDays.has(day)) {
+                    selectedDays.delete(day);
+                    e.target.classList.remove('active');
+                } else {
+                    selectedDays.add(day);
+                    e.target.classList.add('active');
+                }
+                applyFilters();
+            });
+        });
+
+        document.querySelectorAll('.view-btn').forEach(btn => {
+            btn.addEventListener('click', e => {
+                document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.view-content').forEach(v => v.classList.add('hidden'));
+
+                e.target.classList.add('active');
+                const viewId = e.target.dataset.view;
+                const viewEl = document.getElementById(viewId + 'View');
+                if (viewEl) {
+                    viewEl.classList.remove('hidden');
+                }
+
+                // Quando clicar na aba Bankroll, recalcula tudo
+                if (viewId === 'bankroll') {
+                    updateBankroll();
+                }
+            });
+        });
+
+
+        document.getElementById('applyFilters').addEventListener('click', applyFilters);
+
+        document.getElementById('reloadAPI').addEventListener('click', async () => {
+            allTournamentsData = await loadTournamentsFromAPI();
+            filteredTournaments = [...allTournamentsData];
+            applyFilters();
+            showNotification('✅ Atualizado', 'Dados recarregados da API', 'success');
+        });
+
+        document.getElementById('saveProfile').addEventListener('click', saveCurrentProfile);
+
+        document.getElementById('fixedDate').addEventListener('change', applyFilters);
+
+        document.querySelectorAll('.room-filter, .type-filter, .priority-filter, .status-filter').forEach(el => {
+            el.addEventListener('change', applyFilters);
+        });
+
+        document.getElementById('minBuyin').addEventListener('input', applyFilters);
+        document.getElementById('maxBuyin').addEventListener('input', applyFilters);
+        document.getElementById('minGuaranteed').addEventListener('input', applyFilters);
+        document.getElementById('maxGuaranteed').addEventListener('input', applyFilters);
+
+        document.querySelectorAll('th[data-column]').forEach(th => {
+            th.addEventListener('click', e => {
+                const column = e.target.dataset.column;
+                if (sortColumn === column) sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+                else {
+                    sortColumn = column;
+                    sortDirection = 'asc';
+                }
+                applyFilters();
+            });
+        });
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') closeCashoutModal();
+        });
+        // No setupEventListeners():
+        document.getElementById('rebuyCount').addEventListener('input', updateInvestedAmount);
+    
+    }
+
+    function applyFilters() {
+        const rooms = Array.from(document.querySelectorAll('.room-filter:checked')).map(e => e.value);
+        const types = Array.from(document.querySelectorAll('.type-filter:checked')).map(e => e.value);
+        const priorities = Array.from(document.querySelectorAll('.priority-filter:checked')).map(e => e.value);
+        const statuses = Array.from(document.querySelectorAll('.status-filter:checked')).map(e => e.value);
+        const minBuyin = parseInt(document.getElementById('minBuyin').value) || 0;
+        const maxBuyin = parseInt(document.getElementById('maxBuyin').value) || 999999;
+        const minGuaranteed = parseInt(document.getElementById('minGuaranteed').value) || 0;
+        const maxGuaranteed = parseInt(document.getElementById('maxGuaranteed').value) || 999999;
+        const fixedDateValue = document.getElementById('fixedDate').value;
+
+        filteredTournaments = allTournamentsData.filter(t => {
+            const statusInfo = calculateTournamentStatus(t);
+            t.status = statusInfo.status;
+            t.timeRemaining = statusInfo.timeRemaining;
+
+            const matchDate = !fixedDateValue || t.date === fixedDateValue;
+
+            return rooms.includes(t.site) &&
+                types.includes(t.type) &&
+                priorities.includes(t.priority) &&
+                statuses.includes(statusInfo.status) &&
+                t.buyin >= minBuyin &&
+                t.buyin <= maxBuyin &&
+                t.guaranteed >= minGuaranteed &&
+                t.guaranteed <= maxGuaranteed &&
+                selectedDays.has(t.day) &&
+                matchDate;
+        });
+
+        if (sortColumn && sortColumn !== 'time' && sortColumn !== 'date') {
+            filteredTournaments.sort((a, b) => {
+                let aVal = a[sortColumn];
+                let bVal = b[sortColumn];
+
+                if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+                if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+
+                if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+                if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+
+                if (a.date !== b.date) return a.date.localeCompare(b.date);
+                return a.time.localeCompare(b.time);
+            });
+        } else if (sortColumn === 'time') {
+            filteredTournaments.sort((a, b) => {
+                if (a.time !== b.time)
+                    return sortDirection === 'asc' ? a.time.localeCompare(b.time) : b.time.localeCompare(a.time);
+                return sortDirection === 'asc' ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date);
+            });
+        } else if (sortColumn === 'date') {
+            filteredTournaments.sort((a, b) => {
+                if (a.date !== b.date)
+                    return sortDirection === 'asc' ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date);
+                return sortDirection === 'asc' ? a.time.localeCompare(b.time) : b.time.localeCompare(a.time);
+            });
+        } else {
+            filteredTournaments.sort((a, b) => {
+                if (a.date !== b.date) return a.date.localeCompare(b.date);
+                return a.time.localeCompare(b.time);
+            });
+        }
+
+        renderTable();
+        updateControlDashboard();
+    }
+
+    function renderTable() {
+        renderRegisteredTournamentsTable();
+        const tbody = document.getElementById('tournamentBody');
+
+        document.querySelectorAll('th[data-column]').forEach(th => {
+            th.classList.remove('sort-asc', 'sort-desc');
+            if (th.dataset.column === sortColumn) th.classList.add(`sort-${sortDirection}`);
+        });
+
+        const priorityLabels = {
+            'very-low': 'Very Low',
+            'low': 'Low',
+            'medium': 'Medium',
+            'high': 'High',
+            'very-high': 'Very High'
+        };
+
+        tbody.innerHTML = filteredTournaments.map(t => {
+            const typeClass = t.type.toLowerCase().replace(' ', '-');
+
+            return `
+                <tr data-tournament-row-id="${t.id}" class="${registered.has(t.id) ? 'registered' : ''}">
+                    <td><span style="color: var(--secondary); font-weight: 700;">${t.time}</span></td>
+                    <td><span style="color: var(--text-secondary);">${t.date}</span></td>
+                    <td><span class="site-badge site-${t.site.toLowerCase().replace(/\s/g, '')}">${t.site}</span></td>
+                    <td><span style="color: var(--secondary); font-weight: 600;">${t.name}</span></td>
+                    <td><span class="badge badge-${typeClass}">${t.type}</span></td>
+                    <td>$${t.buyin}</td>
+                    <td>$${(t.guaranteed / 1000).toFixed(0)}K</td>
+                    <td>${t.field}</td>
+                    <td><span class="badge badge-priority badge-${t.priority}">${priorityLabels[t.priority]}</span></td>
+                    <td data-status-cell>${renderStatusWithCountdown(t)}</td>
+                    <td><button class="btn-register ${registered.has(t.id) ? 'active' : ''}" data-id="${t.id}">${registered.has(t.id) ? '✅ Registrado' : 'Registrar'}</button></td>
+                    <td><button class="btn-cashout ${!registered.has(t.id) ? 'disabled' : ''}" onclick="openCashoutModal(${t.id})" ${!registered.has(t.id) ? 'disabled' : ''}>💰 Cashout</button></td>
+                </tr>
+            `;
+        }).join('');
+
+        document.querySelectorAll('.btn-register').forEach(btn => {
+            btn.addEventListener('click', e => {
+                const id = parseInt(e.target.dataset.id);
+                toggleRegister(id);
+                updateControlDashboard();
+            });
+        });
+    }
+    function renderRegisteredTournamentsTable() {
+        const registeredTournaments = Array.from(registered)
+            .map(id => filteredTournaments.find(t => t.id === id))
+            .filter(t => t);
+
+        const tbody = document.getElementById('registeredTournamentsBody');
+        const badge = document.getElementById('registeredCountBadge');
+
+        badge.textContent = registeredTournaments.length;
+
+        if (registeredTournaments.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                        Nenhum torneio registrado ainda. Clique em "Registrar" na tabela abaixo.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = registeredTournaments.map(t => {
+            const baseBuyin = t.buyin || 0;
+            const rebuyData = buyins[t.id] || {};
+            const rebuyCount = rebuyData.rebuyCount ?? 0;
+            const totalInvested = rebuyData.totalInvested ?? baseBuyin;
+            const cashout = cashouts[t.id] ?? 0;
+            const profit = cashout - totalInvested;
+
+            const profitColor = profit >= 0 ? 'var(--success)' : 'var(--danger)';
+
+            return `
+                <tr style="border-bottom: 1px solid var(--border); background: rgba(201, 169, 97, 0.02);">
+                    <td style="padding: 8px 10px; color: var(--text-secondary);">${t.time}</td>
+                    <td style="padding: 8px 10px; color: var(--text-primary); font-weight: 600;">${t.name}</td>
+                    <td style="padding: 8px 10px; text-align: center; color: var(--text-secondary);">$${baseBuyin}</td>
+                    <td style="padding: 8px 10px; text-align: center; color: var(--secondary); font-weight: 600;">
+                        ${rebuyCount > 0 ? `+${rebuyCount}` : '-'}
+                    </td>
+                    <td style="padding: 8px 10px; text-align: center; color: var(--text-primary); font-weight: 600;">
+                        $${totalInvested.toFixed(2)}
+                    </td>
+                    <td style="padding: 8px 10px; text-align: center; color: var(--text-primary); font-weight: 600;">
+                        ${cashout > 0 ? '$' + cashout.toFixed(2) : '⏳'}
+                    </td>
+                    <td style="padding: 8px 10px; text-align: center; color: ${profitColor}; font-weight: 600;">
+                        ${cashout > 0 ? '$' + profit.toFixed(2) : '-'}
+                    </td>
+                    <td style="padding: 8px 10px; text-align: center;">
+                        <button class="btn-cashout" onclick="openCashoutModal(${t.id})"
+                                style="padding: 4px 8px; font-size: 10px;">
+                            ${cashout > 0 ? '✏️ Editar' : '💰 Cashout'}
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function toggleRegister(id) {
+        if (registered.has(id)) {
+            registered.delete(id);
+            delete cashouts[id];
+            showNotification('❌ Removido', 'Registro cancelado', 'warning');
+        } else {
+            registered.add(id);
+            const t = filteredTournaments.find(x => x.id === id);
+            cashouts[id] = t ? t.buyin : 0;
+            showNotification('✅ Registrado!', `${t ? t.name : 'Torneio'} adicionado`, 'success');
+        }
+        renderTable();
+        updateControlDashboard();
+        saveCurrentUserState();
+        saveToBackend();
+    }
+
+    function updateControlDashboard() {
+        const registeredTournaments = Array.from(registered)
+            .map(id => filteredTournaments.find(t => t.id === id))
+            .filter(t => t);
+
+        // Total investido (considerando rebuys)
+        const totalBuyin = registeredTournaments.reduce((sum, t) => {
+            const invested = buyins[t.id]?.totalInvested ?? t.buyin;
+            return sum + invested;
+        }, 0);
+
+        // Total cashout (só quando está definido, senão usa 0)
+        const totalCashoutVal = registeredTournaments.reduce((sum, t) => {
+            return sum + (cashouts[t.id] !== undefined ? cashouts[t.id] : 0);
+        }, 0);
+
+        const profit = totalCashoutVal - totalBuyin;
+        const roi = totalBuyin > 0 ? (profit / totalBuyin * 100).toFixed(1) : 0;
+
+        // ===== ATUALIZAR DASHBOARD CARDS =====
+        document.getElementById('dashTournamentsTotal').textContent = filteredTournaments.length;
+        document.getElementById('dashRegistered').textContent = registeredTournaments.length;
+        document.getElementById('dashTotalBuyin').textContent = totalBuyin.toFixed(2);
+        document.getElementById('dashTotalCashout').textContent = totalCashoutVal.toFixed(2);
+
+        // Lucro/Prejuízo com cor
+        const profitElement = document.getElementById('dashProfit');
+        const profitROI = document.getElementById('dashProfitROI');
+        profitElement.textContent = profit.toFixed(2);
+        profitElement.style.color = profit > 0 ? 'var(--success)' : profit < 0 ? 'var(--danger)' : 'var(--text-primary)';
+        profitROI.textContent = `ROI: ${roi}%`;
+
+        // Mostrar/esconder botões de exportação
+        const exportButtons = document.getElementById('exportButtons');
+        exportButtons.style.display = registeredTournaments.length > 0 ? 'flex' : 'none';
+
+        // ===== TABELA DE HISTÓRICO =====
+        const historyContainer = document.getElementById('historyContainer');
+        
+        if (registeredTournaments.length > 0) {
+            historyContainer.innerHTML = `
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Torneio</th>
+                            <th>Sala</th>
+                            <th>Tipo</th>
+                            <th>Buy-in</th>
+                            <th>Rebuy</th>
+                            <th>Investido</th>
+                            <th>Cashout</th>
+                            <th>Resultado</th>
+                            <th>ROI</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${registeredTournaments.map((t, idx) => {
+                            // ⬇️ NOVO: calcular dados com rebuy
+                            const baseBuyin = t.buyin;
+                            const rebuyData = buyins[t.id] || {};
+                            const rebuyCount = rebuyData.rebuyCount ?? 0;
+                            const totalInvested = rebuyData.totalInvested ?? baseBuyin;
+                            
+                            const cashout = cashouts[t.id] !== undefined ? cashouts[t.id] : null;
+                            
+                            let resultado = '-';
+                            let roiLine = '-';
+                            let resultColor = '';
+                            
+                            if (cashout !== null) {
+                                resultado = (cashout - totalInvested).toFixed(2);
+                                roiLine = totalInvested > 0 ? (resultado / totalInvested * 100).toFixed(1) : '-';
+                                resultColor = resultado >= 0 ? 'positive' : 'negative';
+                            }
+                            
+                            return `
+                                <tr style="background: ${idx % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent'}">
+                                    <td>${t.name}</td>
+                                    <td>${t.site}</td>
+                                    <td>${t.type}</td>
+                                    <td>$${baseBuyin}</td>
+                                    <td style="text-align: center; color: var(--secondary); font-weight: 600;">
+                                        ${rebuyCount > 0 ? '+' + rebuyCount : '-'}
+                                    </td>
+                                    <td style="font-weight: 600;">$${totalInvested.toFixed(2)}</td>
+                                    <td>${cashout !== null ? '$' + cashout.toFixed(2) : '⏳'}</td>
+                                    <td class="${resultColor}">${resultado}</td>
+                                    <td class="${resultColor}">${roiLine}%</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+        } else {
+            historyContainer.innerHTML = '<div style="color: var(--text-secondary); font-size: 12px; text-align: center; padding: 20px;">Nenhum torneio registrado ainda</div>';
+        }
+
+        // Chamar renderizar a tabela de torneios registrados no topo
+        renderRegisteredTournamentsTable();
+    }
+
+    function openCashoutModal(id) {
+    const t = filteredTournaments.find(x => x.id === id);
+    if (!t) return;
+
+    currentCashoutId = id;
+    document.getElementById('modalTournamentName').textContent = t.name;
+    document.getElementById('modalBuyin').textContent = '$' + t.buyin;
+
+    // Se já tem dados salvos, carrega
+    const existing = buyins[id] || {};
+    document.getElementById('rebuyCount').value = existing.rebuyCount ?? 0;
+    document.getElementById('cashoutInput').value = cashouts[id] ?? t.buyin;
+
+    updateInvestedAmount();
+    document.getElementById('cashoutModal').classList.add('active');
+}
+
+    function updateInvestedAmount() {
+    const baseBuyin = parseFloat(document.getElementById('modalBuyin').textContent.replace('$', '')) || 0;
+    const rebuyCount = parseFloat(document.getElementById('rebuyCount').value) || 0;
+
+    const totalInvested = baseBuyin * (1 + rebuyCount);
+
+    document.getElementById('modalTotalInvested').textContent = '$' + totalInvested.toFixed(2);
+    document.getElementById('modalTotalInvested').dataset.total = totalInvested;
+}
+
+    function closeCashoutModal() {
+    document.getElementById('cashoutModal').classList.remove('active');
+    currentCashoutId = null;
+}
+
+    function saveCashout() {
+    if (currentCashoutId === null) return;
+
+    const baseBuyin = parseFloat(document.getElementById('modalBuyin').textContent.replace('$', '')) || 0;
+    const rebuyCount = parseInt(document.getElementById('rebuyCount').value) || 0;
+    const cashoutValue = parseFloat(document.getElementById('cashoutInput').value) || 0;
+
+    const totalInvested = baseBuyin * (1 + rebuyCount);
+
+    // Salvar na estrutura
+    buyins[currentCashoutId] = {
+        baseBuyin: baseBuyin,
+        rebuyCount: rebuyCount,
+        totalInvested: totalInvested
+    };
+
+    cashouts[currentCashoutId] = cashoutValue;
+
+    closeCashoutModal();
+    showNotification('💰 Cashout Registrado', 
+        `Valor $${cashoutValue} com ${rebuyCount} rebuy(s) salvo com sucesso`, 
+        'success');
+
+    renderTable();
+    updateControlDashboard();
+    if (typeof updateBankrollMetrics === 'function') {
+        updateBankrollMetrics();
+    }
+
+    saveCurrentUserState();
+    saveToBackend();
+}
+
+    function exportCSV() {
+        const registeredTournaments = Array.from(registered).map(id => filteredTournaments.find(t => t.id === id)).filter(t => t);
+        if (registeredTournaments.length === 0) {
+            showNotification('⚠️ Aviso', 'Nenhum torneio registrado para exportar', 'warning');
+            return;
+        }
+
+        let csv = 'Torneio,Sala,Tipo,Buy-in,Cashout,Lucro/Prejuízo,ROI,Data\n';
+        const today = new Date().toLocaleDateString('pt-BR');
+
+        registeredTournaments.forEach(t => {
+            const cashout = cashouts[t.id] !== undefined ? cashouts[t.id] : 'Pendente';
+            let profit = '';
+            let roi = '';
+            if (cashout !== 'Pendente') {
+                profit = (cashout - t.buyin).toFixed(2);
+                roi = (profit / t.buyin * 100).toFixed(1);
+            } else {
+                profit = 'Pendente';
+                roi = 'Pendente';
+            }
+            csv += `${t.name},${t.site},${t.type},${t.buyin},${cashout},${profit},${roi},${today}\n`;
+        });
+
+        const bom = '\ufeff';
+        const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.download = `pega-blinder-${today.replace(/\//g, '-')}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(() => {
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }, 1000);
+
+        showNotification('✅ Exportado!', `Histórico exportado como CSV (${registeredTournaments.length} torneios)`, 'success');
+    }
+
+    function exportPDF() {
+        const registeredTournaments = Array.from(registered).map(id => filteredTournaments.find(t => t.id === id)).filter(t => t);
+        if (registeredTournaments.length === 0) {
+            showNotification('⚠️ Aviso', 'Nenhum torneio registrado para exportar', 'warning');
+            return;
+        }
+
+        const totalBuyin = registeredTournaments.reduce((sum, t) => sum + t.buyin, 0);
+        const totalCashout = registeredTournaments.reduce((sum, t) => sum + (cashouts[t.id] !== undefined ? cashouts[t.id] : t.buyin), 0);
+        const profit = totalCashout - totalBuyin;
+        const roi = totalBuyin > 0 ? (profit / totalBuyin * 100).toFixed(1) : 0;
+        const today = new Date().toLocaleDateString('pt-BR');
+
+        let html = `
+            <div style="font-family: Georgia, serif; padding: 20px; color: #333;">
+                <h1 style="text-align:center; color:#8b7355; margin-bottom: 10px;">🎯 Pega Blinder Lobby</h1>
+                <p style="text-align:center; color: #333; margin-bottom: 20px;"><strong>Data:</strong> ${today}</p>
+                <hr style="border: none; border-top: 2px solid #8b7355; margin: 20px 0;">
+                <h2 style="color: #8b7355; margin-top: 20px;">Resumo Financeiro</h2>
+                <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
+                    <tr style="background: #f5f5f5;">
+                        <td style="padding: 12px; border: 1px solid #ddd; color: #333;"><strong>Total Buy-in:</strong></td>
+                        <td style="padding: 12px; border: 1px solid #ddd; text-align: right; color: #333;"><strong>$${totalBuyin.toFixed(2)}</strong></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 12px; border: 1px solid #ddd; color: #333;"><strong>Total Cashout:</strong></td>
+                        <td style="padding: 12px; border: 1px solid #ddd; text-align: right; color: #333;"><strong>$${totalCashout.toFixed(2)}</strong></td>
+                    </tr>
+                    <tr style="background: ${profit >= 0 ? '#d4edda' : '#f8d7da'};">
+                        <td style="padding: 12px; border: 1px solid #ddd; color: #333;"><strong>Lucro/Prejuízo:</strong></td>
+                        <td style="padding: 12px; border: 1px solid #ddd; text-align: right; color: ${profit >= 0 ? '#155724' : '#721c24'}; font-weight: bold;">$${profit.toFixed(2)}</td>
+                    </tr>
+                    <tr style="background: ${profit >= 0 ? '#d4edda' : '#f8d7da'};">
+                        <td style="padding: 12px; border: 1px solid #ddd; color: #333;"><strong>ROI:</strong></td>
+                        <td style="padding: 12px; border: 1px solid #ddd; text-align: right; color: ${profit >= 0 ? '#155724' : '#721c24'}; font-weight: bold;">${roi}%</td>
+                    </tr>
+                </table>
+                <h2 style="color: #8b7355; margin-top: 30px;">Torneios Registrados</h2>
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                    <thead>
+                        <tr style="background: #1a1813; color: #c9a961;">
+                            <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Torneio</th>
+                            <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Sala</th>
+                            <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Tipo</th>
+                            <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">Buy-in</th>
+                            <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">Cashout</th>
+                            <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">Resultado</th>
+                            <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">ROI</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${registeredTournaments.map((t, idx) => {
+                            const cashout = cashouts[t.id] !== undefined ? cashouts[t.id] : '-';
+                            let resultado = '-';
+                            let roi_calc = '-';
+                            if (cashout !== '-') {
+                                resultado = (cashout - t.buyin).toFixed(2);
+                                roi_calc = (resultado / t.buyin * 100).toFixed(1);
+                            }
+                            return `
+                                <tr style="background: ${idx % 2 === 0 ? '#f9f9f9' : 'white'};">
+                                    <td style="padding: 10px; border: 1px solid #ddd; color: #333;">${t.name}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd; color: #333;">${t.site}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd; color: #333;">${t.type}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #333;">$${t.buyin}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #333;">$${cashout}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #333;">${resultado}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #333;">${roi_calc}%</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+                <p style="text-align: center; color: #666; margin-top: 30px; font-size: 10px;">Gerado em ${new Date().toLocaleString('pt-BR')}</p>
+            </div>
+        `;
+
+        const element = document.createElement('div');
+        element.innerHTML = html;
+
+        if (typeof window.html2pdf !== 'undefined' && window.html2pdf !== null) {
+            const opt = {
+                margin: 10,
+                filename: `pega-blinder-${today.replace(/\//g, '-')}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, allowTaint: true },
+                jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+            };
+
+            window.html2pdf().set(opt).from(element).save()
+                .then(() => {
+                    showNotification('✅ Exportado!', `PDF gerado (${registeredTournaments.length} torneios)`, 'success');
+                })
+                .catch(err => {
+                    showNotification('⚠️ Erro no PDF', 'Tentando exportar como CSV...', 'warning');
+                    setTimeout(() => exportCSV(), 500);
+                });
+        } else {
+            showNotification('⚠️ Aviso', 'Biblioteca PDF não carregada. Exportando como CSV...', 'warning');
+            exportCSV();
+        }
+    }
+
+    function showNotification(title, message, type = 'success') {
+        const container = document.getElementById('notificationContainer');
+        const toast = document.createElement('div');
+        toast.className = `notification-toast ${type}`;
+        toast.innerHTML = `<strong>${title}</strong><p>${message}</p>`;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    }
+
+    // ===== GESTÃO DE BANKROLL =====
+    let bankrollChart = null;
+
+    function updateBankrollMetrics() {
+        // Pegar torneios registrados que já têm cashout
+        const registeredTournaments = Array.from(registered)
+            .map(id => filteredTournaments.find(t => t.id === id))
+            .filter(t => t && cashouts[t.id] !== undefined);
+
+        if (registeredTournaments.length === 0) {
+            document.getElementById('bankrollTotalTournaments').textContent = '0';
+            document.getElementById('bankrollAvgBuyin').textContent = '$0.00';
+            document.getElementById('bankrollTotalProfit').textContent = '$0.00';
+            document.getElementById('bankrollROI').textContent = '0%';
+            document.getElementById('bankrollITM').textContent = '0%';
+            document.getElementById('bankrollPrizeTotal').textContent = '$0.00';
+            document.getElementById('bankrollCurrentBank').textContent = '$0.00';
+            document.getElementById('bankrollIdealABI').textContent = '$0.00';
+            updateBankrollChart([]);
+            
+            // Limpar tabela mensal
+            const tbody = document.getElementById('bankrollMonthlyBody');
+            if (tbody) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="padding: 10px 0; text-align: center; color: var(--text-secondary);">
+                            Ainda não há dados suficientes (registre torneios com cashout).
+                        </td>
+                    </tr>
+                `;
+            }
+            return;
+        }
+
+        // ===== CÁLCULOS PRINCIPAIS (considerando rebuys) =====
+        const totalTournaments = registeredTournaments.length;
+        
+        // Total investido (buy-in + rebuys)
+        let totalBuyin = 0;
+        registeredTournaments.forEach(t => {
+            const invested = buyins[t.id]?.totalInvested ?? t.buyin;
+            totalBuyin += invested;
+        });
+        
+        const avgBuyin = totalBuyin / totalTournaments;
+        
+        // Total cashout
+        const totalCashout = registeredTournaments.reduce((sum, t) => sum + (cashouts[t.id] || 0), 0);
+        
+        // Lucro total
+        const totalProfit = totalCashout - totalBuyin;
+        
+        // ROI
+        const roi = totalBuyin > 0 ? (totalProfit / totalBuyin * 100) : 0;
+
+        // ===== LUCRO MÊS A MÊS (com rebuys) =====
+        const monthly = {}; // chave: 'YYYY-MM' -> dados agregados
+
+        registeredTournaments.forEach(t => {
+            // data no formato 'YYYY-MM-DD'
+            const dateStr = t.date;
+            if (!dateStr) return;
+
+            const [year, month] = dateStr.split('-'); // '2026', '01'
+            const key = `${year}-${month}`;
+
+            if (!monthly[key]) {
+                monthly[key] = {
+                    buyin: 0,
+                    cashout: 0,
+                    count: 0
+                };
+            }
+
+            // ⬇️ CORRIGIDO: usar totalInvested em vez de só t.buyin
+            const invested = buyins[t.id]?.totalInvested ?? t.buyin;
+            const cash     = cashouts[t.id] ?? 0;
+
+            monthly[key].buyin   += invested;
+            monthly[key].cashout += cash;
+            monthly[key].count   += 1;
+        });
+
+        // Renderizar tabela mensal
+        const tbody = document.getElementById('bankrollMonthlyBody');
+        if (!tbody) return; // segurança
+
+        const keys = Object.keys(monthly);
+
+        if (keys.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" style="padding: 10px 0; text-align: center; color: var(--text-secondary);">
+                        Ainda não há dados suficientes (registre torneios com cashout).
+                    </td>
+                </tr>
+            `;
+        } else {
+            // ordenar por ano/mês crescente
+            keys.sort((a, b) => a.localeCompare(b)); // '2026-01', '2026-02', ...
+
+            const rowsHtml = keys.map(key => {
+                const data = monthly[key];
+                const profit = data.cashout - data.buyin;
+                const roiMonth = data.buyin > 0 ? (profit / data.buyin * 100) : 0;
+
+                const [y, m] = key.split('-');
+                const label = `${m}/${y}`; // ex: 01/2026
+
+                return `
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <td style="padding: 8px 0; color: var(--text-secondary);">${label}</td>
+                        <td style="padding: 8px 0; text-align: right;">${data.count}</td>
+                        <td style="padding: 8px 0; text-align: right;">$${data.buyin.toFixed(2)}</td>
+                        <td style="padding: 8px 0; text-align: right;">$${data.cashout.toFixed(2)}</td>
+                        <td style="padding: 8px 0; text-align: right; color: ${profit >= 0 ? 'var(--success)' : 'var(--danger)'};">
+                            $${profit.toFixed(2)}
+                        </td>
+                        <td style="padding: 8px 0; text-align: right;">${roiMonth.toFixed(2)}%</td>
+                    </tr>
+                `;
+            }).join('');
+
+            tbody.innerHTML = rowsHtml;
+        }
+
+        // ===== ATUALIZAR MÉTRICAS NOS CAMPOS =====
+        
+        // Total de torneios
+        document.getElementById('bankrollTotalTournaments').textContent = totalTournaments;
+        
+        // Avg buy-in (média de investimento)
+        document.getElementById('bankrollAvgBuyin').textContent = '$' + avgBuyin.toFixed(2);
+
+        // Lucro total (com cores)
+        const profitElement = document.getElementById('bankrollTotalProfit');
+        profitElement.textContent = '$' + totalProfit.toFixed(2);
+        profitElement.style.color = totalProfit >= 0 ? 'var(--success)' : 'var(--danger)';
+
+        // ROI
+        document.getElementById('bankrollROI').textContent = roi.toFixed(2) + '%';
+
+        // ITM (In The Money)
+        const itmCount = registeredTournaments.filter(t => cashouts[t.id] > (buyins[t.id]?.totalInvested ?? t.buyin)).length;
+        const itmPercent = totalTournaments > 0 ? (itmCount / totalTournaments * 100) : 0;
+        document.getElementById('bankrollITM').textContent = itmPercent.toFixed(2) + '%';
+
+        // Prize total (soma de cashouts)
+        document.getElementById('bankrollPrizeTotal').textContent = '$' + totalCashout.toFixed(2);
+
+        // ===== CONFIGURAÇÃO DE BANCA =====
+        const initialBank = parseFloat(document.getElementById('bankrollInitialBank').value) || 1000;
+        const safetyFactor = parseFloat(document.getElementById('bankrollSafetyFactor').value) || 400;
+        
+        // ABI Ideal
+        const idealABI = initialBank / safetyFactor;
+        document.getElementById('bankrollIdealABI').textContent = '$' + idealABI.toFixed(2);
+
+        // Banca Atual = Banca Inicial + Lucro Total
+        const currentBank = initialBank + totalProfit;
+        const currentBankElement = document.getElementById('bankrollCurrentBank');
+        currentBankElement.textContent = '$' + currentBank.toFixed(2);
+        currentBankElement.style.color = currentBank >= initialBank ? 'var(--success)' : 'var(--danger)';
+
+        // Atualizar gráfico
+        updateBankrollChart(registeredTournaments);
+    }
+
+    function updateBankrollChart(tournaments) {
+        const ctx = document.getElementById('bankrollChart');
+        if (!ctx || typeof Chart === 'undefined') return;
+
+        let cumulativeProfit = 0;
+        const labels = [];
+        const data = [];
+
+        tournaments.forEach((t, index) => {
+            const profit = (cashouts[t.id] || t.buyin) - t.buyin;
+            cumulativeProfit += profit;
+            labels.push((index + 1).toString());
+            data.push(cumulativeProfit);
+        });
+
+        if (bankrollChart) {
+            bankrollChart.destroy();
+        }
+
+        bankrollChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Lucro Acumulado ($)',
+                    data: data,
+                    borderColor: '#4bc0c0',
+                    backgroundColor: 'rgba(75, 192, 192, 0.15)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#4bc0c0',
+                    pointBorderColor: '#4bc0c0',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: {
+                            color: 'var(--text-primary)',
+                            font: { size: 12 }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: '#ffffff' },
+                        grid: { color: 'var(--border)' }
+                    },
+                    x: {
+                        ticks: { color: '#ffffff' },
+                        grid: { color: 'var(--border)' }
+                    }
+                }
+            }
+        });
+    }
+
+    // Integração com sistema existente
+    const origSaveCashout = saveCashout;
+    saveCashout = function() {
+        origSaveCashout();
+        setTimeout(() => {
+            if (document.getElementById('bankrollView')) {
+                updateBankrollMetrics();
+            }
+        }, 100);
+    };
+
+    const origRenderTable = renderTable;
+    renderTable = function() {
+        origRenderTable();
+        if (document.getElementById('bankrollView')) {
+            updateBankrollMetrics();
+        }
+    };
+
+    // Verificar carregamento do Chart.js
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            if (typeof Chart === 'undefined') {
+                console.warn('Chart.js não carregado, tentando novamente...');
+            }
+        }, 500);
+    });
+</script>
+</body>
+</html>
