@@ -1698,7 +1698,15 @@
             localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(usersData));
         }
     }
-
+    
+    function showNotification(title, message, type = 'success') {
+        const container = document.getElementById('notificationContainer');
+        const toast = document.createElement('div');
+        toast.className = `notification-toast ${type}`;
+        toast.innerHTML = `<strong>${title}</strong><p>${message}</p>`;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    }   
 // ===== FIM DO SISTEMA DE USUÁRIOS =====
 
 
@@ -2607,14 +2615,6 @@
         }
     }
 
-    function showNotification(title, message, type = 'success') {
-        const container = document.getElementById('notificationContainer');
-        const toast = document.createElement('div');
-        toast.className = `notification-toast ${type}`;
-        toast.innerHTML = `<strong>${title}</strong><p>${message}</p>`;
-        container.appendChild(toast);
-        setTimeout(() => toast.remove(), 4000);
-    }
 
     // ===== GESTÃO DE BANKROLL =====
     let bankrollChart = null;
