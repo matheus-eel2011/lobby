@@ -2379,7 +2379,7 @@
         renderRegisteredTournamentsTable();
     }
 
-function openCashoutModal(id) {
+    function openCashoutModal(id) {
     const t = filteredTournaments.find(x => x.id === id);
     if (!t) return;
 
@@ -2396,7 +2396,7 @@ function openCashoutModal(id) {
     document.getElementById('cashoutModal').classList.add('active');
 }
 
-function updateInvestedAmount() {
+    function updateInvestedAmount() {
     const baseBuyin = parseFloat(document.getElementById('modalBuyin').textContent.replace('$', '')) || 0;
     const rebuyCount = parseFloat(document.getElementById('rebuyCount').value) || 0;
 
@@ -2406,12 +2406,12 @@ function updateInvestedAmount() {
     document.getElementById('modalTotalInvested').dataset.total = totalInvested;
 }
 
-function closeCashoutModal() {
+    function closeCashoutModal() {
     document.getElementById('cashoutModal').classList.remove('active');
     currentCashoutId = null;
 }
 
-function saveCashout() {
+    function saveCashout() {
     if (currentCashoutId === null) return;
 
     const baseBuyin = parseFloat(document.getElementById('modalBuyin').textContent.replace('$', '')) || 0;
