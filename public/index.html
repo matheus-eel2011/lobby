@@ -1900,36 +1900,87 @@
         // Redireciona para login (quando tiver implementado)
         // window.location.href = '/auth/login';
     }
+    function saveCurrentUserState() {
+        if (!currentUser || !usersData[currentUser]) return;
 
-    function initUserSystem() {
-    // Carregar usuários do localStorage
-    loadUsersFromStorage();
+        // Salvar dados de registro e cashout
+        usersData[currentUser].registered = Array.from(registered);
+        usersData[currentUser].cashouts   = cashouts;
+        usersData[currentUser].buyins     = buyins;
 
-    // Se não houver nenhum usuário, criar padrão
-    if (Object.keys(usersData).length === 0) {
-        const defaultName = 'Jogador 1';
-        usersData[defaultName] = {
+        // Salvar configuração de banca
+        const bankEl   = document.getElementById('bankrollInitialBank');
+        const safetyEl = document.getElementById('bankrollSafetyFactor');
+
+        if (bankEl) {
+            usersData[currentUser].bankrollInitialBank = parseFloat(bankEl.value) || 1000;
+        }
+        if (safetyEl) {
+            usersData[currentUser].bankrollSafetyFactor = parseFloat(safetyEl.value) || 400;
+        }
+    }
+
+    function applyUserState() {
+        if (!currentUser) return;
+
+        const data = usersData[currentUser] || {
             registered: [],
             cashouts: {},
             buyins: {},
             bankrollInitialBank: 1000,
             bankrollSafetyFactor: 400
         };
-        currentUser = defaultName;
-        saveUsersToStorage();
-    } else {
-        // Pegar primeiro usuário como padrão
-        currentUser = Object.keys(usersData)[0];
+
+        // Aplicar registered/cashouts
+        registered = new Set(data.registered || []);
+        cashouts   = data.cashouts || {};
+        buyins     = data.buyins || {};
+
+        // Aplicar configuração de banca
+        const bankEl   = document.getElementById('bankrollInitialBank');
+        const safetyEl = document.getElementById('bankrollSafetyFactor');
+
+        if (bankEl)   bankEl.value   = data.bankrollInitialBank  ?? 1000;
+        if (safetyEl) safetyEl.value = data.bankrollSafetyFactor ?? 400;
+
+        // Redesenhar tudo
+        renderTable();
+        updateControlDashboard();
+        if (typeof updateBankrollMetrics === 'function') {
+            updateBankrollMetrics();
+        }
     }
 
-    // Popular seletor
-    updateUserSelect();
+    function initUserSystem() {
+        // Carregar usuários do localStorage
+        loadUsersFromStorage();
 
-    // Aplicar estado do usuário atual
-    applyUserState();
-    
-    console.log('👤 Sistema de usuários inicializado. Usuário atual:', currentUser);
+        // Se não houver nenhum usuário, criar padrão
+        if (Object.keys(usersData).length === 0) {
+            const defaultName = 'Jogador 1';
+            usersData[defaultName] = {
+                registered: [],
+                cashouts: {},
+                buyins: {},
+                bankrollInitialBank: 1000,
+                bankrollSafetyFactor: 400
+            };
+            currentUser = defaultName;
+            saveUsersToStorage();
+        } else {
+            // Pegar primeiro usuário como padrão
+            currentUser = Object.keys(usersData)[0];
+        }
+
+        // Popular seletor
+        updateUserSelect();
+
+        // Aplicar estado do usuário atual
+        applyUserState();
+        
+        console.log('👤 Sistema de usuários inicializado. Usuário atual:', currentUser);
     }
+
 
     async function initializeApp() {
         // Carregar dados do servidor (novo)
