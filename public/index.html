@@ -1426,7 +1426,18 @@
     let usersData = {};
     let currentUser = null; 
     const USERS_STORAGE_KEY = 'pegaBlinderUsers_v1';
-    
+    let allTournamentsData = [];
+    let filteredTournaments = [];
+    let buyins = {};             // { tournamentId: { count: N, total: amount, buyIns: [10, 10, 5] } }
+    let selectedDays = new Set([1, 2, 3, 4, 5, 6, 0]);
+    let cashouts = {};
+    let currentCashoutId = null;
+    let apiOnline = false;
+    let registered = new Set();
+    let profiles = {};
+    let sortColumn = null;
+    let sortDirection = 'asc';
+    let updateInterval = null;
     function createNewUser() {
         const name = prompt('Nome do novo usuário:');
         if (!name || name.trim() === '') return;
@@ -1694,18 +1705,7 @@
     }
 
     
-    let allTournamentsData = [];
-    let filteredTournaments = [];
-    let buyins = {};             // { tournamentId: { count: N, total: amount, buyIns: [10, 10, 5] } }
-    let selectedDays = new Set([1, 2, 3, 4, 5, 6, 0]);
-    let cashouts = {};
-    let currentCashoutId = null;
-    let apiOnline = false;
-    let registered = new Set();
-    let profiles = {};
-    let sortColumn = null;
-    let sortDirection = 'asc';
-    let updateInterval = null;
+
 
     async function persistData() {
         await fetch('/api/bankroll', {
