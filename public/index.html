@@ -1427,7 +1427,7 @@
     let currentUser = null;
     const USERS_STORAGE_KEY = 'pegaBlinderUsers_v1';
     
-    function createNewUser() {
+function createNewUser() {
         const name = prompt('Nome do novo usuário:');
         if (!name || name.trim() === '') return;
 
@@ -1570,7 +1570,7 @@
         console.log('👤 Sistema de usuários inicializado. Usuário atual:', currentUser);
     }
     
-    async function logout() {
+async function logout() {
         // Salvar dados antes de sair
         saveCurrentUserState();
         await saveToBackend();
@@ -1982,10 +1982,7 @@
         ];
     }
 
-    // ===== SISTEMA DE MÚLTIPLOS USUÁRIOS =====
-
-    
-
+      
 
     async function initializeApp() {
         // Carregar dados do servidor (novo)
@@ -2599,9 +2596,6 @@ function saveCashout() {
         container.appendChild(toast);
         setTimeout(() => toast.remove(), 4000);
     }
-
-    initializeApp();
-
 
     // ===== GESTÃO DE BANKROLL =====
     let bankrollChart = null;
