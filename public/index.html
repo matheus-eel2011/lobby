@@ -1552,95 +1552,6 @@
         mainContent.classList.toggle('sidebar-open');
     }
 
-    async function loadFromBackend() {
-        try {
-            const response = await fetch('/api/bankroll', {
-                method: 'GET',
-                credentials: 'include'
-            });
-
-            if (!response.ok) {
-                // Se não conseguir buscar do servidor, tenta localStorage
-                console.warn('Não consegui buscar do servidor, usando backup local');
-                loadUsersFromStorageLocal();
-                return;
-            }
-
-            const data = await response.json();
-
-            // Estruturar dados no formato que seu código espera
-            if (!usersData[currentUser]) {
-                usersData[currentUser] = {
-                    registered: [],
-                    cashouts: {},
-                    buyins: {},
-                    bankrollInitialBank: 1000,
-                    bankrollSafetyFactor: 400
-                };
-            }
-
-            // Preencher com dados do servidor
-            usersData[currentUser].registered = data.registered || [];
-            usersData[currentUser].cashouts = data.cashouts || {};
-            usersData[currentUser].buyins = data.buyins || {};
-            usersData[currentUser].bankrollInitialBank = data.bankrollInitialBank || 1000;
-            usersData[currentUser].bankrollSafetyFactor = data.bankrollSafetyFactor || 400;
-
-            console.log('✅ Dados carregados do servidor');
-        } catch (e) {
-            console.error('Erro ao carregar do servidor:', e);
-            loadUsersFromStorageLocal();
-        }
-    }
-
-    // Backup: tenta carregar do localStorage se servidor falhar
-    function loadUsersFromStorageLocal() {
-        try {
-            const raw = localStorage.getItem(USERS_STORAGE_KEY);
-            usersData = raw ? JSON.parse(raw) : {};
-        } catch (e) {
-            usersData = {};
-        }
-    }
-
-    async function saveToBackend() {
-        if (!currentUser) return;
-
-        // Buscar os dados do usuário atual
-        const userData = usersData[currentUser];
-        if (!userData) return;
-
-        try {
-            const response = await fetch('/api/bankroll', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'include', // importante: envia cookie de sessão
-                body: JSON.stringify({
-                    registered: Array.from(userData.registered),
-                    buyins: userData.buyins || {},
-                    cashouts: userData.cashouts || {},
-                    bankrollInitialBank: userData.bankrollInitialBank || 1000,
-                    bankrollSafetyFactor: userData.bankrollSafetyFactor || 400
-                })
-            });
-
-            if (!response.ok) {
-                console.error('Erro ao salvar:', response.statusText);
-                // Se falhar, volta a salvar localmente como backup
-                localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(usersData));
-                return;
-            }
-
-            console.log('✅ Dados salvos no servidor');
-        } catch (e) {
-            console.error('Erro ao conectar com servidor:', e);
-            // Se não conseguir conectar, salva localmente
-            localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(usersData));
-        }
-    }
-
 
     function renderProfilesList() {
         const container = document.getElementById('profilesList');
@@ -1876,30 +1787,7 @@
             select.value = currentUser;
         }
     }
-
-    async function logout() {
-        // Salvar dados antes de sair
-        saveCurrentUserState();
-        await saveToBackend();
-        
-        console.log('🔓 Fazendo logout...');
-        
-        // Se estiver usando NextAuth:
-        // window.location.href = '/api/auth/signout?callbackUrl=/auth/login';
-        // Se estiver rodando localmente (sem NextAuth ainda):
-        // Apenas limpa dados e volta para início
-        registered = new Set();
-        cashouts = {};
-        buyins = {};
-        currentUser = null;
-        usersData = {};
-        
-        // Mostra modal de confirmação
-        alert('✅ Você foi desconectado. Atualize a página para fazer login novamente.');
-        
-        // Redireciona para login (quando tiver implementado)
-        // window.location.href = '/auth/login';
-    }
+    
     function saveCurrentUserState() {
         if (!currentUser || !usersData[currentUser]) return;
 
@@ -1980,6 +1868,119 @@
         
         console.log('👤 Sistema de usuários inicializado. Usuário atual:', currentUser);
     }
+    
+    async function logout() {
+        // Salvar dados antes de sair
+        saveCurrentUserState();
+        await saveToBackend();
+        
+        console.log('🔓 Fazendo logout...');
+        
+        // Se estiver usando NextAuth:
+        // window.location.href = '/api/auth/signout?callbackUrl=/auth/login';
+        // Se estiver rodando localmente (sem NextAuth ainda):
+        // Apenas limpa dados e volta para início
+        registered = new Set();
+        cashouts = {};
+        buyins = {};
+        currentUser = null;
+        usersData = {};
+        
+        // Mostra modal de confirmação
+        alert('✅ Você foi desconectado. Atualize a página para fazer login novamente.');
+        
+        // Redireciona para login (quando tiver implementado)
+        // window.location.href = '/auth/login';
+    }
+    
+    async function loadFromBackend() {
+        try {
+            const response = await fetch('/api/bankroll', {
+                method: 'GET',
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                // Se não conseguir buscar do servidor, tenta localStorage
+                console.warn('Não consegui buscar do servidor, usando backup local');
+                loadUsersFromStorageLocal();
+                return;
+            }
+
+            const data = await response.json();
+
+            // Estruturar dados no formato que seu código espera
+            if (!usersData[currentUser]) {
+                usersData[currentUser] = {
+                    registered: [],
+                    cashouts: {},
+                    buyins: {},
+                    bankrollInitialBank: 1000,
+                    bankrollSafetyFactor: 400
+                };
+            }
+
+            // Preencher com dados do servidor
+            usersData[currentUser].registered = data.registered || [];
+            usersData[currentUser].cashouts = data.cashouts || {};
+            usersData[currentUser].buyins = data.buyins || {};
+            usersData[currentUser].bankrollInitialBank = data.bankrollInitialBank || 1000;
+            usersData[currentUser].bankrollSafetyFactor = data.bankrollSafetyFactor || 400;
+
+            console.log('✅ Dados carregados do servidor');
+        } catch (e) {
+            console.error('Erro ao carregar do servidor:', e);
+            loadUsersFromStorageLocal();
+        }
+    }
+
+    // Backup: tenta carregar do localStorage se servidor falhar
+    function loadUsersFromStorageLocal() {
+        try {
+            const raw = localStorage.getItem(USERS_STORAGE_KEY);
+            usersData = raw ? JSON.parse(raw) : {};
+        } catch (e) {
+            usersData = {};
+        }
+    }
+
+    async function saveToBackend() {
+        if (!currentUser) return;
+
+        // Buscar os dados do usuário atual
+        const userData = usersData[currentUser];
+        if (!userData) return;
+
+        try {
+            const response = await fetch('/api/bankroll', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include', // importante: envia cookie de sessão
+                body: JSON.stringify({
+                    registered: Array.from(userData.registered),
+                    buyins: userData.buyins || {},
+                    cashouts: userData.cashouts || {},
+                    bankrollInitialBank: userData.bankrollInitialBank || 1000,
+                    bankrollSafetyFactor: userData.bankrollSafetyFactor || 400
+                })
+            });
+
+            if (!response.ok) {
+                console.error('Erro ao salvar:', response.statusText);
+                // Se falhar, volta a salvar localmente como backup
+                localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(usersData));
+                return;
+            }
+
+            console.log('✅ Dados salvos no servidor');
+        } catch (e) {
+            console.error('Erro ao conectar com servidor:', e);
+            // Se não conseguir conectar, salva localmente
+            localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(usersData));
+        }
+    } 
 
 
     async function initializeApp() {
