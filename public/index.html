@@ -1423,6 +1423,36 @@
 <div id="notificationContainer"></div>
 
 <script>
+// ===== SISTEMA DE MÚLTIPLOS USUÁRIOS =====
+window.usersData = {};
+window.currentUser = null;
+const USERS_STORAGE_KEY = 'pegaBlinderUsers_v1';
+
+window.createNewUser = function() {
+    const name = prompt('Nome do novo usuário:');
+    if (!name || name.trim() === '') return;
+    if (usersData[name]) {
+        alert('❌ Já existe um usuário com esse nome.');
+        return;
+    }
+    usersData[name] = {
+        registered: [],
+        cashouts: {},
+        buyins: {},
+        bankrollInitialBank: 1000,
+        bankrollSafetyFactor: 400
+    };
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(usersData));
+    alert('✅ Novo usuário criado: ' + name);
+};
+
+window.logout = function() {
+    if (confirm('Desconectar?')) {
+        localStorage.removeItem(USERS_STORAGE_KEY);
+        window.location.reload();
+    }
+};
+
     let usersData = {};
     let currentUser = null; 
     const USERS_STORAGE_KEY = 'pegaBlinderUsers_v1';
@@ -1709,13 +1739,13 @@
                     updateBankrollMetrics();
                     saveCurrentUserState();
                     saveToBackend(); 
-                });
+                }),
                 document.getElementById('bankrollSafetyFactor')?.addEventListener('change', function() {
                     updateBankrollMetrics();
                     saveCurrentUserState();
                     saveToBackend(); 
-                });
-            })
+                }),
+            }),
         }).catch(e => {
             // Se falhar, salva em localStorage como backup
             localStorage.setItem('pegaBlinderData', JSON.stringify({
