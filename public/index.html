@@ -1985,6 +1985,7 @@
 
     async function initializeApp() {
         // Carregar dados do servidor (novo)
+        initUserSystem();
         await loadFromBackend();
         loadProfiles();
         allTournamentsData = await loadTournamentsFromAPI();
@@ -1997,8 +1998,7 @@
         renderTable();
         setupEventListeners();
         updateControlDashboard();
-        initUserSystem();
-
+        
         if (updateInterval) clearInterval(updateInterval);
         updateInterval = setInterval(() => {
             document.querySelectorAll('tr[data-tournament-row-id]').forEach(row => {
