@@ -1423,11 +1423,11 @@
 <div id="notificationContainer"></div>
 
 <script>
-    let usersData = [];
-    let currentUser = null;
+    let usersData = {};
+    let currentUser = null; 
     const USERS_STORAGE_KEY = 'pegaBlinderUsers_v1';
     
-function createNewUser() {
+    function createNewUser() {
         const name = prompt('Nome do novo usuário:');
         if (!name || name.trim() === '') return;
 
@@ -1570,7 +1570,7 @@ function createNewUser() {
         console.log('👤 Sistema de usuários inicializado. Usuário atual:', currentUser);
     }
     
-async function logout() {
+    async function logout() {
         // Salvar dados antes de sair
         saveCurrentUserState();
         await saveToBackend();
@@ -1685,13 +1685,12 @@ async function logout() {
     
     let allTournamentsData = [];
     let filteredTournaments = [];
-    let registered = new Set();
     let buyins = {};             // { tournamentId: { count: N, total: amount, buyIns: [10, 10, 5] } }
     let selectedDays = new Set([1, 2, 3, 4, 5, 6, 0]);
     let cashouts = {};
     let currentCashoutId = null;
     let apiOnline = false;
-
+    let registered = new Set();
     let profiles = {};
     let sortColumn = null;
     let sortDirection = 'asc';
