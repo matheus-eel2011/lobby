@@ -1154,6 +1154,41 @@
 
         <div class="content-area">
             <div id="listView" class="view-content">
+                <div id="registeredTournamentsSection" 
+                    style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; margin-bottom: 20px; overflow: hidden;">
+    
+                    <div style="padding: 15px; background: rgba(201, 169, 97, 0.1); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                        <h3 style="color: var(--secondary); margin: 0; text-transform: uppercase; font-size: 13px; letter-spacing: 0.5px;">
+                            📌 TORNEIOS REGISTRADOS NESTA SESSÃO
+                        </h3>
+                        <span id="registeredCountBadge" style="background: var(--secondary); color: var(--bg-dark); padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 12px;">0</span>
+                    </div>
+
+                    <div style="max-height: 250px; overflow-y: auto;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                            <thead>
+                                <tr style="background: var(--bg-dark); position: sticky; top: 0;">
+                                    <th style="text-align: left; padding: 10px; border-bottom: 1px solid var(--border); color: var(--secondary); font-weight: 700; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px;">Hora</th>
+                                    <th style="text-align: left; padding: 10px; border-bottom: 1px solid var(--border); color: var(--secondary); font-weight: 700; text-transform: uppercase; font-size: 10px;">Torneio</th>
+                                    <th style="text-align: center; padding: 10px; border-bottom: 1px solid var(--border); color: var(--secondary); font-weight: 700; text-transform: uppercase; font-size: 10px;">Buy-in</th>
+                                    <th style="text-align: center; padding: 10px; border-bottom: 1px solid var(--border); color: var(--secondary); font-weight: 700; text-transform: uppercase; font-size: 10px;">Rebuy</th>
+                                    <th style="text-align: center; padding: 10px; border-bottom: 1px solid var(--border); color: var(--secondary); font-weight: 700; text-transform: uppercase; font-size: 10px;">Investido</th>
+                                    <th style="text-align: center; padding: 10px; border-bottom: 1px solid var(--border); color: var(--secondary); font-weight: 700; text-transform: uppercase; font-size: 10px;">Cashout</th>
+                                    <th style="text-align: center; padding: 10px; border-bottom: 1px solid var(--border); color: var(--secondary); font-weight: 700; text-transform: uppercase; font-size: 10px;">Lucro</th>
+                                    <th style="text-align: center; padding: 10px; border-bottom: 1px solid var(--border); color: var(--secondary); font-weight: 700; text-transform: uppercase; font-size: 10px;">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="registeredTournamentsBody">
+                                <tr>
+                                    <td colspan="8" style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                                        Nenhum torneio registrado ainda. Clique em "Registrar" na tabela abaixo.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+     
                 <div class="table-container">
                     <table id="tournamentTable">
                         <thead>
@@ -1812,6 +1847,7 @@
     }
 
     function renderTable() {
+        renderRegisteredTournamentsTable();
         const tbody = document.getElementById('tournamentBody');
 
         document.querySelectorAll('th[data-column]').forEach(th => {
@@ -1856,6 +1892,64 @@
             });
         });
     }
+    function renderRegisteredTournamentsTable() {
+        const registeredTournaments = Array.from(registered)
+            .map(id => filteredTournaments.find(t => t.id === id))
+            .filter(t => t);
+
+        const tbody = document.getElementById('registeredTournamentsBody');
+        const badge = document.getElementById('registeredCountBadge');
+
+        badge.textContent = registeredTournaments.length;
+
+        if (registeredTournaments.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                        Nenhum torneio registrado ainda. Clique em "Registrar" na tabela abaixo.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = registeredTournaments.map(t => {
+            const baseBuyin = t.buyin || 0;
+            const rebuyData = buyins[t.id] || {};
+            const rebuyCount = rebuyData.rebuyCount ?? 0;
+            const totalInvested = rebuyData.totalInvested ?? baseBuyin;
+            const cashout = cashouts[t.id] ?? 0;
+            const profit = cashout - totalInvested;
+
+            const profitColor = profit >= 0 ? 'var(--success)' : 'var(--danger)';
+
+            return `
+                <tr style="border-bottom: 1px solid var(--border); background: rgba(201, 169, 97, 0.02);">
+                    <td style="padding: 8px 10px; color: var(--text-secondary);">${t.time}</td>
+                    <td style="padding: 8px 10px; color: var(--text-primary); font-weight: 600;">${t.name}</td>
+                    <td style="padding: 8px 10px; text-align: center; color: var(--text-secondary);">$${baseBuyin}</td>
+                    <td style="padding: 8px 10px; text-align: center; color: var(--secondary); font-weight: 600;">
+                        ${rebuyCount > 0 ? `+${rebuyCount}` : '-'}
+                    </td>
+                    <td style="padding: 8px 10px; text-align: center; color: var(--text-primary); font-weight: 600;">
+                        $${totalInvested.toFixed(2)}
+                    </td>
+                    <td style="padding: 8px 10px; text-align: center; color: var(--text-primary); font-weight: 600;">
+                        ${cashout > 0 ? '$' + cashout.toFixed(2) : '⏳'}
+                    </td>
+                    <td style="padding: 8px 10px; text-align: center; color: ${profitColor}; font-weight: 600;">
+                        ${cashout > 0 ? '$' + profit.toFixed(2) : '-'}
+                    </td>
+                    <td style="padding: 8px 10px; text-align: center;">
+                        <button class="btn-cashout" onclick="openCashoutModal(${t.id})"
+                                style="padding: 4px 8px; font-size: 10px;">
+                            ${cashout > 0 ? '✏️ Editar' : '💰 Cashout'}
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
 
     function toggleRegister(id) {
         if (registered.has(id)) {
@@ -1872,30 +1966,44 @@
     }
 
     function updateControlDashboard() {
-        const registeredTournaments = Array.from(registered).map(id => filteredTournaments.find(t => t.id === id)).filter(t => t);
+        const registeredTournaments = Array.from(registered)
+            .map(id => filteredTournaments.find(t => t.id === id))
+            .filter(t => t);
+
+        // Total investido (considerando rebuys)
         const totalBuyin = registeredTournaments.reduce((sum, t) => {
             const invested = buyins[t.id]?.totalInvested ?? t.buyin;
             return sum + invested;
         }, 0);
-        const totalCashoutVal = registeredTournaments.reduce((sum, t) => sum + (cashouts[t.id] !== undefined ? cashouts[t.id] : t.buyin), 0);
+
+        // Total cashout (só quando está definido, senão usa 0)
+        const totalCashoutVal = registeredTournaments.reduce((sum, t) => {
+            return sum + (cashouts[t.id] !== undefined ? cashouts[t.id] : 0);
+        }, 0);
+
         const profit = totalCashoutVal - totalBuyin;
         const roi = totalBuyin > 0 ? (profit / totalBuyin * 100).toFixed(1) : 0;
 
+        // ===== ATUALIZAR DASHBOARD CARDS =====
         document.getElementById('dashTournamentsTotal').textContent = filteredTournaments.length;
         document.getElementById('dashRegistered').textContent = registeredTournaments.length;
-        document.getElementById('dashTotalBuyin').textContent = totalBuyin.toFixed(0);
-        document.getElementById('dashTotalCashout').textContent = totalCashoutVal.toFixed(0);
+        document.getElementById('dashTotalBuyin').textContent = totalBuyin.toFixed(2);
+        document.getElementById('dashTotalCashout').textContent = totalCashoutVal.toFixed(2);
 
+        // Lucro/Prejuízo com cor
         const profitElement = document.getElementById('dashProfit');
         const profitROI = document.getElementById('dashProfitROI');
-        profitElement.textContent = profit.toFixed(0);
-        profitElement.className = 'dashboard-value ' + (profit > 0 ? 'positive' : profit < 0 ? 'negative' : '');
+        profitElement.textContent = profit.toFixed(2);
+        profitElement.style.color = profit > 0 ? 'var(--success)' : profit < 0 ? 'var(--danger)' : 'var(--text-primary)';
         profitROI.textContent = `ROI: ${roi}%`;
 
+        // Mostrar/esconder botões de exportação
         const exportButtons = document.getElementById('exportButtons');
         exportButtons.style.display = registeredTournaments.length > 0 ? 'flex' : 'none';
 
+        // ===== TABELA DE HISTÓRICO =====
         const historyContainer = document.getElementById('historyContainer');
+        
         if (registeredTournaments.length > 0) {
             historyContainer.innerHTML = `
                 <table class="history-table">
@@ -1905,6 +2013,8 @@
                             <th>Sala</th>
                             <th>Tipo</th>
                             <th>Buy-in</th>
+                            <th>Rebuy</th>
+                            <th>Investido</th>
                             <th>Cashout</th>
                             <th>Resultado</th>
                             <th>ROI</th>
@@ -1912,22 +2022,35 @@
                     </thead>
                     <tbody>
                         ${registeredTournaments.map((t, idx) => {
-                            const cashout = cashouts[t.id] !== undefined ? cashouts[t.id] : '-';
+                            // ⬇️ NOVO: calcular dados com rebuy
+                            const baseBuyin = t.buyin;
+                            const rebuyData = buyins[t.id] || {};
+                            const rebuyCount = rebuyData.rebuyCount ?? 0;
+                            const totalInvested = rebuyData.totalInvested ?? baseBuyin;
+                            
+                            const cashout = cashouts[t.id] !== undefined ? cashouts[t.id] : null;
+                            
                             let resultado = '-';
                             let roiLine = '-';
                             let resultColor = '';
-                            if (cashout !== '-') {
-                                resultado = (cashout - t.buyin).toFixed(2);
-                                roiLine = (resultado / t.buyin * 100).toFixed(1);
+                            
+                            if (cashout !== null) {
+                                resultado = (cashout - totalInvested).toFixed(2);
+                                roiLine = totalInvested > 0 ? (resultado / totalInvested * 100).toFixed(1) : '-';
                                 resultColor = resultado >= 0 ? 'positive' : 'negative';
                             }
+                            
                             return `
                                 <tr style="background: ${idx % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent'}">
                                     <td>${t.name}</td>
                                     <td>${t.site}</td>
                                     <td>${t.type}</td>
-                                    <td>$${t.buyin}</td>
-                                    <td>$${cashout}</td>
+                                    <td>$${baseBuyin}</td>
+                                    <td style="text-align: center; color: var(--secondary); font-weight: 600;">
+                                        ${rebuyCount > 0 ? '+' + rebuyCount : '-'}
+                                    </td>
+                                    <td style="font-weight: 600;">$${totalInvested.toFixed(2)}</td>
+                                    <td>${cashout !== null ? '$' + cashout.toFixed(2) : '⏳'}</td>
                                     <td class="${resultColor}">${resultado}</td>
                                     <td class="${resultColor}">${roiLine}%</td>
                                 </tr>
@@ -1939,6 +2062,9 @@
         } else {
             historyContainer.innerHTML = '<div style="color: var(--text-secondary); font-size: 12px; text-align: center; padding: 20px;">Nenhum torneio registrado ainda</div>';
         }
+
+        // Chamar renderizar a tabela de torneios registrados no topo
+        renderRegisteredTournamentsTable();
     }
 
 function openCashoutModal(id) {
