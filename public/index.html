@@ -1438,6 +1438,7 @@
     let sortColumn = null;
     let sortDirection = 'asc';
     let updateInterval = null;
+    
     function createNewUser() {
         const name = prompt('Nome do novo usuário:');
         if (!name || name.trim() === '') return;
@@ -2867,6 +2868,24 @@
             }
         }, 500);
     });
+// ===== INICIALIZAÇÃO DO APP =====
+document.addEventListener('DOMContentLoaded', async function() {
+    console.log('🚀 Iniciando aplicação...');
+    
+    // 1️⃣ Inicializar sistema de usuários PRIMEIRO
+    initUserSystem();
+    
+    // 2️⃣ Tentar carregar do servidor
+    await loadFromBackend();
+    
+    // 3️⃣ Depois inicializar o resto
+    loadAllTournaments();
+    applyFilters();
+    setupEventListeners();
+    
+    console.log('✅ Aplicação inicializada com sucesso!');
+});
+
 </script>
 </body>
 </html>
