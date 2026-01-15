@@ -1423,6 +1423,266 @@
 <div id="notificationContainer"></div>
 
 <script>
+    let usersData = [];
+    let currentUser = null;
+    const USERS_STORAGE_KEY = 'pegaBlinderUsers_v1';
+    
+    function createNewUser() {
+        const name = prompt('Nome do novo usuário:');
+        if (!name || name.trim() === '') return;
+
+        if (usersData[name]) {
+            alert('❌ Já existe um usuário com esse nome.');
+            return;
+        }
+
+        // Criar novo usuário vazio
+        usersData[name] = {
+            registered: [],
+            cashouts: {},
+            buyins: {},
+            bankrollInitialBank: 1000,
+            bankrollSafetyFactor: 400
+        };
+
+        // Salvar e recarregar seletor
+        saveUsersToStorage();
+        updateUserSelect();
+        
+        // Mudar para o novo usuário
+        onUserChange(name);
+        
+        showNotification('✅ Novo usuário criado', name, 'success');
+    }
+
+    function onUserChange(name) {
+        // Salvar estado do usuário anterior
+        saveCurrentUserState();
+        saveUsersToStorage();
+
+        // Mudar para novo usuário
+        currentUser = name;
+        applyUserState();
+        
+        // Atualizar select visual
+        document.getElementById('userSelect').value = name;
+        
+        console.log('👤 Usuário alterado para:', name);
+    }
+
+    function updateUserSelect() {
+        const select = document.getElementById('userSelect');
+        if (!select) return;
+
+        const usernames = Object.keys(usersData);
+        select.innerHTML = '';
+
+        usernames.forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            select.appendChild(opt);
+        });
+
+        if (currentUser && usernames.includes(currentUser)) {
+            select.value = currentUser;
+        }
+    }
+    
+    function saveCurrentUserState() {
+        if (!currentUser || !usersData[currentUser]) return;
+
+        // Salvar dados de registro e cashout
+        usersData[currentUser].registered = Array.from(registered);
+        usersData[currentUser].cashouts   = cashouts;
+        usersData[currentUser].buyins     = buyins;
+
+        // Salvar configuração de banca
+        const bankEl   = document.getElementById('bankrollInitialBank');
+        const safetyEl = document.getElementById('bankrollSafetyFactor');
+
+        if (bankEl) {
+            usersData[currentUser].bankrollInitialBank = parseFloat(bankEl.value) || 1000;
+        }
+        if (safetyEl) {
+            usersData[currentUser].bankrollSafetyFactor = parseFloat(safetyEl.value) || 400;
+        }
+    }
+
+    function applyUserState() {
+        if (!currentUser) return;
+
+        const data = usersData[currentUser] || {
+            registered: [],
+            cashouts: {},
+            buyins: {},
+            bankrollInitialBank: 1000,
+            bankrollSafetyFactor: 400
+        };
+
+        // Aplicar registered/cashouts
+        registered = new Set(data.registered || []);
+        cashouts   = data.cashouts || {};
+        buyins     = data.buyins || {};
+
+        // Aplicar configuração de banca
+        const bankEl   = document.getElementById('bankrollInitialBank');
+        const safetyEl = document.getElementById('bankrollSafetyFactor');
+
+        if (bankEl)   bankEl.value   = data.bankrollInitialBank  ?? 1000;
+        if (safetyEl) safetyEl.value = data.bankrollSafetyFactor ?? 400;
+
+        // Redesenhar tudo
+        renderTable();
+        updateControlDashboard();
+        if (typeof updateBankrollMetrics === 'function') {
+            updateBankrollMetrics();
+        }
+    }
+
+    function initUserSystem() {
+        // Carregar usuários do localStorage
+        loadUsersFromStorage();
+
+        // Se não houver nenhum usuário, criar padrão
+        if (Object.keys(usersData).length === 0) {
+            const defaultName = 'Jogador 1';
+            usersData[defaultName] = {
+                registered: [],
+                cashouts: {},
+                buyins: {},
+                bankrollInitialBank: 1000,
+                bankrollSafetyFactor: 400
+            };
+            currentUser = defaultName;
+            saveUsersToStorage();
+        } else {
+            // Pegar primeiro usuário como padrão
+            currentUser = Object.keys(usersData)[0];
+        }
+
+        // Popular seletor
+        updateUserSelect();
+
+        // Aplicar estado do usuário atual
+        applyUserState();
+        
+        console.log('👤 Sistema de usuários inicializado. Usuário atual:', currentUser);
+    }
+    
+    async function logout() {
+        // Salvar dados antes de sair
+        saveCurrentUserState();
+        await saveToBackend();
+        
+        console.log('🔓 Fazendo logout...');
+        
+        // Se estiver usando NextAuth:
+        // window.location.href = '/api/auth/signout?callbackUrl=/auth/login';
+        // Se estiver rodando localmente (sem NextAuth ainda):
+        // Apenas limpa dados e volta para início
+        registered = new Set();
+        cashouts = {};
+        buyins = {};
+        currentUser = null;
+        usersData = {};
+        
+        // Mostra modal de confirmação
+        alert('✅ Você foi desconectado. Atualize a página para fazer login novamente.');
+        
+        // Redireciona para login (quando tiver implementado)
+        // window.location.href = '/auth/login';
+    }
+    
+    async function loadFromBackend() {
+        try {
+            const response = await fetch('/api/bankroll', {
+                method: 'GET',
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                // Se não conseguir buscar do servidor, tenta localStorage
+                console.warn('Não consegui buscar do servidor, usando backup local');
+                loadUsersFromStorageLocal();
+                return;
+            }
+
+            const data = await response.json();
+
+            // Estruturar dados no formato que seu código espera
+            if (!usersData[currentUser]) {
+                usersData[currentUser] = {
+                    registered: [],
+                    cashouts: {},
+                    buyins: {},
+                    bankrollInitialBank: 1000,
+                    bankrollSafetyFactor: 400
+                };
+            }
+
+            // Preencher com dados do servidor
+            usersData[currentUser].registered = data.registered || [];
+            usersData[currentUser].cashouts = data.cashouts || {};
+            usersData[currentUser].buyins = data.buyins || {};
+            usersData[currentUser].bankrollInitialBank = data.bankrollInitialBank || 1000;
+            usersData[currentUser].bankrollSafetyFactor = data.bankrollSafetyFactor || 400;
+
+            console.log('✅ Dados carregados do servidor');
+        } catch (e) {
+            console.error('Erro ao carregar do servidor:', e);
+            loadUsersFromStorageLocal();
+        }
+    }
+
+    // Backup: tenta carregar do localStorage se servidor falhar
+    function loadUsersFromStorageLocal() {
+        try {
+            const raw = localStorage.getItem(USERS_STORAGE_KEY);
+            usersData = raw ? JSON.parse(raw) : {};
+        } catch (e) {
+            usersData = {};
+        }
+    }
+
+    async function saveToBackend() {
+        if (!currentUser) return;
+
+        // Buscar os dados do usuário atual
+        const userData = usersData[currentUser];
+        if (!userData) return;
+
+        try {
+            const response = await fetch('/api/bankroll', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include', // importante: envia cookie de sessão
+                body: JSON.stringify({
+                    registered: Array.from(userData.registered),
+                    buyins: userData.buyins || {},
+                    cashouts: userData.cashouts || {},
+                    bankrollInitialBank: userData.bankrollInitialBank || 1000,
+                    bankrollSafetyFactor: userData.bankrollSafetyFactor || 400
+                })
+            });
+
+            if (!response.ok) {
+                console.error('Erro ao salvar:', response.statusText);
+                // Se falhar, volta a salvar localmente como backup
+                localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(usersData));
+                return;
+            }
+
+            console.log('✅ Dados salvos no servidor');
+        } catch (e) {
+            console.error('Erro ao conectar com servidor:', e);
+            // Se não conseguir conectar, salva localmente
+            localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(usersData));
+        }
+    } 
+    
     let allTournamentsData = [];
     let filteredTournaments = [];
     let registered = new Set();
@@ -1431,9 +1691,7 @@
     let cashouts = {};
     let currentCashoutId = null;
     let apiOnline = false;
-    let usersData = [];
-    let currentUser = null;
-    const USERS_STORAGE_KEY = 'pegaBlinderUsers_v1';
+
     let profiles = {};
     let sortColumn = null;
     let sortDirection = 'asc';
@@ -1726,261 +1984,7 @@
 
     // ===== SISTEMA DE MÚLTIPLOS USUÁRIOS =====
 
-    function createNewUser() {
-        const name = prompt('Nome do novo usuário:');
-        if (!name || name.trim() === '') return;
-
-        if (usersData[name]) {
-            alert('❌ Já existe um usuário com esse nome.');
-            return;
-        }
-
-        // Criar novo usuário vazio
-        usersData[name] = {
-            registered: [],
-            cashouts: {},
-            buyins: {},
-            bankrollInitialBank: 1000,
-            bankrollSafetyFactor: 400
-        };
-
-        // Salvar e recarregar seletor
-        saveUsersToStorage();
-        updateUserSelect();
-        
-        // Mudar para o novo usuário
-        onUserChange(name);
-        
-        showNotification('✅ Novo usuário criado', name, 'success');
-    }
-
-    function onUserChange(name) {
-        // Salvar estado do usuário anterior
-        saveCurrentUserState();
-        saveUsersToStorage();
-
-        // Mudar para novo usuário
-        currentUser = name;
-        applyUserState();
-        
-        // Atualizar select visual
-        document.getElementById('userSelect').value = name;
-        
-        console.log('👤 Usuário alterado para:', name);
-    }
-
-    function updateUserSelect() {
-        const select = document.getElementById('userSelect');
-        if (!select) return;
-
-        const usernames = Object.keys(usersData);
-        select.innerHTML = '';
-
-        usernames.forEach(name => {
-            const opt = document.createElement('option');
-            opt.value = name;
-            opt.textContent = name;
-            select.appendChild(opt);
-        });
-
-        if (currentUser && usernames.includes(currentUser)) {
-            select.value = currentUser;
-        }
-    }
     
-    function saveCurrentUserState() {
-        if (!currentUser || !usersData[currentUser]) return;
-
-        // Salvar dados de registro e cashout
-        usersData[currentUser].registered = Array.from(registered);
-        usersData[currentUser].cashouts   = cashouts;
-        usersData[currentUser].buyins     = buyins;
-
-        // Salvar configuração de banca
-        const bankEl   = document.getElementById('bankrollInitialBank');
-        const safetyEl = document.getElementById('bankrollSafetyFactor');
-
-        if (bankEl) {
-            usersData[currentUser].bankrollInitialBank = parseFloat(bankEl.value) || 1000;
-        }
-        if (safetyEl) {
-            usersData[currentUser].bankrollSafetyFactor = parseFloat(safetyEl.value) || 400;
-        }
-    }
-
-    function applyUserState() {
-        if (!currentUser) return;
-
-        const data = usersData[currentUser] || {
-            registered: [],
-            cashouts: {},
-            buyins: {},
-            bankrollInitialBank: 1000,
-            bankrollSafetyFactor: 400
-        };
-
-        // Aplicar registered/cashouts
-        registered = new Set(data.registered || []);
-        cashouts   = data.cashouts || {};
-        buyins     = data.buyins || {};
-
-        // Aplicar configuração de banca
-        const bankEl   = document.getElementById('bankrollInitialBank');
-        const safetyEl = document.getElementById('bankrollSafetyFactor');
-
-        if (bankEl)   bankEl.value   = data.bankrollInitialBank  ?? 1000;
-        if (safetyEl) safetyEl.value = data.bankrollSafetyFactor ?? 400;
-
-        // Redesenhar tudo
-        renderTable();
-        updateControlDashboard();
-        if (typeof updateBankrollMetrics === 'function') {
-            updateBankrollMetrics();
-        }
-    }
-
-    function initUserSystem() {
-        // Carregar usuários do localStorage
-        loadUsersFromStorage();
-
-        // Se não houver nenhum usuário, criar padrão
-        if (Object.keys(usersData).length === 0) {
-            const defaultName = 'Jogador 1';
-            usersData[defaultName] = {
-                registered: [],
-                cashouts: {},
-                buyins: {},
-                bankrollInitialBank: 1000,
-                bankrollSafetyFactor: 400
-            };
-            currentUser = defaultName;
-            saveUsersToStorage();
-        } else {
-            // Pegar primeiro usuário como padrão
-            currentUser = Object.keys(usersData)[0];
-        }
-
-        // Popular seletor
-        updateUserSelect();
-
-        // Aplicar estado do usuário atual
-        applyUserState();
-        
-        console.log('👤 Sistema de usuários inicializado. Usuário atual:', currentUser);
-    }
-    
-    async function logout() {
-        // Salvar dados antes de sair
-        saveCurrentUserState();
-        await saveToBackend();
-        
-        console.log('🔓 Fazendo logout...');
-        
-        // Se estiver usando NextAuth:
-        // window.location.href = '/api/auth/signout?callbackUrl=/auth/login';
-        // Se estiver rodando localmente (sem NextAuth ainda):
-        // Apenas limpa dados e volta para início
-        registered = new Set();
-        cashouts = {};
-        buyins = {};
-        currentUser = null;
-        usersData = {};
-        
-        // Mostra modal de confirmação
-        alert('✅ Você foi desconectado. Atualize a página para fazer login novamente.');
-        
-        // Redireciona para login (quando tiver implementado)
-        // window.location.href = '/auth/login';
-    }
-    
-    async function loadFromBackend() {
-        try {
-            const response = await fetch('/api/bankroll', {
-                method: 'GET',
-                credentials: 'include'
-            });
-
-            if (!response.ok) {
-                // Se não conseguir buscar do servidor, tenta localStorage
-                console.warn('Não consegui buscar do servidor, usando backup local');
-                loadUsersFromStorageLocal();
-                return;
-            }
-
-            const data = await response.json();
-
-            // Estruturar dados no formato que seu código espera
-            if (!usersData[currentUser]) {
-                usersData[currentUser] = {
-                    registered: [],
-                    cashouts: {},
-                    buyins: {},
-                    bankrollInitialBank: 1000,
-                    bankrollSafetyFactor: 400
-                };
-            }
-
-            // Preencher com dados do servidor
-            usersData[currentUser].registered = data.registered || [];
-            usersData[currentUser].cashouts = data.cashouts || {};
-            usersData[currentUser].buyins = data.buyins || {};
-            usersData[currentUser].bankrollInitialBank = data.bankrollInitialBank || 1000;
-            usersData[currentUser].bankrollSafetyFactor = data.bankrollSafetyFactor || 400;
-
-            console.log('✅ Dados carregados do servidor');
-        } catch (e) {
-            console.error('Erro ao carregar do servidor:', e);
-            loadUsersFromStorageLocal();
-        }
-    }
-
-    // Backup: tenta carregar do localStorage se servidor falhar
-    function loadUsersFromStorageLocal() {
-        try {
-            const raw = localStorage.getItem(USERS_STORAGE_KEY);
-            usersData = raw ? JSON.parse(raw) : {};
-        } catch (e) {
-            usersData = {};
-        }
-    }
-
-    async function saveToBackend() {
-        if (!currentUser) return;
-
-        // Buscar os dados do usuário atual
-        const userData = usersData[currentUser];
-        if (!userData) return;
-
-        try {
-            const response = await fetch('/api/bankroll', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'include', // importante: envia cookie de sessão
-                body: JSON.stringify({
-                    registered: Array.from(userData.registered),
-                    buyins: userData.buyins || {},
-                    cashouts: userData.cashouts || {},
-                    bankrollInitialBank: userData.bankrollInitialBank || 1000,
-                    bankrollSafetyFactor: userData.bankrollSafetyFactor || 400
-                })
-            });
-
-            if (!response.ok) {
-                console.error('Erro ao salvar:', response.statusText);
-                // Se falhar, volta a salvar localmente como backup
-                localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(usersData));
-                return;
-            }
-
-            console.log('✅ Dados salvos no servidor');
-        } catch (e) {
-            console.error('Erro ao conectar com servidor:', e);
-            // Se não conseguir conectar, salva localmente
-            localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(usersData));
-        }
-    } 
 
 
     async function initializeApp() {
