@@ -1423,22 +1423,36 @@
 <div id="notificationContainer"></div>
 
 <script>   
-    let usersData = {};
-    let currentUser = null; 
-    const USERS_STORAGE_KEY = 'pegaBlinderUsers_v1';
-    let allTournamentsData = [];
-    let filteredTournaments = [];
-    let buyins = {};             // { tournamentId: { count: N, total: amount, buyIns: [10, 10, 5] } }
-    let selectedDays = new Set([1, 2, 3, 4, 5, 6, 0]);
-    let cashouts = {};
-    let currentCashoutId = null;
-    let apiOnline = false;
-    let registered = new Set();
-    let profiles = {};
-    let sortColumn = null;
-    let sortDirection = 'asc';
-    let updateInterval = null;
     
+    // ===== VARIÁVEIS GLOBAIS DE USUÁRIOS =====
+    let usersData = {};
+    let currentUser = null;
+    const USERS_STORAGE_KEY = 'pegaBlinderUsers_v1';
+
+    // ===== FUNÇÕES DE ARMAZENAMENTO (CRÍTICAS) =====
+
+    function loadUsersFromStorage() {
+        try {
+            const raw = localStorage.getItem(USERS_STORAGE_KEY);
+            usersData = raw ? JSON.parse(raw) : {};
+            console.log('✅ Usuários carregados do localStorage');
+        } catch (e) {
+            console.error('❌ Erro ao carregar usuários:', e);
+            usersData = {};
+        }
+    }
+
+    function saveUsersToStorage() {
+        try {
+            localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(usersData));
+            console.log('✅ Usuários salvos no localStorage');
+        } catch (e) {
+            console.error('❌ Erro ao salvar usuários:', e);
+        }
+    }
+
+    // ===== SISTEMA DE MÚLTIPLOS USUÁRIOS =====
+
     function createNewUser() {
         const name = prompt('Nome do novo usuário:');
         if (!name || name.trim() === '') return;
@@ -1448,7 +1462,6 @@
             return;
         }
 
-        // Criar novo usuário vazio
         usersData[name] = {
             registered: [],
             cashouts: {},
@@ -1457,37 +1470,33 @@
             bankrollSafetyFactor: 400
         };
 
-        // Salvar e recarregar seletor
         saveUsersToStorage();
         updateUserSelect();
-        
-        // Mudar para o novo usuário
         onUserChange(name);
-        
         showNotification('✅ Novo usuário criado', name, 'success');
     }
 
     function onUserChange(name) {
-        // Salvar estado do usuário anterior
         saveCurrentUserState();
         saveUsersToStorage();
 
-        // Mudar para novo usuário
         currentUser = name;
         applyUserState();
         
-        // Atualizar select visual
         const select = document.getElementById('userSelect');
         if (select) {
             select.value = name;
         }
-    
+        
         console.log('👤 Usuário alterado para:', name);
     }
 
     function updateUserSelect() {
         const select = document.getElementById('userSelect');
-        if (!select) return;
+        if (!select) {
+            console.warn('⚠️ Elemento userSelect não encontrado');
+            return;
+        }
 
         const usernames = Object.keys(usersData);
         select.innerHTML = '';
@@ -1503,16 +1512,14 @@
             select.value = currentUser;
         }
     }
-    
+
     function saveCurrentUserState() {
         if (!currentUser || !usersData[currentUser]) return;
 
-        // Salvar dados de registro e cashout
         usersData[currentUser].registered = Array.from(registered);
         usersData[currentUser].cashouts   = cashouts;
         usersData[currentUser].buyins     = buyins;
 
-        // Salvar configuração de banca
         const bankEl   = document.getElementById('bankrollInitialBank');
         const safetyEl = document.getElementById('bankrollSafetyFactor');
 
@@ -1535,19 +1542,16 @@
             bankrollSafetyFactor: 400
         };
 
-        // Aplicar registered/cashouts
         registered = new Set(data.registered || []);
         cashouts   = data.cashouts || {};
         buyins     = data.buyins || {};
 
-        // Aplicar configuração de banca
         const bankEl   = document.getElementById('bankrollInitialBank');
         const safetyEl = document.getElementById('bankrollSafetyFactor');
 
         if (bankEl)   bankEl.value   = data.bankrollInitialBank  ?? 1000;
         if (safetyEl) safetyEl.value = data.bankrollSafetyFactor ?? 400;
 
-        // Redesenhar tudo
         renderTable();
         updateControlDashboard();
         if (typeof updateBankrollMetrics === 'function') {
@@ -1556,10 +1560,8 @@
     }
 
     function initUserSystem() {
-        // Carregar usuários do localStorage
         loadUsersFromStorage();
 
-        // Se não houver nenhum usuário, criar padrão
         if (Object.keys(usersData).length === 0) {
             const defaultName = 'Jogador 1';
             usersData[defaultName] = {
@@ -1572,19 +1574,15 @@
             currentUser = defaultName;
             saveUsersToStorage();
         } else {
-            // Pegar primeiro usuário como padrão
             currentUser = Object.keys(usersData)[0];
         }
 
-        // Popular seletor
         updateUserSelect();
-
-        // Aplicar estado do usuário atual
         applyUserState();
         
         console.log('👤 Sistema de usuários inicializado. Usuário atual:', currentUser);
     }
-    
+
     async function logout() {
         saveCurrentUserState();
         await saveToBackend();
@@ -1601,7 +1599,7 @@
         alert('✅ Você foi desconectado. A página será recarregada.');
         window.location.reload();
     }
-    
+
     async function loadFromBackend() {
         try {
             const response = await fetch('/api/bankroll', {
@@ -1617,9 +1615,7 @@
 
             const data = await response.json();
 
-            // ✅ DIFERENÇA IMPORTANTE: Valida currentUser PRIMEIRO
             if (!currentUser) {
-                // Se não há usuário ativo, tenta pegar do servidor/sessão
                 const sessionRes = await fetch('/api/auth/session', {
                     credentials: 'include'
                 });
@@ -1631,7 +1627,6 @@
                 }
             }
 
-            // Agora currentUser está garantido ✅
             if (!usersData[currentUser]) {
                 usersData[currentUser] = {
                     registered: [],
@@ -1656,21 +1651,20 @@
         }
     }
 
-
-    function loadUsersFromStorage() {
+    function loadUsersFromStorageLocal() {
         try {
             const raw = localStorage.getItem(USERS_STORAGE_KEY);
             usersData = raw ? JSON.parse(raw) : {};
-            console.log('✅ Usuários carregados do localStorage');  // ← LOG AQUI!
+            console.log('✅ Dados carregados do localStorage (offline)');
         } catch (e) {
-            console.error('❌ Erro ao carregar usuários:', e);  // ← LOG AQUI!
+            console.error('❌ Erro ao carregar localStorage:', e);
             usersData = {};
         }
     }
 
     async function saveToBackend() {
         if (!currentUser || !usersData[currentUser]) {
-            console.warn('⚠️ Nenhum usuário para salvar');  // ← LOG AQUI!
+            console.warn('⚠️ Nenhum usuário para salvar');
             return;
         }
 
@@ -1693,19 +1687,33 @@
             });
 
             if (!response.ok) {
-                throw new Error('HTTP ' + response.status);  // ← Throw ao invés de return
+                throw new Error('HTTP ' + response.status);
             }
 
             console.log('✅ Dados salvos no servidor');
-            localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(usersData));  // ← Salva também localmente
-            
+            localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(usersData));
+
         } catch (e) {
-            console.error('⚠️ Erro ao salvar (offline, salvando localmente):', e);  // ← Log melhorado
+            console.error('⚠️ Erro ao salvar (offline, salvando localmente):', e);
             localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(usersData));
         }
     }
 
-    
+// ===== FIM DO SISTEMA DE USUÁRIOS =====
+
+
+    let allTournamentsData = [];
+    let filteredTournaments = [];
+    let buyins = {};             // { tournamentId: { count: N, total: amount, buyIns: [10, 10, 5] } }
+    let selectedDays = new Set([1, 2, 3, 4, 5, 6, 0]);
+    let cashouts = {};
+    let currentCashoutId = null;
+    let apiOnline = false;
+    let registered = new Set();
+    let profiles = {};
+    let sortColumn = null;
+    let sortDirection = 'asc';
+    let updateInterval = null;
 
 
     async function persistData() {
