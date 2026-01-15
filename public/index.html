@@ -1636,7 +1636,7 @@
     }
 
     // Backup: tenta carregar do localStorage se servidor falhar
-    function loadUsersFromStorageLocal() {
+    function loadUsersFromStorage() {
         try {
             const raw = localStorage.getItem(USERS_STORAGE_KEY);
             usersData = raw ? JSON.parse(raw) : {};
