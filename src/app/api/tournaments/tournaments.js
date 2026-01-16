@@ -1,4 +1,5 @@
-export default function handler(req, res) {
+export const getTournaments = () => {
+
   res.setHeader("Cache-Control", "s-maxage=30, stale-while-revalidate=300");
 
   // ✅ Função: Determinar prioridade para torneios YaPoker
