@@ -1156,7 +1156,7 @@
                 </select>
                 
                 <!-- Botão para criar novo usuário local -->
-                <button onclick="createNewUser()" 
+                <button onclick="criarNovoPerfil()" 
                         style="background: var(--secondary); color: var(--bg-dark); border: 1px solid var(--secondary); padding: 6px 8px; border-radius: 2px; cursor: pointer; font-size: 11px; font-weight: 600;">
                     ➕ Novo
                 </button>
@@ -1425,6 +1425,9 @@
 <script>   
     
     // ===== VARIÁVEIS GLOBAIS DE USUÁRIOS =====
+    let registered = new Set();
+    let cashouts = {};
+    let buyins = {};
     let usersData = {};
     let currentUser = null;
     const USERS_STORAGE_KEY = 'pegaBlinderUsers_v1';
@@ -1453,7 +1456,7 @@
 
     // ===== SISTEMA DE MÚLTIPLOS USUÁRIOS =====
 
-    function createNewUser() {
+    function criarNovoPerfil() {
         const name = prompt('Nome do novo usuário:');
         if (!name || name.trim() === '') return;
 
