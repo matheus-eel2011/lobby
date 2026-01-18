@@ -1,7 +1,5 @@
-export const getTournaments = () => {
-
-  res.setHeader("Cache-Control", "s-maxage=30, stale-while-revalidate=300");
-
+export const getTournaments = async () => {
+  
   // ✅ Função: Determinar prioridade para torneios YaPoker
   const getYaPriority = (tournamentName) => {
     const nameLower = tournamentName.toLowerCase();
@@ -1482,5 +1480,5 @@ export const getTournaments = () => {
   id = addChampionTournaments(tournaments, id);
   id = addpartypokerTournaments(tournaments, id);
   
-  res.json(tournaments);
+  return tournaments;
 }
