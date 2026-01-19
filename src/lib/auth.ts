@@ -1,4 +1,6 @@
-﻿import { supabase } from './supabase'
+﻿import { saveUserProfile } from './userService'
+import { supabase } from './supabase'
+
 export async function registerUser(email: string, password: string) {
   try {
     const { data, error } = await supabase.auth.signUp({

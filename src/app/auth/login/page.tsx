@@ -21,7 +21,7 @@ export default function LoginPage() {
       const result = await loginUser(email, password)
       
       if (result.success) {
-        router.push('/')
+        router.push('/lobby')
       } else {
         setError(result.error || 'Falha ao fazer login')
       }
