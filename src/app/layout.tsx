@@ -19,7 +19,6 @@ export default function RootLayout({
         <Script
           src="/poker-init.js"
           strategy="beforeInteractive"
-          priority
         />
         <Script
           src="/poker-storage.js"
