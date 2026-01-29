@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { registerUser } from '@/lib/auth'
 
-export default function RegisterPage() {
+export default function SignupPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -20,7 +20,6 @@ export default function RegisterPage() {
     setSuccess('')
     setLoading(true)
 
-    // Validações
     if (password !== confirmPassword) {
       setError('As senhas não coincidem')
       setLoading(false)
@@ -35,7 +34,6 @@ export default function RegisterPage() {
 
     try {
       const result = await registerUser(email, password)
-      
       if (result.success) {
         setSuccess('Cadastro realizado! Verifique seu email para confirmar.')
         setTimeout(() => {
@@ -52,143 +50,123 @@ export default function RegisterPage() {
   }
 
   return (
-    <div style={{
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      minHeight: '100vh',
-      backgroundColor: '#f5f5f5'
-    }}>
-      <div style={{
-        backgroundColor: 'white',
-        padding: '40px',
-        borderRadius: '8px',
-        boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-        width: '100%',
-        maxWidth: '400px'
-      }}>
-        <h1 style={{ marginBottom: '30px', textAlign: 'center', color: '#333' }}>
-          Cadastrar
-        </h1>
+    <div className="min-h-screen w-full flex items-center justify-center overflow-hidden relative">
+      {/* Background com overlay */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: 'url(/images/cadastro.jpg)',
+          filter: 'brightness(0.5) contrast(1.1)',
+        }}
+      />
 
-        {error && (
-          <div style={{
-            backgroundColor: '#fee',
-            color: '#c33',
-            padding: '10px',
-            borderRadius: '4px',
-            marginBottom: '20px',
-            fontSize: '14px'
-          }}>
-            {error}
-          </div>
-        )}
+      {/* Overlay gradient para melhor legibilidade */}
+      <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-transparent to-black/60" />
 
-        {success && (
-          <div style={{
-            backgroundColor: '#efe',
-            color: '#3c3',
-            padding: '10px',
-            borderRadius: '4px',
-            marginBottom: '20px',
-            fontSize: '14px'
-          }}>
-            {success}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-          <div>
-            <label htmlFor="email" style={{ display: 'block', marginBottom: '5px', color: '#666' }}>
-              Email:
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              style={{
-                width: '100%',
-                padding: '10px',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                fontSize: '14px',
-                boxSizing: 'border-box'
-              }}
-              placeholder="seu@email.com"
-            />
+      {/* Container do formulário */}
+      <div className="relative z-10 w-full max-w-md px-6 sm:px-8">
+        <div className="backdrop-blur-lg bg-white/5 border border-white/10 rounded-2xl shadow-2xl p-8 space-y-6">
+          {/* Header */}
+          <div className="text-center space-y-2">
+            <h1 className="text-4xl font-bold text-white tracking-tight">Cadastro</h1>
+            <p className="text-gray-300 text-sm">Crie sua conta para começar</p>
           </div>
 
-          <div>
-            <label htmlFor="password" style={{ display: 'block', marginBottom: '5px', color: '#666' }}>
-              Senha:
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              style={{
-                width: '100%',
-                padding: '10px',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                fontSize: '14px',
-                boxSizing: 'border-box'
-              }}
-              placeholder="••••••••"
-            />
+          {/* Mensagens de erro e sucesso */}
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 flex items-start gap-3">
+              <div className="w-2 h-2 bg-red-500 rounded-full mt-1.5 flex-shrink-0" />
+              <p className="text-red-400 text-sm leading-relaxed">{error}</p>
+            </div>
+          )}
+
+          {success && (
+            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4 flex items-start gap-3">
+              <div className="w-2 h-2 bg-emerald-500 rounded-full mt-1.5 flex-shrink-0" />
+              <p className="text-emerald-400 text-sm leading-relaxed">{success}</p>
+            </div>
+          )}
+
+          {/* Formulário */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Email */}
+            <div className="space-y-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-200">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                placeholder="seu@email.com"
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all duration-300"
+              />
+            </div>
+
+            {/* Senha */}
+            <div className="space-y-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-200">
+                Senha
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                placeholder="Mínimo 6 caracteres"
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all duration-300"
+              />
+            </div>
+
+            {/* Confirmar Senha */}
+            <div className="space-y-2">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-200">
+                Confirmar Senha
+              </label>
+              <input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                placeholder="Repita sua senha"
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all duration-300"
+              />
+            </div>
+
+            {/* Botão de envio */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Cadastrando...
+                </span>
+              ) : (
+                'Criar Conta'
+              )}
+            </button>
+          </form>
+
+          {/* Link para login */}
+          <div className="text-center pt-4 border-t border-white/10">
+            <p className="text-gray-300 text-sm">
+              Já tem conta?{' '}
+              <Link href="/auth/login" className="text-cyan-400 hover:text-cyan-300 font-semibold transition-colors">
+                Faça login aqui
+              </Link>
+            </p>
           </div>
-
-          <div>
-            <label htmlFor="confirmPassword" style={{ display: 'block', marginBottom: '5px', color: '#666' }}>
-              Confirmar Senha:
-            </label>
-            <input
-              id="confirmPassword"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              style={{
-                width: '100%',
-                padding: '10px',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                fontSize: '14px',
-                boxSizing: 'border-box'
-              }}
-              placeholder="••••••••"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              backgroundColor: loading ? '#ccc' : '#4CAF50',
-              color: 'white',
-              padding: '10px',
-              borderRadius: '4px',
-              border: 'none',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              marginTop: '10px'
-            }}
-          >
-            {loading ? 'Cadastrando...' : 'Cadastrar'}
-          </button>
-        </form>
-
-        <p style={{ marginTop: '20px', textAlign: 'center', color: '#666' }}>
-          Já tem conta?{' '}
-          <Link href="/auth/login" style={{ color: '#2196F3', textDecoration: 'none' }}>
-            Faça login aqui
-          </Link>
-        </p>
+        </div>
       </div>
     </div>
   )

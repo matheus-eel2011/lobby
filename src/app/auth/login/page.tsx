@@ -19,8 +19,8 @@ export default function LoginPage() {
 
     try {
       const result = await loginUser(email, password)
-      
       if (result.success) {
+        // ✅ Apenas navega - deixa o lobby carregar os dados
         router.push('/lobby')
       } else {
         setError(result.error || 'Falha ao fazer login')
@@ -33,108 +33,97 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={{
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      minHeight: '100vh',
-      backgroundColor: '#f5f5f5'
-    }}>
-      <div style={{
-        backgroundColor: 'white',
-        padding: '40px',
-        borderRadius: '8px',
-        boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-        width: '100%',
-        maxWidth: '400px'
-      }}>
-        <h1 style={{ marginBottom: '30px', textAlign: 'center', color: '#333' }}>
-          Entrar
-        </h1>
+    <div
+      className="relative min-h-screen w-full overflow-hidden"
+      style={{
+        backgroundImage: 'url(/images/black-country-blues-bg.jpg)',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'left',
+        backgroundAttachment: 'fixed',
+      }}
+    >
+      {/* Overlay escuro para melhorar legibilidade */}
+      <div className="absolute inset-0 bg-black/50" />
 
-        {error && (
-          <div style={{
-            backgroundColor: '#fee',
-            color: '#c33',
-            padding: '10px',
-            borderRadius: '4px',
-            marginBottom: '20px',
-            fontSize: '14px'
-          }}>
-            {error}
+      {/* Conteúdo do formulário */}
+      <div className="relative z-10 flex items-center justify-center min-h-screen px-4">
+        <div className="w-full max-w-md">
+          <div className="bg-black/70 backdrop-blur-sm border border-gray-700 rounded-lg shadow-2xl p-8">
+            {/* Logo/Título */}
+            <div className="text-center mb-8">
+              <h1 className="text-3xl font-bold text-white mb-2">Pega Blinder</h1>
+              <p className="text-gray-400 text-sm">Gerenciador de Torneios e Bankroll</p>
+            </div>
+
+            {/* Formulário */}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Email */}
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  placeholder="seu@email.com"
+                  className="w-full px-4 py-2 bg-gray-900 border border-gray-600 text-white placeholder-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition"
+                />
+              </div>
+
+              {/* Senha */}
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
+                  Senha
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  placeholder="••••••••"
+                  className="w-full px-4 py-2 bg-gray-900 border border-gray-600 text-white placeholder-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition"
+                />
+              </div>
+
+              {/* Mensagem de erro */}
+              {error && (
+                <div className="bg-red-500/20 border border-red-500/50 text-red-400 px-4 py-3 rounded-md text-sm">
+                  {error}
+                </div>
+              )}
+
+              {/* Botão de Login */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full px-4 py-2 bg-cyan-500 hover:bg-cyan-600 disabled:bg-gray-600 text-white font-semibold rounded-md transition duration-200 mt-6"
+              >
+                {loading ? 'Conectando...' : 'Entrar'}
+              </button>
+            </form>
+
+            {/* Link para cadastro */}
+            <div className="text-center mt-6">
+              <p className="text-gray-400 text-sm">
+                Não tem conta?{' '}
+                <Link href="/auth/signup" className="text-cyan-400 hover:text-cyan-300 font-semibold transition">
+                  Cadastre-se aqui
+                </Link>
+              </p>
+            </div>
           </div>
-        )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-          <div>
-            <label htmlFor="email" style={{ display: 'block', marginBottom: '5px', color: '#666' }}>
-              Email:
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              style={{
-                width: '100%',
-                padding: '10px',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                fontSize: '14px',
-                boxSizing: 'border-box'
-              }}
-              placeholder="seu@email.com"
-            />
+          {/* Rodapé */}
+          <div className="text-center mt-8">
+            <p className="text-gray-500 text-xs">
+              © 2026 Pega Blinder. Todos os direitos reservados.
+            </p>
           </div>
-
-          <div>
-            <label htmlFor="password" style={{ display: 'block', marginBottom: '5px', color: '#666' }}>
-              Senha:
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              style={{
-                width: '100%',
-                padding: '10px',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                fontSize: '14px',
-                boxSizing: 'border-box'
-              }}
-              placeholder="••••••••"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              backgroundColor: loading ? '#ccc' : '#2196F3',
-              color: 'white',
-              padding: '10px',
-              borderRadius: '4px',
-              border: 'none',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              marginTop: '10px'
-            }}
-          >
-            {loading ? 'Entrando...' : 'Entrar'}
-          </button>
-        </form>
-
-        <p style={{ marginTop: '20px', textAlign: 'center', color: '#666' }}>
-          Não tem conta?{' '}
-          <Link href="/auth/register" style={{ color: '#2196F3', textDecoration: 'none' }}>
-            Cadastre-se aqui
-          </Link>
-        </p>
+        </div>
       </div>
     </div>
   )

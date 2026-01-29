@@ -148,7 +148,7 @@ export default function HomePage() {
                 }}>
                   Login
                 </Link>
-                <Link href="/auth/register" style={{
+                <Link href="/auth/signup" style={{
                   backgroundColor: '#4CAF50',
                   color: 'white',
                   padding: '10px 20px',
@@ -261,7 +261,7 @@ export default function HomePage() {
               }}>
                 🔐 Login
               </Link>
-              <Link href="/auth/register" style={{
+              <Link href="/auth/signup" style={{
                 backgroundColor: '#4CAF50',
                 color: 'white',
                 padding: '20px',
