@@ -1,6 +1,7 @@
 ﻿'use client'
 
 import { useEffect, useState } from 'react'
+import { redirect } from 'next/navigation'
 
 interface Tournament {
   id: number
@@ -17,6 +18,7 @@ interface Tournament {
 }
 
 export default function Home() {
+  redirect('/auth/login')
   const [tournaments, setTournaments] = useState<Tournament[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
