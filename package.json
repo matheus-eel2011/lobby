@@ -5,8 +5,12 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p $PORT",
     "lint": "eslint"
+  },
+    "engines": {
+    "node": "18.x",
+    "npm": "9.x"
   },
   "dependencies": {
     "@auth/core": "^0.34.3",
