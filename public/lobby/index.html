@@ -1141,14 +1141,15 @@
             <div class="header-left">
                 <button class="toggle-sidebar" id="toggleSidebar" onclick="toggleSidebar()">☰</button>
                 <div class="header-title">
-                    🎯 PEGA BLINDER LOBBY
+                    🎯 PEGA BLINDER
                     <span class="api-status online" id="apiStatus">✅ Online</span>
                 </div>
             </div>
             <div class="view-toggle">
-                <button class="view-btn active" data-view="list">Lista</button>
-                <button class="view-btn" data-view="control">Controle</button>
+                <button class="view-btn active" data-view="list">Lobby</button>
+                <button class="view-btn" data-view="control">Control</button>
                 <button class="view-btn" data-view="bankroll">💰 Bankroll</button>
+                <button class="view-btn" data-view="manual">Add Tournaments</button>
             </div>
         </div>
 
@@ -1159,7 +1160,7 @@
     
                     <div style="padding: 15px; background: rgba(201, 169, 97, 0.1); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
                         <h3 style="color: var(--secondary); margin: 0; text-transform: uppercase; font-size: 13px; letter-spacing: 0.5px;">
-                            📌 TORNEIOS REGISTRADOS NESTA SESSÃO
+                            📌 REGISTERED TOURNAMENTS
                         </h3>
                         <span id="registeredCountBadge" style="background: var(--secondary); color: var(--bg-dark); padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 12px;">0</span>
                     </div>
@@ -1168,14 +1169,14 @@
                         <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
                             <thead>
                                 <tr style="background: var(--bg-dark); position: sticky; top: 0;">
-                                    <th style="text-align: left; padding: 10px; border-bottom: 1px solid var(--border); color: var(--secondary); font-weight: 700; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px;">Hora</th>
-                                    <th style="text-align: left; padding: 10px; border-bottom: 1px solid var(--border); color: var(--secondary); font-weight: 700; text-transform: uppercase; font-size: 10px;">Torneio</th>
+                                    <th style="text-align: left; padding: 10px; border-bottom: 1px solid var(--border); color: var(--secondary); font-weight: 700; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px;">Hour</th>
+                                    <th style="text-align: left; padding: 10px; border-bottom: 1px solid var(--border); color: var(--secondary); font-weight: 700; text-transform: uppercase; font-size: 10px;">Tournament</th>
                                     <th style="text-align: center; padding: 10px; border-bottom: 1px solid var(--border); color: var(--secondary); font-weight: 700; text-transform: uppercase; font-size: 10px;">Buy-in</th>
                                     <th style="text-align: center; padding: 10px; border-bottom: 1px solid var(--border); color: var(--secondary); font-weight: 700; text-transform: uppercase; font-size: 10px;">Rebuy</th>
-                                    <th style="text-align: center; padding: 10px; border-bottom: 1px solid var(--border); color: var(--secondary); font-weight: 700; text-transform: uppercase; font-size: 10px;">Investido</th>
+                                    <th style="text-align: center; padding: 10px; border-bottom: 1px solid var(--border); color: var(--secondary); font-weight: 700; text-transform: uppercase; font-size: 10px;">Total</th>
                                     <th style="text-align: center; padding: 10px; border-bottom: 1px solid var(--border); color: var(--secondary); font-weight: 700; text-transform: uppercase; font-size: 10px;">Cashout</th>
-                                    <th style="text-align: center; padding: 10px; border-bottom: 1px solid var(--border); color: var(--secondary); font-weight: 700; text-transform: uppercase; font-size: 10px;">Lucro</th>
-                                    <th style="text-align: center; padding: 10px; border-bottom: 1px solid var(--border); color: var(--secondary); font-weight: 700; text-transform: uppercase; font-size: 10px;">Ação</th>
+                                    <th style="text-align: center; padding: 10px; border-bottom: 1px solid var(--border); color: var(--secondary); font-weight: 700; text-transform: uppercase; font-size: 10px;">L/P</th>
+                                    <th style="text-align: center; padding: 10px; border-bottom: 1px solid var(--border); color: var(--secondary); font-weight: 700; text-transform: uppercase; font-size: 10px;">Action</th>
                                 </tr>
                             </thead>
                             <tbody id="registeredTournamentsBody">
@@ -1363,7 +1364,107 @@
                     </div>
                 </div>
             </div>
+            <div id="manualView" class="view-content hidden">
+                <div style="padding:20px">
+                    <div class="grind-card">
+                        <div class="grind-title">Tournament Schedule</div>
+
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                            <div>
+                        <label style="color:var(--text-secondary); font-size:12px;">Date</label>
+                        <input type="date" id="manualDate">
+                    </div>
+
+                    <div>
+                        <label style="color:var(--text-secondary); font-size:12px;">Starting</label>
+                        <input type="time" id="manualTime">
+                    </div>
+
+                    <div>
+                        <label style="color:var(--text-secondary); font-size:12px;">Plataform</label>
+                        <select id="manualSite">
+                            <option value="GGPoker">GGPoker</option>
+                            <option value="PokerStars">PokerStars</option>
+                            <option value="888Poker">888Poker</option>
+                            <option value="YaPoker">YaPoker</option>
+                            <option value="Champion">Champion</option>
+                            <option value="Partypoker">Partypoker</option>
+                            <option value="WPT">WPT</option>
+                            <option value="Suprema">Suprema</option>
+                            <option value="KKpoker">KKpoker</option>
+                            <option value="Coin">Coin</option>
+                            <option value="Jack">Jack</option>
+                            <option value="QQPK">QQPK</option>
+                            <option value="Tiger">Tiger</option>
+                            <option value="Bodog">Bodog</option>                            
+                        </select>
+                    </div>
+
+                    <div>
+                        <label style="color:var(--text-secondary); font-size:12px;">Type</label>
+                        <select id="manualType">
+                            <option value="REG">REG</option>
+                            <option value="TURBO">TURBO</option>
+                            <option value="REG KO">REG KO</option>
+                            <option value="TURBO KO">TURBO KO</option>
+                            <option value="MYSTERY">MYSTERY</option>
+                            <option value="HYPER">HYPER</option>
+                        </select>
+                    </div>
+
+                    <div style="grid-column: 1 / -1;">
+                        <label style="color:var(--text-secondary); font-size:12px;">Name</label>
+                        <input type="text" id="manualName" placeholder="Ex: Daily Special 5.50">
+                    </div>
+
+                    <div>
+                        <label style="color:var(--text-secondary); font-size:12px;">Buy-in</label>
+                        <input type="number" id="manualBuyin" step="0.01" value="0">
+                    </div>
+
+                    <div>
+                        <label style="color:var(--text-secondary); font-size:12px;">Late Reg (min)</label>
+                        <input type="number" id="manualLateReg" step="1" value="0">
+                    </div>
+
+                    <div>
+                        <label style="color:var(--text-secondary); font-size:12px;">GTD</label>
+                        <input type="number" id="manualGuaranteed" step="1" value="0">
+                    </div>
+
+                    <div>
+                        <label style="color:var(--text-secondary); font-size:12px;">Field</label>
+                        <input type="number" id="manualField" step="1" value="0">
+                    </div>
+
+                    <div>
+                        <label style="color:var(--text-secondary); font-size:12px;">Priority</label>
+                        <select id="manualPriority">
+                            <option value="very-low">Very Low</option>
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                            <option value="very-high">Very High</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:10px; margin-top:12px;">
+                    <button class="btn-primary" id="btnManualSave" style="margin-top:0;">Save</button>
+                    <button class="btn-primary" id="btnManualRefresh" style="margin-top:0;">Refresh</button>
+                </div>
+            </div>
+
+            <div class="grind-card">
+                <div class="grind-title">Torunaments Saved</div>
+                <div id="manualListContainer" style="color:var(--text-secondary); font-size:12px;">
+                    Carregando...
+                </div>
+            </div>
+                </div>
         </div>
+
+    </div>
 
 
 <!-- Modal -->
@@ -2720,8 +2821,18 @@ window.resetTournamentsPagination = async function() {
     
     }
 
-    function applyFilters() {
-        const source = Array.isArray(window.allTournamentsData) ? window.allTournamentsData : [];
+    function getMergedTournamentsSource() {
+        const api = Array.isArray(window.allTournamentsData) ? window.allTournamentsData : [];
+        const manual = Array.isArray(window.manualTournaments) ? window.manualTournaments : [];
+
+        // dedupe por id
+        const map = new Map();
+        [...api, ...manual].forEach(t => map.set(Number(t.id), t));
+        return Array.from(map.values());
+    }    
+    
+    function applyFilters() {     
+        const source = getMergedTournamentsSource();
         const rooms = Array.from(document.querySelectorAll('.room-filter:checked')).map(e => e.value);
         const types = Array.from(document.querySelectorAll('.type-filter:checked')).map(e => e.value);
         const priorities = Array.from(document.querySelectorAll('.priority-filter:checked')).map(e => e.value);
@@ -3997,12 +4108,32 @@ if (document.querySelector('.view-btn[data-view="bankroll"].active')) {
             try {
                 console.log('[Init] Carregando dados do usuário...');
                 await window.loadUserData();
-                console.log('[Init] ✅ Dados do usuário carregados com sucesso');
+                // garante array mesmo se falhar
+                window.manualTournaments = [];
+
+                // carrega manuais do Supabase
+                if (typeof loadManualTournamentsFromSupabase === 'function') {
+                window.manualTournaments = await loadManualTournamentsFromSupabase();
+                console.log('[Init] Manual tournaments:', window.manualTournaments.length);
+                } else {
+                console.warn('[Init] loadManualTournamentsFromSupabase não existe');
+                }
+
+                // IMPORTANTE: aqui você ainda não tem certeza que a API já carregou.
+                // Então ou você chama loadTournamentsFromAPI agora, ou deixa ela rodar e aplicar filtros depois.
+                if (typeof window.resetTournamentsPagination === 'function') {
+                await window.resetTournamentsPagination(); // isso chama loadTournamentsFromAPI(reset=true) no seu código
+                }
+
+                // agora sim: filtros enxergam API + manuais (desde que applyFilters use a fonte mesclada)
+                if (typeof applyFilters === 'function') applyFilters();
+
+                console.log('[Init] ✅ Dados do usuário + manuais + API carregados');
             } catch (error) {
                 console.error('[Init] ❌ Erro ao carregar dados:', error);
             }
-        } else {
-            console.warn('[Init] ⚠️  loadUserData não é função');
+            } else {
+            console.warn('[Init] ⚠️ loadUserData não é função');
         }
 
         // ============================================
