@@ -20,6 +20,8 @@ export default function LoginPage() {
     try {
       const result = await loginUser(email, password)
       if (result.success) {
+        // ✅ Força refresh para atualizar os cookies
+        router.refresh()
         // ✅ Apenas navega - deixa o lobby carregar os dados
         router.push('/lobby')
       } else {

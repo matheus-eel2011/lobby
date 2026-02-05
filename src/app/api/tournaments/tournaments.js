@@ -32,8 +32,8 @@ export const getTournaments = async () => {
 
   function generateDatesForFebruary() {
     const dates = [];
-    const startDate = new Date(2026, 0, 4);
-    const endDate = new Date(2026, 0, 28);
+    const startDate = new Date(2026, 1, 4);
+    const endDate = new Date(2026, 1, 28);
     for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
       dates.push(new Date(d));
     }

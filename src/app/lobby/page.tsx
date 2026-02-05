@@ -25,8 +25,8 @@ export default function LobbyPage() {
               '<script>',
               `<script>
                 // ✅ GARANTIR USER ID ANTES DE TUDO
-                window.CURRENT_USER_ID = "${user.id}";
-                console.log('[Lobby] User ID carregado:', window.CURRENT_USER_ID);
+                window.CURRENTUSERID = "${user.id}";
+                console.log('[Lobby] User ID carregado:', window.CURRENTUSERID);
                 
                 // ========================================
                 // 🔧 INICIALIZAÇÃO PARA NOVOS USUÁRIOS
@@ -61,7 +61,7 @@ export default function LobbyPage() {
             )
             // ✅ REMOVER linha que anula o User ID
             .replace('window.currentUserId = null', '')
-            .replace('window.CURRENT_USER_ID = null', '')
+            .replace('window.CURRENTUSERID = null', '')
           
           setIframeContent(modifiedHtml)
         })

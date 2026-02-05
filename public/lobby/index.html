@@ -1190,6 +1190,21 @@
                 </div>
      
                 <div class="table-container">
+                    <!-- Pagination controls (NOVO) -->
+                    <div id="tournamentsPagination" style="display:flex; gap:10px; align-items:center; justify-content:space-between; margin:12px 0;">
+                    <div style="color: var(--text-secondary); font-size: 12px;">
+                        <span id="pageInfo">Carregando...</span>
+                    </div>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <button id="btnReloadToday" class="btn-primary" style="padding:6px 10px; font-size:12px;" onclick="resetTournamentsPagination()">
+                        Hoje
+                        </button>
+                        <button id="btnLoadMore" class="btn-primary" style="padding:6px 10px; font-size:12px;" onclick="nextTournamentsPage()">
+                        Carregar mais
+                        </button>
+                    </div>
+                    </div>
+
                     <table id="tournamentTable">
                         <thead>
                         <tr>
@@ -1469,6 +1484,7 @@
                         cashouts: validated.cashouts || _pokerStorage.cashouts,
                         currentCashoutId: validated.currentCashoutId ?? _pokerStorage.currentCashoutId,
                         storage: validated.storage || _pokerStorage.storage,
+                        registeredMeta: validated.registeredMeta ?? pokerStorage.registeredMeta ?? {},
                         _initialized: true,
                         _initTimestamp: new Date().toISOString()
                     };
@@ -1518,6 +1534,7 @@
                 _pokerStorage = {
                     buyins: {},
                     cashouts: {},
+                    registeredMeta: {},
                     currentCashoutId: null,
                     storage: {},
                     _initialized: false,
@@ -1592,13 +1609,13 @@ let dataLoaded = false;     // ← Nova flag
 
 // CARREGAR MÉTRICAS DE BANKROLL
 async function loadBankrollMetrics() {
-    if (!window.CURRENT_USER_ID) {
+    if (!window.CURRENTUSERID) {
         console.log('[Storage] User ID não disponível para carregar métricas');
         return null;
     }
 
     try {
-        const response = await fetch(`/api/storage/bankroll-metrics?userId=${window.CURRENT_USER_ID}`);
+        const response = await fetch(`/api/storage/bankroll-metrics?userId=${window.CURRENTUSERID}`);
         const result = await response.json();
 
         if (result.success && result.data && result.data.metrics) {
@@ -1646,49 +1663,70 @@ async function restoreBankrollMetricsUI(metrics) {
 };  
 
 const storageModule = {
-    async saveUserState(data) {
-        // ⚠️ VERIFICAÇÃO CRÍTICA: Não salvar durante carregamento
-        if (isLoadingData || !dataLoaded) {
-            console.log('[Storage] ⏸️  Salvamento bloqueado - aguardando carregamento de dados');
-            return null;
-        }
+   async saveUserState(data) {
+    // ⚠️ Não salvar durante carregamento
+    if (isLoadingData || !dataLoaded) {
+        console.log('[Storage] ⏸️ Salvamento bloqueado - aguardando carregamento de dados');
+        return null;
+    }
 
-        if (!window.CURRENT_USER_ID) {
-            console.warn('[Storage] User ID não disponível');
-            return;
-        }
+    if (!window.CURRENTUSERID) {
+        console.warn('[Storage] User ID não disponível');
+        return null;
+    }
 
-        try {
-            // ✅ CORRIGIDO: Montar o payload corretamente
-            const payload = {
-                state: {
-                buyins: window.buyins || {},
-                cashouts: window.cashouts || {},
-                ...(data || {})
-                },
-                userId: window.CURRENT_USER_ID
-            }
+    // ✅ Evita sobrescrever no Supabase com estado vazio acidental
+    const buyinsNow = window.buyins || {};
+    const cashoutsNow = window.cashouts || {};
+    const hasSomeData =
+        Object.keys(buyinsNow).length > 0 || Object.keys(cashoutsNow).length > 0;
 
-                console.log('[Storage] Salvando com payload:', payload)
+    if (!hasSomeData) {
+        console.warn('[Storage] Salvamento ignorado: buyins/cashouts vazios');
+        return null;
+    }
 
-                const response = await fetch('/api/storage/user-state', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-        } catch (error) {
-            console.error('[Storage] Erro:', error);
-        }              
+    try {
+        // ✅ FORMATO CERTO: { userId, state: {...} }
+        const payload = {
+        userId: window.CURRENTUSERID,
+        state: {
+            buyins: buyinsNow,
+            cashouts: cashoutsNow,
+            currentCashoutId: window.currentCashoutId ?? null,
+            selectedGames: Array.from(window.selectedGames || ['ALL']),
+            selectedVenues: Array.from(window.selectedVenues || ['ALL']),
+            filteredTournaments: window.filteredTournaments || [],
+            ...(data || {}),
+        },
+        };
+
+        console.log('[Storage] Salvando com payload:', payload);
+
+        const response = await fetch('/api/storage/user-state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        });
+
+        const result = await response.json();
+        console.log('[Storage] ✅ saveUserState result:', result);
+        return result;
+    } catch (error) {
+        console.error('[Storage] Erro:', error);
+        return null;
+    }
     },
+
     async updateBankroll(amount) {
-        if (!window.CURRENT_USER_ID) return;
+        if (!window.CURRENTUSERID) return;
         try {
             const response = await fetch('/api/storage/bankroll', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                 amount: Number(amount) || 0, 
-                userId: window.CURRENT_USER_ID 
+                userId: window.CURRENTUSERID 
                 })
             });
             const result = await response.json();
@@ -1699,7 +1737,7 @@ const storageModule = {
         }
     },
     async saveCashout(cashoutValue, baseBuyin, rebuyCount, totalInvested) {
-            if (!window.CURRENT_USER_ID) {
+            if (!window.CURRENTUSERID) {
                 console.warn('[Storage] User ID não disponível');
                 return;
             }
@@ -1712,7 +1750,7 @@ const storageModule = {
                     rebuyCount: Number(rebuyCount) || 0,
                     totalInvested: Number(totalInvested) || 0,
                     timestamp: new Date().toISOString(),
-                    userId: window.CURRENT_USER_ID
+                    userId: window.CURRENTUSERID
                 };
 
                 console.log('[Storage] Enviando cashout:', cashoutData);
@@ -1747,7 +1785,7 @@ const storageModule = {
             }
         },
     async saveUsersToStorage(usersList) {
-        if (!window.CURRENT_USER_ID) return;
+        if (!window.CURRENTUSERID) return;
 
         try {
             const response = await fetch('/api/storage/users', {
@@ -1755,7 +1793,7 @@ const storageModule = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                 users: usersList || [], 
-                userId: window.CURRENT_USER_ID 
+                userId: window.CURRENTUSERID 
                 })
             });
             const result = await response.json();
@@ -1767,224 +1805,201 @@ const storageModule = {
     },
 }
 window.storageModule = storageModule
-// 1. CARREGAR DADOS DO SUPABASE
-window.loadUserData = async function() {
-    if (!window.CURRENT_USER_ID) {
-        console.warn('[Storage] User ID não disponível para carregar dados');
+/// 1. CARREGAR DADOS DO SUPABASE
+window.loadUserData = async function () {
+  if (!window.CURRENTUSERID) {
+    console.warn('[Storage] User ID não disponível para carregar dados');
+    return;
+  }
+
+  try {
+    isLoadingData = true;
+    console.log('[Storage] Carregando dados do usuário...');
+
+    const response = await fetch(`/api/storage/get-data?userId=${window.CURRENTUSERID}`);
+    const result = await response.json();
+
+    console.log('[Storage] Resposta bruta:', result);
+
+    if (!(result.success && result.data && result.data.userState)) {
+      console.warn('[Storage] Nenhum dado encontrado para restaurar');
+
+      // Inicializar estruturas vazias
+      window.registeredTournaments = new Map();
+      window.filteredTournaments = [];
+      window.buyins = {};
+      window.cashouts = {};
+
+      dataLoaded = true;
+      return;
+    }
+
+    const userState = result.data.userState;
+
+    console.log('[Storage] userState completo:', userState);
+    console.log('[Storage] userState.state:', userState.state);
+    console.log('[Storage] userState.state.state:', userState.state?.state);
+
+    // USAR A FUNÇÃO CENTRALIZADA
+    const loadedSuccessfully = window.loadPokerData(userState);
+
+    if (!loadedSuccessfully) {
+      console.warn('[Storage] Falha ao carregar dados via loadPokerData');
+
+      // ⚠️ no seu arquivo parece existir POKERDEBUG (sem underscore)
+      if (window.POKERDEBUG?.reset) window.POKERDEBUG.reset();
+
+      window.registeredTournaments = new Map();
+      window.filteredTournaments = [];
+      window.buyins = {};
+      window.cashouts = {};
+
+      dataLoaded = true;
+      return;
+    }
+
+    console.log('[Storage] ✅ Dados carregados em window.POKER');
+    console.log('[Storage] ✅ Buyins restaurados:', window.POKER.buyins);
+    console.log('[Storage] ✅ Cashouts restaurados:', window.POKER.cashouts);
+
+    // ===== 1) ALIASES PRIMEIRO (antes de qualquer restore que dependa deles) =====
+    console.log('[Storage] Criando aliases globais...');
+    window.buyins = window.POKER?.buyins || {};
+    window.cashouts = window.POKER?.cashouts || {};
+    window.currentCashoutId = window.POKER?.currentCashoutId ?? null;
+    console.log('[Storage] ✅ Aliases criados');
+    console.log('[Storage] ✅ window.buyins:', window.buyins);
+    console.log('[Storage] ✅ window.cashouts:', window.cashouts);
+    
+    window.registeredMeta = window.POKER?.registeredMeta || {};
+
+    // ===== 2) RESTAURAR filteredTournaments do estado salvo =====
+    if (userState.state?.state?.filteredTournaments && Array.isArray(userState.state.state.filteredTournaments)) {
+      window.filteredTournaments = userState.state.state.filteredTournaments;
+      console.log('[Storage] ✅ filteredTournaments restaurado:', window.filteredTournaments.length, 'torneios');
+    } else {
+      window.filteredTournaments = [];
+      console.log('[Storage] filteredTournaments vazio, inicializando');
+    }
+
+    // ===== 3) RESTAURAR selectedGames / selectedVenues =====
+    console.log('[Storage] Restaurando variáveis globais...');
+
+    if (userState.state?.state?.selectedGames && Array.isArray(userState.state.state.selectedGames)) {
+      window.selectedGames = new Set(userState.state.state.selectedGames);
+      console.log('[Storage] ✅ selectedGames restaurado:', window.selectedGames);
+    } else {
+      window.selectedGames = new Set(['ALL']);
+      console.log('[Storage] selectedGames vazio, iniciando com ALL');
+    }
+
+    if (userState.state?.state?.selectedVenues && Array.isArray(userState.state.state.selectedVenues)) {
+      window.selectedVenues = new Set(userState.state.state.selectedVenues);
+      console.log('[Storage] ✅ selectedVenues restaurado:', window.selectedVenues);
+    } else {
+      window.selectedVenues = new Set(['ALL']);
+      console.log('[Storage] selectedVenues vazio, iniciando com ALL');
+    }
+
+    // ===== 4) RESTAURAR registeredTournaments (PENDENTES) =====
+    console.log('[Init] 🔄 Reconstruindo registeredTournaments via buyins (pendentes)...');
+
+    if (!(window.registeredTournaments instanceof Map)) window.registeredTournaments = new Map();
+    window.registeredTournaments.clear();
+
+    // snapshot salvo (se existir)
+    window.registeredMeta = window.registeredMeta || window.POKER?.registeredMeta || {};
+
+    Object.keys(window.buyins || {}).forEach((idStr) => {
+    const id = Number(idStr);
+
+    // pendente = cashout null/undefined
+    const cashVal = window.cashouts?.[id];
+    if (cashVal !== null && cashVal !== undefined) return;
+
+    // 1) Preferir snapshot persistido
+    const snap = window.registeredMeta?.[id];
+    if (snap) {
+        window.registeredTournaments.set(id, snap);
         return;
     }
 
-    try {
-        isLoadingData = true;
-        console.log('[Storage] Carregando dados do usuário...');
+    // 2) Tentar match na lista atual (se existir)
+    const tournament =
+        (window.filteredTournaments || []).find(t => Number(t.id) === id) ||
+        (window.allTournamentsData || []).find(t => Number(t.id) === id) ||
+        null;
 
-        const response = await fetch(`/api/storage/get-data?userId=${window.CURRENT_USER_ID}`);
-        const result = await response.json();
-
-        console.log('[Storage] Resposta bruta:', result);
-
-        if (result.success && result.data && result.data.userState) {
-            const userState = result.data.userState;
-
-            console.log('[Storage] userState completo:', userState);
-            console.log('[Storage] userState.state:', userState.state);
-            console.log('[Storage] userState.state.state:', userState.state?.state);
-                        
-            // USAR A FUNÇÃO CENTRALIZADA
-            const loadedSuccessfully = window.loadPokerData(userState);
-
-            if (loadedSuccessfully) {
-                console.log('[Storage] ✅ Dados carregados em window.POKER');
-                console.log('[Storage] ✅ Buyins restaurados:', window.POKER.buyins);
-                console.log('[Storage] ✅ Cashouts restaurados:', window.POKER.cashouts);
-
-                // ========== RESTAURAR TORNEIOS REGISTRADOS ==========
-                async function restoreRegisteredTournaments() {
-                    console.log('[Init] 🔍 DEBUG: Iniciando restoreRegisteredTournaments...');
-                    console.log('[Init] window.CURRENT_USER_ID:', window.CURRENT_USER_ID);
-                    console.log('[Init] window.POKER:', window.POKER);
-                    console.log('[Init] window.POKER?.cashouts:', window.POKER?.cashouts);
-                    
-                    // ✅ INICIALIZAR registeredTournaments como Map
-                    if (!window.registeredTournaments) {
-                        window.registeredTournaments = new Map();
-                        console.log('[Init] ✅ registeredTournaments inicializado como Map');
-                    }
-                    
-                    if (!window.CURRENT_USER_ID) {
-                        console.warn('[Init] User ID não disponível, abortando');
-                        return;
-                    }    
-                    
-                    try {
-                        console.log('[Init] 🔄 Restaurando torneios registrados...');
-                        
-                        // Os dados já vêm em window.POKER.cashouts após loadUserData()
-                        if (window.POKER?.cashouts && Object.keys(window.POKER.cashouts).length > 0) {
-                            console.log('[Init] ✅ Encontrados cashouts:', Object.keys(window.POKER.cashouts));
-                            
-                            // 🆕 Limpar registeredTournaments antes de restaurar
-                            window.registeredTournaments.clear();
-                            
-                            Object.keys(window.POKER.cashouts).forEach(id => {
-                                const cashoutValue = window.POKER.cashouts[id];
-                                
-                                // 🆕 Apenas adicionar se cashout for null ou undefined
-                                if (cashoutValue === null || cashoutValue === undefined) {
-                                    // ✅ BUSCAR TORNEIO COMPLETO nos dados filtrados
-                                    const tournament = window.filteredTournaments?.find(t => t.id === parseInt(id));
-                                    
-                                    if (tournament) {
-                                        window.registeredTournaments.set(parseInt(id), tournament);
-                                        console.log(`[Init] ✅ Torneio ${id} restaurado (cashout pendente):`, tournament.name);
-                                    } else {
-                                        console.warn(`[Init] ⚠️ Torneio ${id} não encontrado em filteredTournaments`);
-                                    }
-                                } else {
-                                    console.log(`[Init] ⏭️ Torneio ${id} ignorado (cashout preenchido: ${cashoutValue})`);
-                                }
-                            });
-
-                            console.log('[Init] ✅ Torneios ativos restaurados:', window.registeredTournaments.size, 'torneios');
-                            console.log('[Init] 🎯 IDs ativos:', Array.from(window.registeredTournaments.keys()));
-                        
-                            // Atualizar contador
-                            const badge = document.getElementById('registeredCountBadge');
-                            console.log('[Init] Badge element:', badge);
-                            
-                            if (badge) {
-                                badge.textContent = window.registeredTournaments.size;
-                                console.log('[Init] ✅ Badge atualizado para:', window.registeredTournaments.size);
-                            } else {
-                                console.warn('[Init] registeredCountBadge não encontrado!');
-                            }
-                            
-                            return true;
-                        } else {
-                            console.warn('[Init] Nenhum cashout encontrado para restaurar');
-                        }
-                    } catch (error) {
-                        console.error('[Init] Erro ao restaurar torneios:', error);
-                    }
-                        
-                    return false;
-                }
-                
-                // ⭐ RESTAURAR filteredTournaments ANTES de restaurar registrados
-                if (userState.state?.state?.filteredTournaments && Array.isArray(userState.state.state.filteredTournaments)) {
-                    window.filteredTournaments = userState.state.state.filteredTournaments;
-                    console.log('[Storage] ✅ filteredTournaments restaurado:', window.filteredTournaments.length, 'torneios');
-                } else {
-                    window.filteredTournaments = [];
-                    console.log('[Storage] filteredTournaments vazio, inicializando');
-                }
-
-                // ✅ AGORA restaurar torneios registrados (precisa de filteredTournaments primeiro)
-                await restoreRegisteredTournaments();
-
-                if (typeof renderTable === 'function') {
-                    console.log('[Storage] Renderizando tabela...');
-                    setTimeout(() => {
-                        renderTable();
-                        updateControlDashboard();
-                    }, 100);
-                }
-
-                // ⭐ RESTAURAR TODAS AS VARIÁVEIS GLOBAIS
-                console.log('[Storage] Restaurando variáveis globais...');
-
-                // Restaurar selectedGames (Set)
-                if (userState.state?.state?.selectedGames && Array.isArray(userState.state.state.selectedGames)) {
-                    window.selectedGames = new Set(userState.state.state.selectedGames);
-                    console.log('[Storage] ✅ selectedGames restaurado:', window.selectedGames);
-                } else {
-                    window.selectedGames = new Set(['ALL']);
-                    console.log('[Storage] selectedGames vazio, iniciando com ALL');
-                }
-
-                // Restaurar selectedVenues (Set)
-                if (userState.state?.state?.selectedVenues && Array.isArray(userState.state.state.selectedVenues)) {
-                    window.selectedVenues = new Set(userState.state.state.selectedVenues);
-                    console.log('[Storage] ✅ selectedVenues restaurado:', window.selectedVenues);
-                } else {
-                    window.selectedVenues = new Set(['ALL']);
-                    console.log('[Storage] selectedVenues vazio, iniciando com ALL');
-                }
-            
-                // Criar aliases (referências rápidas para window.POKER)
-                console.log('[Storage] Criando aliases globais...');
-                window.buyins = window.POKER.buyins;
-                window.cashouts = window.POKER.cashouts;
-                window.currentCashoutId = window.POKER.currentCashoutId;
-                console.log('[Storage] ✅ Aliases criados');
-                console.log('[Storage] ✅ window.buyins:', window.buyins);
-                console.log('[Storage] ✅ window.cashouts:', window.cashouts);
-                
-                // Restaurar MÉTRICAS DE BANKROLL
-                console.log('[Storage] Carregando métricas de bankroll...');
-                const savedMetrics = await loadBankrollMetrics();
-                if (savedMetrics && savedMetrics.totalTournaments > 0) {
-                    console.log('[Storage] Restaurando métricas na UI...');
-                    restoreBankrollMetricsUI(savedMetrics);
-                } else {
-                    console.log('[Storage] Nenhuma métrica salva encontrada');
-                }
-
-                console.log('[Storage] ✅ Todas as variáveis restauradas!');
-                console.log('[Storage] 🔍 Estado final:');
-                console.log('[Storage]   - registeredTournaments:', window.registeredTournaments.size, 'torneios');
-                console.log('[Storage]   - filteredTournaments:', window.filteredTournaments.length, 'torneios');
-                console.log('[Storage]   - selectedGames:', window.selectedGames);
-                console.log('[Storage]   - selectedVenues:', window.selectedVenues);
-                console.log('[Storage]   - buyins:', Object.keys(window.buyins).length, 'registros');
-                console.log('[Storage]   - cashouts:', Object.keys(window.cashouts).length, 'registros');
-
-                // Renderizar tabela com dados restaurados
-                if (typeof renderTable === 'function') {
-                    console.log('[Storage] Renderizando tabela com dados restaurados');
-                    renderTable();                                        
-                }
-
-                console.log('[Storage] ✅ Dados restaurados! window.buyins:', window.buyins, 'window.cashouts:', window.cashouts);
-                
-                dataLoaded = true;
-                return result.data;
-            } else {
-                console.warn('[Storage] Falha ao carregar dados via loadPokerData');
-                window.POKER_DEBUG.reset();
-                window.buyins = {};
-                window.cashouts = {};
-                
-                // ✅ Inicializar estruturas vazias para novo usuário
-                window.registeredTournaments = new Map();
-                window.filteredTournaments = [];
-            }
-        } else {
-            console.warn('[Storage] Nenhum dado encontrado para restaurar');
-            window.POKER_DEBUG.reset();
-            window.buyins = {};
-            window.cashouts = {};
-            
-            // ✅ Inicializar estruturas vazias para novo usuário
-            window.registeredTournaments = new Map();
-            window.filteredTournaments = [];
-        }
-
-        dataLoaded = true;
-    } catch (error) {
-        console.error('[Storage] Erro ao carregar dados:', error);
-        
-        // ✅ Inicializar estruturas vazias em caso de erro
-        window.registeredTournaments = new Map();
-        window.filteredTournaments = [];
-        window.buyins = {};
-        window.cashouts = {};
-        
-        dataLoaded = true;
-    } finally {
-        isLoadingData = false;
+    if (tournament) {
+        window.registeredTournaments.set(id, tournament);
+        return;
     }
+
+    // 3) Fallback: stub (não some)
+    const base = window.buyins?.[id] || {};
+    window.registeredTournaments.set(id, {
+        id,
+        name: `Torneio #${id}`,
+        site: '-',
+        type: '-',
+        buyin: base.baseBuyin ?? base.totalInvested ?? 0,
+        date: '',
+        time: ''
+    });
+
+    console.warn('[Init] ⚠️ Torneio pendente sem match na lista, stub:', id);
+    });
+
+    console.log('[Init] ✅ Pendentes reconstruídos:', window.registeredTournaments.size);
+
+    // badge
+    const badge = document.getElementById('registeredCountBadge');
+    if (badge) badge.textContent = window.registeredTournaments.size;
+
+
+
+    // ===== 5) Render / dashboard =====
+    if (typeof renderTable === 'function') {
+      console.log('[Storage] Renderizando tabela...');
+      setTimeout(() => {
+        renderTable();
+        if (typeof updateControlDashboard === 'function') updateControlDashboard();
+      }, 100);
+    }
+
+    // ===== 6) Métricas bankroll =====
+    console.log('[Storage] Carregando métricas de bankroll...');
+    const savedMetrics = await loadBankrollMetrics();
+    if (savedMetrics && savedMetrics.totalTournaments > 0) {
+      console.log('[Storage] Restaurando métricas na UI...');
+      restoreBankrollMetricsUI(savedMetrics);
+    } else {
+      console.log('[Storage] Nenhuma métrica salva encontrada');
+    }
+
+    console.log('[Storage] ✅ Estado final:');
+    console.log('[Storage]   - registeredTournaments:', window.registeredTournaments.size, 'torneios');
+    console.log('[Storage]   - filteredTournaments:', window.filteredTournaments.length, 'torneios');
+    console.log('[Storage]   - buyins:', Object.keys(window.buyins).length, 'registros');
+    console.log('[Storage]   - cashouts:', Object.keys(window.cashouts).length, 'registros');
+
+    dataLoaded = true;
+    return result.data;
+
+  } catch (error) {
+    console.error('[Storage] Erro ao carregar dados:', error);
+
+    window.registeredTournaments = new Map();
+    window.filteredTournaments = [];
+    window.buyins = {};
+    window.cashouts = {};
+    dataLoaded = true;
+
+  } finally {
+    isLoadingData = false;
+  }
 };
+
 
 
 
@@ -2044,7 +2059,7 @@ window.saveCashout = async function() {
     console.log('[Storage] Cashouts:', window.POKER.cashouts);
 
     // SALVAR NO SUPABASE - usando storageModule
-    if (window.CURRENT_USER_ID && window.storageModule && typeof window.storageModule.saveCashout === 'function') {
+    if (window.CURRENTUSERID && window.storageModule && typeof window.storageModule.saveCashout === 'function') {
       try {
         await window.storageModule.saveCashout(
           cashoutValue,
@@ -2122,11 +2137,17 @@ window.saveCurrentUserState = async function(data) {
     
     const stateData = {
         ...data,
+
+        // mantém como está hoje
         buyins: window.POKER.buyins,
         cashouts: window.POKER.cashouts,
         registered: Array.from(window.registered || []),
-        filteredTournaments: window.filteredTournaments || []
+        filteredTournaments: window.filteredTournaments,
+
+        // ✅ NOVO: persistir snapshot com date/time do histórico
+        registeredMeta: window.registeredMeta || window.POKER?.registeredMeta || {}
     };
+
     
     console.log('[Storage] Salvando estado do usuário:', stateData);
     
@@ -2134,21 +2155,13 @@ window.saveCurrentUserState = async function(data) {
         try {
             const result = await window.storageModule.saveUserState(stateData);
             
-            // ⭐ DEPOIS de salvar o estado, RECONSTRUIR registered
-            console.log('[Storage] 🔍 Estado salvo, reconstruindo registered...');
-            
-            const allTournamentIds = new Set();
-            if (window.POKER.cashouts) {
-                Object.keys(window.POKER.cashouts).forEach(id => {
-                    if (window.POKER.cashouts[id] !== undefined) {
-                        allTournamentIds.add(parseInt(id));
-                    }
-                });
-            }
-            
-            window.registered = allTournamentIds;
-            console.log('[Storage] 🔍 Reconstruído window.registered:', window.registered);
-            console.log('[Storage] 🔍 window.registered.size =', window.registered.size);
+            // ✅ Depois de salvar: nada de window.registered (Set legado)
+            console.log('[Storage] ✅ Estado salvo. registeredTournaments.size =', window.registeredTournaments?.size || 0);
+
+            // Atualiza UI (badge/tabela do topo/dashboard)
+            if (typeof renderRegisteredTournamentsTable === 'function') renderRegisteredTournamentsTable();
+            if (typeof updateControlDashboard === 'function') updateControlDashboard();
+
             
             // ⭐ AGORA sim chamar saveBankrollMetrics
             if (typeof saveBankrollMetrics === 'function') {
@@ -2407,64 +2420,180 @@ console.log('[Storage] Aguardando User ID...')
         }
     }
 
-    async function loadTournamentsFromAPI() {
-        try {
-            const response = await fetch('/api/tournaments');
-            if (!response.ok) throw new Error(`Erro HTTP ${response.status}`);
+    // ===== Paginação de torneios (NOVO) =====
+const TOURNAMENTS_PAGE_SIZE = 50;
 
-            const data = await response.json();
+window.TOURNAMENTS_PAGINATION = {
+  page: 0,
+  limit: TOURNAMENTS_PAGE_SIZE,
+  day: null,        // YYYY-MM-DD (Brasil)
+  total: 0,
+  totalPages: 0,
+  hasNext: true,
+  loading: false
+};
 
-            let tournaments = Array.isArray(data) ? data : data.tournaments || data.data || [];
-            if (tournaments.length === 0) throw new Error('Nenhum torneio encontrado na resposta');
+// Passo 5: "hoje" no fuso do Brasil (America/Sao_Paulo)
+function getBrazilYYYYMMDD(date = new Date()) {
+  // Gera YYYY-MM-DD usando o timezone do Brasil
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(date);
 
-            // ✅ FILTRO: Apenas torneios de HOJE EM DIANTE
-            //const isFutureOrToday = (dateStr) => {
-            //    const [year, month, day] = dateStr.split('-');
-            //    const now = new Date();
-                
-                // Pegar data de hoje (sem hora)
-            //    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            //    const tourneyDateOnly = new Date(year, parseInt(month) - 1, parseInt(day));
-                
-                // Retorna true se for hoje OU depois de hoje
-            //    return tourneyDateOnly >= today;
-            //};
-            
-            //const totalAntes = tournaments.length;
-            //tournaments = tournaments.filter(t => {
-              //  return isFutureOrToday(t.date || '1970-01-01');
-            //});
+  const y = parts.find(p => p.type === 'year')?.value;
+  const m = parts.find(p => p.type === 'month')?.value;
+  const d = parts.find(p => p.type === 'day')?.value;
+  return `${y}-${m}-${d}`;
+}
 
-            tournaments = tournaments.map((t, idx) => {
-                const [year, month, day] = t.date.split('-');
-                const dateObj = new Date(year, parseInt(month) - 1, parseInt(day));
-                const dayOfWeek = dateObj.getDay();
+function updatePageInfo() {
+  const info = document.getElementById('pageInfo');
+  const btn = document.getElementById('btnLoadMore');
+  const p = window.TOURNAMENTS_PAGINATION;
 
-                return {
-                    id: t.id || idx + 1,
-                    time: t.time || '00:00',
-                    date: t.date,
-                    site: t.site || 'GGPoker',
-                    name: t.name || 'Torneio',
-                    type: (t.type || 'REG').toUpperCase(),
-                    buyin: parseFloat(t.buyin) || 0,
-                    guaranteed: parseFloat(t.guaranteed) || 0,
-                    field: parseInt(t.field) || 0,
-                    lateReg: parseInt(t.lateReg) || 0,
-                    status: t.status || 'Aberto',
-                    priority: t.priority || 'medium',
-                    day: dayOfWeek
-                };
-            });
+  if (info) {
+    const dayLabel = p.day || getBrazilYYYYMMDD();
+    const loaded = (window.allTournamentsData?.length || 0);
+    const total = p.total || 0;
+    const pageText = p.page > 0 ? `Página ${p.page}/${p.totalPages || 1}` : 'Página 0';
+    info.textContent = `Dia ${dayLabel} • ${pageText} • Carregados ${loaded} de ${total}`;
+  }
 
-            updateAPIStatus(true);
-            return tournaments;
-        } catch (error) {
-            updateAPIStatus(false, error.message);
-            showNotification('⚠️ Aviso', 'Usando dados padrão. ' + error.message, 'warning');
-            return getMockTournaments();
-        }
+  if (btn) {
+    btn.disabled = !p.hasNext || p.loading;
+    btn.textContent = p.loading ? 'Carregando...' : (p.hasNext ? 'Carregar mais' : 'Sem mais torneios');
+  }
+}
+
+// ✅ Nova função: busca UMA página do backend
+async function fetchTournamentsPage(page) {
+  const limit = window.TOURNAMENTS_PAGINATION?.limit || 50;
+
+  const fixedDateValue = document.getElementById('fixedDate')?.value;
+
+  const params = new URLSearchParams();
+  params.set('page', String(page));
+  params.set('limit', String(limit));
+
+  if (fixedDateValue) {
+    // quando o usuário escolhe uma data, peça exatamente aquela data
+    params.set('date', fixedDateValue);
+  } else {
+    // padrão: últimos 2 dias
+    params.set('days', '2');
+  }
+
+  const res = await fetch(`/api/tournaments?${params.toString()}`);
+  const json = await res.json();
+
+  if (!json?.success) throw new Error(json?.error || 'API retornou success=false');
+  return json;
+}
+
+
+async function loadTournamentsFromAPI({ reset = false } = {}) {
+  try {
+    if (window.TOURNAMENTS_PAGINATION.loading) return [];
+
+    // Reset geral (primeira carga ou clique em "Hoje")
+    if (reset) {
+      window.TOURNAMENTS_PAGINATION.page = 0;
+      window.TOURNAMENTS_PAGINATION.hasNext = true;
+      window.TOURNAMENTS_PAGINATION.total = 0;
+      window.TOURNAMENTS_PAGINATION.totalPages = 0;
+      window.allTournamentsData = [];
+      window.filteredTournaments = [];
     }
+
+    // Próxima página
+    const nextPage = window.TOURNAMENTS_PAGINATION.page + 1;
+    window.TOURNAMENTS_PAGINATION.loading = true;
+    updatePageInfo();
+
+    const payload = await fetchTournamentsPage(nextPage);
+
+    // Normaliza seus torneios no formato que o app espera
+    const tournaments = (payload.tournaments || []).map((t, idx) => {
+      const yearMonthDay = (t.date || '1970-01-01').split('-');
+      const year = yearMonthDay[0];
+      const month = yearMonthDay[1];
+      const day = yearMonthDay[2];
+
+      const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      const dayOfWeek = dateObj.getDay();
+
+      return {
+        id: t.id ?? (idx + 1),
+        time: t.time || '00:00',
+        date: t.date,
+        site: t.site || 'GGPoker',
+        name: t.name || 'Torneio',
+        type: (t.type || 'REG').toUpperCase(),
+        buyin: parseFloat(t.buyin || 0),
+        guaranteed: parseFloat(t.guaranteed || 0),
+        field: parseInt(t.field || 0),
+        lateReg: parseInt(t.lateReg || 0),
+        status: t.status || 'Aberto',
+        priority: t.priority || 'medium',
+        day: dayOfWeek
+      };
+    });
+
+    // Atualiza estado global
+    window.TOURNAMENTS_PAGINATION.page = payload.pagination?.page ?? nextPage;
+    window.TOURNAMENTS_PAGINATION.total = payload.pagination?.total ?? tournaments.length;
+    window.TOURNAMENTS_PAGINATION.totalPages = payload.pagination?.totalPages ?? 1;
+    window.TOURNAMENTS_PAGINATION.hasNext = payload.pagination?.hasNext ?? false;
+
+    // Concatena no array total
+    window.allTournamentsData = (window.allTournamentsData || []).concat(tournaments);
+
+    // Aqui é importante: o seu app usa applyFilters() para criar window.filteredTournaments
+    // então guardamos allTournamentsData e chamamos applyFilters.
+    updateAPIStatus(true);
+
+    // Rodar filtros e render
+    if (typeof applyFilters === 'function') {
+      applyFilters();
+    } else {
+      window.filteredTournaments = window.allTournamentsData;
+      renderTable();
+      updateControlDashboard();
+    }
+
+    // Atualizar UI de paginação
+    updatePageInfo();
+
+    return tournaments;
+
+  } catch (error) {
+    updateAPIStatus(false, error.message);
+    showNotification('Aviso', `Erro ao carregar torneios: ${error.message}`, 'warning');
+    console.error('[API] loadTournamentsFromAPI error:', error);
+    updatePageInfo();
+    return [];
+  } finally {
+    window.TOURNAMENTS_PAGINATION.loading = false;
+    updatePageInfo();
+  }
+}
+
+// Expor ações globais para os botões
+window.nextTournamentsPage = async function() {
+  const p = window.TOURNAMENTS_PAGINATION;
+  if (!p.hasNext || p.loading) return;
+  await loadTournamentsFromAPI({ reset: false });
+};
+
+window.resetTournamentsPagination = async function() {
+  // fixa o dia como HOJE (Brasil)
+  window.TOURNAMENTS_PAGINATION.day = getBrazilYYYYMMDD();
+  await loadTournamentsFromAPI({ reset: true });
+};
+
 
     function updateAPIStatus(online, message = '') {
         apiOnline = online;
@@ -2493,15 +2622,10 @@ console.log('[Storage] Aguardando User ID...')
 
     async function initializeApp() {
         loadProfiles();
-        allTournamentsData = await loadTournamentsFromAPI();
-        window.allTournamentsData = allTournamentsData;
-        const today = new Date();
-        const todayFormatted = today.toISOString().split('T')[0]; // YYYY-MM-DD
- 
-        window.filteredTournaments = allTournamentsData;
+        
+        // Carrega 1ª página (hoje BR)
+        await window.resetTournamentsPagination();
 
-        applyFilters(); // ✅ Aplica filtro automático com a data de hoje
-        renderTable();
         setupEventListeners();
         updateControlDashboard();
 
@@ -2555,15 +2679,17 @@ console.log('[Storage] Aguardando User ID...')
         document.getElementById('applyFilters').addEventListener('click', applyFilters);
 
         document.getElementById('reloadAPI').addEventListener('click', async () => {
-            allTournamentsData = await loadTournamentsFromAPI();
-            window.filteredTournaments = [...allTournamentsData];
-            applyFilters();
-            showNotification('✅ Atualizado', 'Dados recarregados da API', 'success');
+            await window.resetTournamentsPagination();
+            showNotification('Atualizado', 'Primeira página de hoje recarregada.', 'success');
         });
+
 
         document.getElementById('saveProfile').addEventListener('click', saveCurrentProfile);
 
-        document.getElementById('fixedDate').addEventListener('change', applyFilters);
+        document.getElementById('fixedDate')?.addEventListener('change', async () => {
+            await loadTournamentsFromAPI({ reset: true }); // isso vai chamar fetchTournamentsPage() e repovoar allTournamentsData
+        });
+
 
         document.querySelectorAll('.room-filter, .type-filter, .priority-filter, .status-filter').forEach(el => {
             el.addEventListener('change', applyFilters);
@@ -2595,6 +2721,7 @@ console.log('[Storage] Aguardando User ID...')
     }
 
     function applyFilters() {
+        const source = Array.isArray(window.allTournamentsData) ? window.allTournamentsData : [];
         const rooms = Array.from(document.querySelectorAll('.room-filter:checked')).map(e => e.value);
         const types = Array.from(document.querySelectorAll('.type-filter:checked')).map(e => e.value);
         const priorities = Array.from(document.querySelectorAll('.priority-filter:checked')).map(e => e.value);
@@ -2603,17 +2730,17 @@ console.log('[Storage] Aguardando User ID...')
         const maxBuyin = parseInt(document.getElementById('maxBuyin').value) || 999999;
         const minGuaranteed = parseInt(document.getElementById('minGuaranteed').value) || 0;
         const maxGuaranteed = parseInt(document.getElementById('maxGuaranteed').value) || 999999;
-        const fixedDateValue = document.getElementById('fixedDate').value;
-
+        const fixedDateValue = document.getElementById('fixedDate').value;        
         const today = new Date();
         const twoDaysAgo = new Date(today); twoDaysAgo.setDate(today.getDate() - 2);
-        const twoDaysAgoFormatted = twoDaysAgo.toISOString().split('T')[0];
-        window.filteredTournaments = allTournamentsData.filter(t => {
+        const twoDaysAgoFormatted = `${twoDaysAgo.getFullYear()}-${String(twoDaysAgo.getMonth()+1).padStart(2,'0')}-${String(twoDaysAgo.getDate()).padStart(2,'0')}`;
+        window.filteredTournaments = source.filter(t => {
             const statusInfo = calculateTournamentStatus(t);
             t.status = statusInfo.status;
             t.timeRemaining = statusInfo.timeRemaining;
 
-            const isRegistered = window.registered?.has(t.id);        
+       
+            const isRegistered = window.registeredTournaments?.has(Number(t.id)) || false;        
             if (isRegistered) {
                 return rooms.includes(t.site) &&
                     types.includes(t.type) &&
@@ -2626,7 +2753,7 @@ console.log('[Storage] Aguardando User ID...')
             let matchDate = false;
                 if (fixedDateValue) {
                     // Se TEM filtro de data: mostra apenas essa data exata
-                    matchDate = t.date?.startsWith(fixedDateValue);
+                    matchDate = t.date === fixedDateValue;
                 } else {
                     // Se NÃO TEM filtro: mostra últimos 2 dias
                     matchDate = t.date >= twoDaysAgoFormatted;
@@ -2702,7 +2829,7 @@ console.log('[Storage] Aguardando User ID...')
             const typeClass = t.type.toLowerCase().replace(' ', '-');
 
             return `
-                <tr data-tournament-row-id="${t.id}" class="${window.registered.has(t.id) ? 'registered' : ''}">
+                <tr data-tournament-row-id="${t.id}" class="${window.registeredTournaments.has(t.id) ? 'registered' : ''}">
                     <td><span style="color: var(--secondary); font-weight: 700;">${t.time}</span></td>
                     <td><span style="color: var(--text-secondary);">${t.date}</span></td>
                     <td><span class="site-badge site-${t.site.toLowerCase().replace(/\s/g, '')}">${t.site}</span></td>
@@ -2713,8 +2840,8 @@ console.log('[Storage] Aguardando User ID...')
                     <td>${t.field}</td>
                     <td><span class="badge badge-priority badge-${t.priority}">${priorityLabels[t.priority]}</span></td>
                     <td data-status-cell>${renderStatusWithCountdown(t)}</td>
-                    <td><button class="btn-register ${window.registered.has(t.id) ? 'active' : ''}" data-id="${t.id}">${window.registered.has(t.id) ? '✅ Registrado' : 'Registrar'}</button></td>
-                    <td><button class="btn-cashout ${!window.registered.has(t.id) ? 'disabled' : ''}" onclick="openCashoutModal(${t.id})" ${!window.registered.has(t.id) ? 'disabled' : ''}>💰 Cashout</button></td>
+                    <td><button class="btn-register ${window.registeredTournaments.has(t.id) ? 'active' : ''}" data-id="${t.id}">${window.registeredTournaments.has(t.id) ? '✅ Registrado' : 'Registrar'}</button></td>
+                    <td><button class="btn-cashout ${!window.registeredTournaments.has(t.id) ? 'disabled' : ''}" onclick="openCashoutModal(${t.id})" ${!window.registeredTournaments.has(t.id) ? 'disabled' : ''}>💰 Cashout</button></td>
                 </tr>
             `;
         }).join('');
@@ -2727,7 +2854,6 @@ console.log('[Storage] Aguardando User ID...')
             });
         });
     }
-// WRAPPER PARA renderTable - SEM SALVAMENTOS AUTOMÁTICOS
 // WRAPPER PARA renderTable - SEM SALVAMENTOS AUTOMÁTICOS
 const origRenderTable = window.renderTable;
 window.renderTable = async function() {
@@ -2920,53 +3046,73 @@ window.renderTable = async function() {
             `;
         }).join('');
     }
+   
+    async function toggleRegister(id) {
+        const tid = Number(id);
+
+        if (!window.registeredMeta || typeof window.registeredMeta !== 'object') window.registeredMeta = {};
+        if (!(window.registeredTournaments instanceof Map)) window.registeredTournaments = new Map();
+        if (!window.buyins) window.buyins = {};
+        if (!window.cashouts) window.cashouts = {};
+
+        const t =
+            (window.filteredTournaments || []).find(x => Number(x.id) === tid) ||
+            (window.allTournamentsData || []).find(x => Number(x.id) === tid) ||
+            null;
+
+        const hasCashoutKey = Object.prototype.hasOwnProperty.call(window.cashouts, tid);
+        const isPending = hasCashoutKey && window.cashouts[tid] === null;       // ✅ pendente só null
+        const isFinalized = hasCashoutKey && window.cashouts[tid] !== null;     // ✅ inclui 0, 1, 10...
 
 
-    function toggleRegister(id) {
-        if (window.registered.has(id)) {
-            // Desregistrar
-            registered.delete(id);
-            delete cashouts[id];
-            delete buyins[id]; // 🆕 Remover buyin também
-            showNotification('❌ Removido', 'Registro cancelado', 'warning');
+        if (isPending) {
+            // estava pendente -> desregistrar
+            delete window.cashouts[tid];
+            delete window.buyins[tid];
+            delete window.registeredMeta[tid];
+            window.registeredTournaments.delete(tid);
+        } else if (isFinalized) {
+            // já tem cashout (0 ou >0) -> não é pendente
+            showNotification('Aviso', 'Este torneio já tem cashout (incluindo 0).', 'warning');
+            return;
         } else {
-            // Registrar
-            registered.add(id);
-            const t = window.filteredTournaments.find(x => x.id === id);
-            
-            // 🆕 Criar entrada em cashouts com null (pendente)
-            cashouts[id] = null;
-            
-            // 🆕 Criar entrada em buyins com estrutura básica
-            buyins[id] = {
-                baseBuyin: t ? t.buyin : 0,
+            // não existe -> registrar como pendente
+            window.cashouts[tid] = null;
+            window.buyins[tid] = {
+                baseBuyin: Number(t?.buyin ?? 0),
                 rebuyCount: 0,
-                totalInvested: t ? t.buyin : 0
+                totalInvested: Number(t?.buyin ?? 0),
             };
-            
-            showNotification('✅ Registrado!', `${t ? t.name : 'Torneio'} adicionado`, 'success');
+
+            window.registeredMeta[tid] = t ? {
+                id: tid,
+                name: t.name,
+                site: t.site,
+                type: t.type,
+                buyin: Number(t.buyin ?? 0),
+                date: t.date,
+                time: t.time,
+            } : { id: tid };
+
+            window.registeredTournaments.set(tid, window.registeredMeta[tid]);
         }
-        
-        renderTable();
-        // 🆕 Chamar apenas se a função existir
-        if (typeof updateRegisteredBadge === 'function') {
-            updateRegisteredBadge();
-        } else {
-            // 🆕 Se não existir, atualizar badge manualmente
-            const badge = document.getElementById('registeredCountBadge');
-            if (badge) {
-                badge.textContent = window.registered.size;
-            }
-        }
-        
-        // 🆕 SALVAR no Supabase imediatamente
+        // ✅ PASSO 2: salvar estado completo (inclui registeredMeta) imediatamente após a alteração
         if (typeof window.saveCurrentUserState === 'function') {
-            window.saveCurrentUserState({ buyins: window.buyins, cashouts: window.cashouts });
+            await window.saveCurrentUserState({
+            registeredMeta: window.registeredMeta,  // garante que vai no payload
+            buyins: window.buyins,                  // opcional, mas ajuda a ficar explícito
+            cashouts: window.cashouts               // opcional, mas ajuda a ficar explícito
+            });
         }
+
+        renderTable();
+
     }
 
-
     function updateControlDashboard() {
+        const buyins = window.buyins || {};
+        const cashouts = window.cashouts || {};
+
         // ✅ ADICIONAR ESTA PROTEÇÃO
         console.log('[Dashboard] Atualizando dashboard de controle...');
     
@@ -2998,14 +3144,15 @@ window.renderTable = async function() {
                 return;
             }
             // Total investido (considerando rebuys)
-            const totalBuyin = registeredTournaments.reduce((sum, t) => {
-                const invested = buyins[t.id]?.totalInvested ?? t.buyin;
-                return sum + invested;
+            const totalBuyin = registered.reduce((sum, t) => {
+            const invested = window.buyins?.[t.id]?.totalInvested ?? t.buyin ?? 0;
+            return sum + Number(invested);
             }, 0);
 
             // Total cashout (só quando está definido, senão usa 0)
-            const totalCashoutVal = registeredTournaments.reduce((sum, t) => {
-                return sum + (cashouts[t.id] !== undefined ? cashouts[t.id] : 0);
+            const totalCashoutVal = registered.reduce((sum, t) => {
+            const v = window.cashouts?.[t.id];
+            return sum + (v === null || v === undefined ? 0 : Number(v));
             }, 0);
 
             const profit = totalCashoutVal - totalBuyin;
@@ -3013,7 +3160,7 @@ window.renderTable = async function() {
 
             // ===== ATUALIZAR DASHBOARD CARDS =====
             document.getElementById('dashTournamentsTotal').textContent = window.filteredTournaments.length;
-            document.getElementById('dashRegistered').textContent = registeredTournaments.length;
+            document.getElementById('dashRegistered').textContent = registered.length;
             document.getElementById('dashTotalBuyin').textContent = totalBuyin.toFixed(2);
             document.getElementById('dashTotalCashout').textContent = totalCashoutVal.toFixed(2);
 
@@ -3026,12 +3173,12 @@ window.renderTable = async function() {
 
             // Mostrar/esconder botões de exportação
             const exportButtons = document.getElementById('exportButtons');
-            exportButtons.style.display = registeredTournaments.length > 0 ? 'flex' : 'none';
+            exportButtons.style.display = registered.length > 0 ? 'flex' : 'none';
 
             // ===== TABELA DE HISTÓRICO =====
             const historyContainer = document.getElementById('historyContainer');
             
-            if (registeredTournaments.length > 0) {
+            if (registered.length > 0) {
                 historyContainer.innerHTML = `
                     <table class="history-table">
                         <thead>
@@ -3048,7 +3195,7 @@ window.renderTable = async function() {
                             </tr>
                         </thead>
                         <tbody>
-                            ${registeredTournaments.map((t, idx) => {
+                            ${registered.map((t, idx) => {
                                 // ⬇️ NOVO: calcular dados com rebuy
                                 const baseBuyin = t.buyin;
                                 const rebuyData = buyins[t.id] || {};
@@ -3099,21 +3246,39 @@ window.renderTable = async function() {
     }
 
 function openCashoutModal(id) {
-    const t = window.filteredTournaments.find(x => x.id === id);
-    if (!t) return;
+  const tid = Number(id);
 
-    currentCashoutId = id;
-    document.getElementById('modalTournamentName').textContent = t.name;
-    document.getElementById('modalBuyin').textContent = '$' + t.buyin;
+  // 1) Tenta achar na lista atual (API)
+  const tFromList =
+    window.filteredTournaments?.find(x => Number(x.id) === tid) ||
+    window.allTournamentsData?.find(x => Number(x.id) === tid);
 
-    // Se já tem dados salvos, carrega
-    const existing = buyins[id] || {};
-    document.getElementById('rebuyCount').value = existing.rebuyCount ?? 0;
-    document.getElementById('cashoutInput').value = cashouts[id] ?? '';
+  // 2) Se não achou, tenta pegar do Map (stub/snapshot)
+  const tFromRegistered = window.registeredTournaments instanceof Map
+    ? window.registeredTournaments.get(tid)
+    : null;
 
-    updateInvestedAmount();
-    document.getElementById('cashoutModal').classList.add('active');
+  const t = tFromList || tFromRegistered;
+  if (!t) {
+    console.warn('[Cashout] Torneio não encontrado para abrir modal:', tid);
+    return;
+  }
+
+  window.currentCashoutId = tid;
+
+  document.getElementById('modalTournamentName').textContent = t.name || `Torneio ${tid}`;
+  document.getElementById('modalBuyin').textContent = Number(t.buyin || 0);
+
+  const existing = window.buyins?.[tid] || window.buyins?.[String(tid)];
+  document.getElementById('rebuyCount').value = existing?.rebuyCount ?? 0;
+
+  const c = window.cashouts?.[tid] ?? window.cashouts?.[String(tid)];
+  document.getElementById('cashoutInput').value = (c ?? '');
+
+  updateInvestedAmount();
+  document.getElementById('cashoutModal').classList.add('active');
 }
+
 
 function updateInvestedAmount() {
     const baseBuyin = parseFloat(document.getElementById('modalBuyin').textContent.replace('$', '')) || 0;
@@ -3149,18 +3314,19 @@ window.saveCashout = async function() {
         window.cashouts[window.currentCashoutId] = cashoutValue;
 
         // 🆕 REMOVER DO REGISTERED (torneio finalizado)
-        if (window.registered && window.registered.has(window.currentCashoutId)) {
-            window.registered.delete(window.currentCashoutId);
+        window.registeredTournaments?.delete(Number(window.currentCashoutId));
+        delete window.registeredMeta?.[Number(window.currentCashoutId)];
+
             console.log(`[Cashout] ✅ Torneio ${window.currentCashoutId} removido de registered`);
             
-            // Atualizar o badge
+            //Atualizar o badge
             if (typeof updateRegisteredBadge === 'function') {
-                updateRegisteredBadge();
+               updateRegisteredBadge();
             }
-        }
+        
 
         // Salvar no Supabase
-        if (window.CURRENT_USER_ID) {
+        if (window.CURRENTUSERID) {
             await storageModule.saveCashout(cashoutValue, baseBuyin, rebuyCount, totalInvested);
         }
 
@@ -3191,7 +3357,7 @@ window.saveCashout = async function() {
 
 
     function exportCSV() {
-        const registeredTournaments = Array.from(window.registered).map(id => window.filteredTournaments.find(t => t.id === id)).filter(t => t);
+        const registeredTournaments = Array.from(window.registeredTournaments).values();
         if (registeredTournaments.length === 0) {
             showNotification('⚠️ Aviso', 'Nenhum torneio registrado para exportar', 'warning');
             return;
@@ -3231,7 +3397,7 @@ window.saveCashout = async function() {
     }
 
     function exportPDF() {
-        const registeredTournaments = Array.from(window.registered).map(id => window.filteredTournaments.find(t => t.id === id)).filter(t => t);
+        const registeredTournaments = Array.from(window.registeredTournaments).values();
         if (registeredTournaments.length === 0) {
             showNotification('⚠️ Aviso', 'Nenhum torneio registrado para exportar', 'warning');
             return;
@@ -3380,10 +3546,23 @@ window.saveCashout = async function() {
 
         const registeredTournaments = allBuyinIds
             .map(id => {
+                const source = Array.isArray(window.allTournamentsData) ? window.allTournamentsData : window.filteredTournaments || [];
                 const tournament = dataSource.find(t => t.id === id);
-                return tournament ? { ...tournament, id } : null;
-            })
-            .filter(Boolean);
+                // ✅ se não achar torneio, cria um "placeholder" só para métricas
+                if (!tournament) {
+                    const invested = Number(window.buyins?.[id]?.totalInvested || window.buyins?.[id]?.baseBuyin || 0);
+                 return {
+                    id,
+                    name: `Torneio #${id} (histórico)`,
+                    buyin: invested,
+                    date: null,
+                    time: null,
+                    priority: 'medium',
+                    _placeholder: true,
+                    };
+                }
+                return tournament;    
+            }).filter(Boolean);
 
         console.log('[Bankroll] Torneios válidos (encontrados na API):', registeredTournaments.length);
 
@@ -3484,8 +3663,14 @@ function updateBankrollChart(tournaments) {
   try {
     const ctx = canvas.getContext('2d');
     
-    // Ordenar por data (mais antigo primeiro)
-    const sortedTournaments = tournaments.sort((a, b) => a.date.localeCompare(b.date));
+    
+    // Ordenar por data mais antigo primeiro (seguro com date null/undefined)
+    const sortedTournaments = [...(tournaments || [])].sort((a, b) => {
+        const da = String(a?.date ?? '');
+        const db = String(b?.date ?? '');
+        return da.localeCompare(db);
+    });
+
     
     // Calcular lucro acumulado por NÚMERO DE TORNEIOS (não por data)
     const labels = [];
@@ -3557,57 +3742,90 @@ function updateBankrollChart(tournaments) {
   }
 }
 
-// ========== TABELA MÊS A MÊS ==========
-function updateMonthlyStats() {
+// Helper: resolve torneio do histórico SEM depender da API atual (50 itens)
+// - tenta achar no allTournamentsData/filteredTournaments
+// - se não achar, cria um placeholder usando buyins + (se existir) registeredMeta
+function getTournamentForHistory(id) {
+  const tid = Number(id);
+
+  const live =
+    (window.allTournamentsData || []).find(t => Number(t.id) === tid) ||
+    (window.filteredTournaments || []).find(t => Number(t.id) === tid) ||
+    null;
+
+  if (live) return live;
+
+  const meta = window.registeredMeta?.[tid] || window.POKER?.registeredMeta?.[tid] || null;
+  const b = window.buyins?.[tid] || window.buyins?.[String(tid)] || null;
+
+  return {
+    id: tid,
+    name: meta?.name || `Torneio ${tid} (histórico)`,
+    site: meta?.site || '-',
+    type: meta?.type || '-',
+    // buyin aqui é só fallback, o cálculo usa buyins[tid].totalInvested quando tiver
+    buyin: Number(meta?.buyin ?? b?.baseBuyin ?? b?.totalInvested ?? 0),
+    // se você tiver snapshot com date/time, isso permite mês-a-mês completo
+    date: meta?.date ?? null,
+    time: meta?.time ?? null,
+    placeholder: true
+  };
+}
+
+
+// ========== TABELA MÊS A MÊS (corrigida) ==========
+function updateMonthlyStats(tournamentsInput) {
   const tbody = document.getElementById('bankrollMonthlyBody');
   if (!tbody) {
     console.warn('[Monthly] tbody não encontrado!');
     return;
   }
 
-  // 🆕 MUDANÇA: Usar window.buyins ao invés de window.registered
-  const dataSource = window.allTournamentsData || window.filteredTournaments || [];
-  const allBuyinIds = Object.keys(window.buyins).map(id => parseInt(id));
-  
-  const tournaments = allBuyinIds
-    .map(id => dataSource.find(t => t.id === id))
-    .filter(Boolean); // Remove nulls
+  const allBuyinIds = Object.keys(window.buyins || {}).map(id => Number(id));
+  const tournaments = Array.isArray(tournamentsInput)
+    ? tournamentsInput
+    : allBuyinIds.map(getTournamentForHistory);
 
-  console.log('[Monthly] 🔍 Torneios para tabela mensal:', tournaments.length);
+  // Para mês-a-mês, precisamos de data. Se não tiver, pula (ou você pode agrupar em "Sem data").
+  const tournamentsWithDate = tournaments.filter(t => t && t.date);
 
-  if (tournaments.length === 0) {
+  console.log('[Monthly] 🔍 Torneios para tabela mensal (com data):', tournamentsWithDate.length);
+
+  if (tournamentsWithDate.length === 0) {
     tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-secondary)">Sem dados</td></tr>';
     return;
   }
 
-  // Agrupar por mês
   const monthly = {};
-  tournaments.forEach(t => {
-    const date = new Date(t.date);
-    const monthKey = date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
-    
+
+  tournamentsWithDate.forEach(t => {
+    const d = new Date(t.date);
+    if (Number.isNaN(d.getTime())) return;
+
+    const monthKey = d.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+
     if (!monthly[monthKey]) {
       monthly[monthKey] = { tournaments: 0, invested: 0, cashout: 0 };
     }
-    
-    const invested = parseFloat(window.buyins[t.id]?.totalInvested || t.buyin || 0);
-    
-    // 🆕 MUDANÇA: Tratar cashout = null como 0 (torneios pendentes)
-    const cashoutValue = window.cashouts?.[t.id];
-    const cashout = (cashoutValue === null || cashoutValue === undefined) ? 0 : parseFloat(cashoutValue);
-    
+
+    const buyinRec = window.buyins?.[t.id] || window.buyins?.[String(t.id)];
+    const invested = Number(buyinRec?.totalInvested ?? buyinRec?.baseBuyin ?? t.buyin ?? 0);
+
+    // pendente = null (mas para métrica, null/undefined vira 0)
+    const cashVal = window.cashouts?.[t.id] ?? window.cashouts?.[String(t.id)];
+    const cashout = (cashVal === null || cashVal === undefined) ? 0 : Number(cashVal);
+
     monthly[monthKey].tournaments++;
     monthly[monthKey].invested += invested;
     monthly[monthKey].cashout += cashout;
   });
 
-  // Preencher tabela
   tbody.innerHTML = '';
 
   Object.entries(monthly).forEach(([month, stats]) => {
     const profit = stats.cashout - stats.invested;
     const roi = stats.invested > 0 ? (profit / stats.invested) * 100 : 0;
-    
+
     const row = `
       <tr>
         <td style="padding: 8px 0; color: var(--text-primary); font-weight: 500">${month}</td>
@@ -3628,29 +3846,29 @@ function updateMonthlyStats() {
   console.log('[Monthly] ✅ Tabela mês a mês atualizada:', Object.keys(monthly).length, 'meses');
 }
 
+
+// ========== REFRESH COMPLETO (corrigido) ==========
 async function refreshAllBankrollMetrics() {
   console.log('[Bankroll] 🔄 Refresh completo iniciado...');
   await updateBankrollMetrics();
-  
-  // 🆕 MUDANÇA: Pegar torneios válidos do histórico completo
-  const dataSource = window.allTournamentsData || window.filteredTournaments || [];
-  const allBuyinIds = Object.keys(window.buyins).map(id => parseInt(id));
-  
-  const tournaments = allBuyinIds
-    .map(id => dataSource.find(t => t.id === id))
-    .filter(Boolean);
-  
+
+  const allBuyinIds = Object.keys(window.buyins || {}).map(id => Number(id));
+  const tournaments = allBuyinIds.map(getTournamentForHistory); // ✅ sem depender da API, sem filter(Boolean)
+
   console.log('[Bankroll] 🔍 Torneios para gráfico e tabela:', tournaments.length);
-  
+
   if (tournaments.length > 0) {
     updateBankrollChart(tournaments);
-    updateMonthlyStats();
+    updateMonthlyStats(tournaments); // ✅ passa a lista pronta
   } else {
     console.warn('[Bankroll] ⚠️ Nenhum torneio encontrado para gráfico/tabela');
+    updateBankrollChart([]);
+    updateMonthlyStats([]);
   }
-  
+
   console.log('[Bankroll] ✅ Refresh completo finalizado!');
 }
+
 
 
 // ========== HOOK AUTOMÁTICO ==========
@@ -3670,8 +3888,8 @@ if (document.querySelector('.view-btn[data-view="bankroll"].active')) {
     const checkUserId = setInterval(() => {
         attempts++;
         
-        if (window.CURRENT_USER_ID) {
-        console.log('[Storage] User ID encontrado:', window.CURRENT_USER_ID);
+        if (window.CURRENTUSERID) {
+        console.log('[Storage] User ID encontrado:', window.CURRENTUSERID);
         clearInterval(checkUserId);
         callback();
         } else if (attempts >= maxRetries) {
@@ -3691,9 +3909,9 @@ if (document.querySelector('.view-btn[data-view="bankroll"].active')) {
     let attempts = 0;
     const waitForUserIdPromise = new Promise((resolve) => {
         const checkUserId = setInterval(() => {
-            if (window.CURRENT_USER_ID) {
+            if (window.CURRENTUSERID) {
                 clearInterval(checkUserId);
-                console.log('[Init] ✅ User ID disponível:', window.CURRENT_USER_ID);
+                console.log('[Init] ✅ User ID disponível:', window.CURRENTUSERID);
                 resolve();
             }
             attempts++;
@@ -3720,18 +3938,31 @@ if (document.querySelector('.view-btn[data-view="bankroll"].active')) {
         // ============================================
         // 3. REGISTRAR FUNÇÕES GLOBAIS
         // ============================================
-        window.saveCurrentUserState = async (data) => {
-            if (typeof window.storageModule !== 'undefined' && typeof window.storageModule.saveUserState === 'function') {
-                return await window.storageModule.saveUserState(data || { 
-                    buyins: window.buyins, 
-                    cashouts: window.cashouts,
-                    registered: Array.from(window.registered || []),
-                    filteredTournaments: window.filteredTournaments || [] 
-                });
-            } else {
+        window.saveCurrentUserState = async (data = {}) => {
+            if (typeof window.storageModule === 'undefined' || typeof window.storageModule.saveUserState !== 'function') {
                 console.warn('[Init] storageModule.saveUserState não disponível');
+                return null;
             }
+
+              // garante estruturas
+            window.registeredMeta = window.registeredMeta || {};
+            window.buyins = window.buyins || {};
+            window.cashouts = window.cashouts || {};
+            // sempre manda o "core" + overrides
+            const payload = {
+                buyins: window.buyins || {},
+                cashouts: window.cashouts || {},
+                currentCashoutId: window.currentCashoutId ?? null,
+                selectedGames: Array.from(window.selectedGames || ['ALL']),
+                selectedVenues: Array.from(window.selectedVenues || ['ALL']),
+                filteredTournaments: window.filteredTournaments || [],
+                registeredMeta: window.registeredMeta,
+                ...data,
+            };
+
+            return await window.storageModule.saveUserState(payload);
         };
+
         
         window.updateBankroll = async (amount) => {
             if (typeof window.storageModule !== 'undefined' && typeof window.storageModule.updateBankroll === 'function') {
@@ -3792,31 +4023,48 @@ if (document.querySelector('.view-btn[data-view="bankroll"].active')) {
         if (typeof window.loadTournamentsFromAPI === 'function') {
             try {
                 console.log('[Init] Carregando torneios da API...');
+
                 const apiTournaments = await window.loadTournamentsFromAPI();
-                
-                // Mesclar com status de "registered"
-                if (Array.isArray(apiTournaments)) {
-                    window.filteredTournaments = apiTournaments.map(t => ({
-                        ...t,
-                        registered: window.registered && window.registered.has(t.id)
-                    }));
-                    console.log('[Init] ✅ Torneios carregados e mesclados:', 
-                                window.filteredTournaments.length, 'torneios');
-                    // ✅ NOVO: Atualizar métricas AGORA que filteredTournaments está populado
-                    if (typeof updateBankrollMetrics === 'function') {
-                        console.log('[Init] 🔄 Atualizando métricas do bankroll...');
-                        updateBankrollMetrics();
-                        console.log('[Init] ✅ Métricas atualizadas com API carregada');
-                    }            
+
+                if (!Array.isArray(apiTournaments)) {
+                console.warn('[Init] ⚠️ API retornou dados inválidos');
+                return;
+                }
+
+                // Base (não filtrada)
+                window.allTournamentsData = apiTournaments;
+
+                // Aplica filtros para gerar window.filteredTournaments corretamente
+                if (typeof window.applyFilters === 'function') {
+                window.applyFilters();
                 } else {
-                    console.warn('[Init] ⚠️  API retornou dados inválidos');
+                // fallback: sem applyFilters, pelo menos espelha
+                window.filteredTournaments = [...apiTournaments];
+                }
+
+                // Mesclar status de registered APENAS para render/UI (sem destruir a base)
+                const registeredSet = window.registered instanceof Set ? window.registered : new Set();
+                window.filteredTournaments = window.filteredTournaments.map(t => ({
+                    ...t,
+                    registered: window.registeredTournaments?.has(Number(t.id)) || false,
+                }));
+
+                console.log('[Init] ✅ Torneios carregados:', window.allTournamentsData.length,
+                            '| Filtrados:', window.filteredTournaments.length);
+
+                // Atualizar bankroll depois que buyins/cashouts também existirem
+                if (typeof window.refreshAllBankrollMetrics === 'function') {
+                window.refreshAllBankrollMetrics();
+                } else if (typeof updateBankrollMetrics === 'function') {
+                updateBankrollMetrics();
                 }
             } catch (error) {
                 console.error('[Init] ❌ Erro ao carregar torneios:', error);
             }
-        } else {
-            console.warn('[Init] ⚠️  loadTournamentsFromAPI não é função');
+            } else {
+            console.warn('[Init] ⚠️ loadTournamentsFromAPI não é função');
         }
+
     
         // ============================================
         // 7. INICIALIZAR APP
@@ -3854,11 +4102,11 @@ if (document.querySelector('.view-btn[data-view="bankroll"].active')) {
         // ============================================
         console.log('[Init] 🎉 APLICAÇÃO TOTALMENTE INICIALIZADA!');
         console.log('[Init] Status Final:', {
-            userIdPresent: !!window.CURRENT_USER_ID,
+            userIdPresent: !!window.CURRENTUSERID,
             pokerExists: typeof window.POKER === 'object',
             tournamentsLoaded: Array.isArray(window.filteredTournaments),
             tournamentsCount: window.filteredTournaments?.length || 0,
-            registeredCount: window.registered?.size || 0
+            registeredCount: window.registeredTournaments?.size || 0
         });
     });
 
