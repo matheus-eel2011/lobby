@@ -1713,6 +1713,22 @@
                 console.error('[loadPokerData] ❌ userState inválido:', userState);
                 return false;
             }
+            const savedSettings =
+                userState?.state?.state?.bankrollSettings ||
+                userState?.state?.bankrollSettings ||
+                userState?.bankrollSettings;
+
+            if (savedSettings) {
+                const initial = Number(savedSettings.initialBank ?? 0);
+                const safety = Number(savedSettings.safetyFactor ?? 0);
+
+                const elInitial = document.getElementById('bankrollInitialBank');
+                const elSafety = document.getElementById('bankrollSafetyFactor');
+
+                if (elInitial) elInitial.value = initial;
+                if (elSafety) elSafety.value = safety;
+            }
+
             
             let pokerData = userState.state;
             
@@ -1968,6 +1984,8 @@ const storageModule = {
     // ✅ Evita sobrescrever no Supabase com estado vazio acidental
     const buyinsNow = window.buyins || {};
     const cashoutsNow = window.cashouts || {};
+    const initialBank = Number(document.getElementById('bankrollInitialBank')?.value ?? 0);
+    const safetyFactor = Number(document.getElementById('bankrollSafetyFactor')?.value ?? 0);
     const hasSomeData =
         Object.keys(buyinsNow).length > 0 || Object.keys(cashoutsNow).length > 0;
 
@@ -1987,6 +2005,7 @@ const storageModule = {
             selectedGames: Array.from(window.selectedGames || ['ALL']),
             selectedVenues: Array.from(window.selectedVenues || ['ALL']),
             filteredTournaments: window.filteredTournaments || [],
+            bankrollSettings: { initialBank, safetyFactor },
             ...(data || {}),
         },
         };
@@ -2425,6 +2444,8 @@ window.saveCurrentUserState = async function(data) {
         return;
     }
     
+    const initialBank = Number(document.getElementById('bankrollInitialBank')?.value ?? 0);
+    const safetyFactor = Number(document.getElementById('bankrollSafetyFactor')?.value ?? 0);
     const stateData = {
         ...data,
 
