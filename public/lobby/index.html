@@ -34,6 +34,12 @@
             --champion: #6b5344;
             --partypoker: #c77f2c;
             --wpt: #3f4a6e;
+            --kkpoker: #61af1c;
+            --coinpoker: #881717;
+            --suprema: #55370f;
+            --jackpoker: #80166e;
+            --clubgg: #271c0d;
+            --qqpk: #236e6e;
         }
 
         body {
@@ -563,7 +569,7 @@
         }
 
         .site-yapoker {
-            background: linear-gradient(135deg, #8ea878 0%, #96866a 100%);
+            background: linear-gradient(135deg, #8ea878 0%, #5ca141 100%);
             box-shadow: 0 2px 8px rgba(168, 152, 120, 0.3);
         }
 
@@ -579,6 +585,36 @@
          
         .site-wpt {
             background: linear-gradient(135deg, #7f71b3 0%, #6021f5 100%);
+            box-shadow: 0 2px 8px rgba(107, 83, 68, 0.3);
+        }
+        
+        .site-kkpoker {
+            background: linear-gradient(135deg, #61af1c 0%, #64b320 100%);
+            box-shadow: 0 2px 8px rgba(107, 83, 68, 0.3);
+        }
+        
+        .site-coinpoker {
+            background: linear-gradient(135deg, #881717 0%, #881717 100%);
+            box-shadow: 0 2px 8px rgba(107, 83, 68, 0.3);
+        }
+        
+        .site-suprema {
+            background: linear-gradient(135deg, #55370f 0%, #55370f 100%);
+            box-shadow: 0 2px 8px rgb(255, 255, 255);
+        }
+        
+        .site-jackpoker {
+            background: linear-gradient(135deg, #80166e 0%, #80166e 100%);
+            box-shadow: 0 2px 8px rgba(107, 83, 68, 0.3);
+        }
+        
+        .site-clubgg {
+            background: linear-gradient(135deg, #271c0d 0%, #271c0d 100%);
+            box-shadow: 0 2px 8px rgb(255, 255, 255);
+        }
+        
+        .site-qqpk {
+            background: linear-gradient(135deg, #236e6e 0%, #236e6e 100%);
             box-shadow: 0 2px 8px rgba(107, 83, 68, 0.3);
         }
 
@@ -1067,6 +1103,12 @@
                 <div class="checkbox-item"><input type="checkbox" id="champion" class="room-filter" value="Champion" checked><label for="champion">Champion</label></div>
                 <div class="checkbox-item"><input type="checkbox" id="partypoker" class="room-filter" value="Partypoker" checked><label for="partypoker">Partypoker</label></div>
                 <div class="checkbox-item"><input type="checkbox" id="wpt" class="room-filter" value="WPT" checked><label for="wpt">WPT</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="kkpoker" class="room-filter" value="KKPOKER" checked><label for="kkpoker">KKPOKER</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="coinpoker" class="room-filter" value="CoinPoker" checked><label for="coinpoker">CoinPoker</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="suprema" class="room-filter" value="Suprema" checked><label for="suprema">Suprema</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="jackpoker" class="room-filter" value="JackPoker" checked><label for="jackpoker">JackPoker</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="clubgg" class="room-filter" value="ClubGG" checked><label for="clubgg">ClubGG</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="qqpk" class="room-filter" value="QQPK" checked><label for="qqpk">QQPK</label></div>
             </div>
         </div>
 
@@ -1391,12 +1433,11 @@
                             <option value="Partypoker">Partypoker</option>
                             <option value="WPT">WPT</option>
                             <option value="Suprema">Suprema</option>
-                            <option value="KKpoker">KKpoker</option>
-                            <option value="Coin">Coin</option>
-                            <option value="Jack">Jack</option>
+                            <option value="KKPOKER">KKPOKER</option>
+                            <option value="CoinPoker">CoinPoker</option>
+                            <option value="JackPoker">JackPoker</option>
                             <option value="QQPK">QQPK</option>
-                            <option value="Tiger">Tiger</option>
-                            <option value="Bodog">Bodog</option>                            
+                            <option value="ClubGG">ClubGG</option>                                                      
                         </select>
                     </div>
 
@@ -1456,7 +1497,7 @@
             </div>
 
             <div class="grind-card">
-                <div class="grind-title">Torunaments Saved</div>
+                <div class="grind-title">Tournaments Saved</div>
                 <div id="manualListContainer" style="color:var(--text-secondary); font-size:12px;">
                     Carregando...
                 </div>
@@ -1762,6 +1803,154 @@ async function restoreBankrollMetricsUI(metrics) {
         console.error('[Storage] Erro ao restaurar métricas:', error);
     }
 };  
+
+
+window.manualTournaments = window.manualTournaments || [];
+
+function getDayOfWeekFromYYYYMMDD(dateStr) {
+  if (!dateStr) return new Date().getDay();
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d).getDay(); // 0=Dom ... 6=Sáb
+}
+
+async function loadManualTournamentsFromSupabasePublic() {
+  const res = await fetch('/api/storage/manual-tournaments-public');
+  const text = await res.text();
+
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch (e) {
+    throw new Error(`Resposta não-JSON (HTTP ${res.status}): ${text.slice(0, 120)}`);
+  }
+
+  if (!res.ok) throw new Error(json?.error || `HTTP ${res.status}`);
+  if (!json?.success) throw new Error(json?.error || 'Falha ao carregar torneios manuais');
+
+  const raw = Array.isArray(json.data) ? json.data
+            : (json.data && typeof json.data === "object") ? [json.data]
+            : [];
+
+  return raw.map(t => ({
+    ...t,
+    lateReg: t.lateReg ?? t.late_reg ?? 0,
+    day: t.day ?? getDayOfWeekFromYYYYMMDD(t.date),
+    createdAt: t.createdAt ?? t.created_at,
+  }));
+}
+
+
+
+function renderManualList() {
+  const el = document.getElementById('manualListContainer');
+  if (!el) return;
+
+  const arr = Array.isArray(window.manualTournaments) ? window.manualTournaments : [];
+  if (arr.length === 0) {
+    el.innerHTML = 'Nenhum torneio manual cadastrado ainda.';
+    return;
+  }
+
+  el.innerHTML = `
+    <table class="history-table">
+      <thead>
+        <tr>
+          <th>Data</th><th>Hora</th><th>Sala</th><th>Torneio</th><th>Buy-in</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${arr
+          .slice()
+          .sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time))
+          .map(t => `
+            <tr>
+              <td>${t.date}</td>
+              <td>${t.time}</td>
+              <td>${t.site}</td>
+              <td>${t.name}</td>
+              <td style="text-align:right;">${Number(t.buyin).toFixed(2)}</td>
+            </tr>
+          `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+async function saveManualTournamentPublic(payload) {
+  const res = await fetch('/api/storage/manual-tournaments-public', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+
+  const json = await res.json();
+  if (!res.ok || !json?.success) throw new Error(json?.error || `HTTP ${res.status}`);
+  return json.data;
+}
+
+
+function getManualFormPayload() {
+  return {
+    date: document.getElementById('manualDate')?.value,
+    time: document.getElementById('manualTime')?.value,
+    site: document.getElementById('manualSite')?.value,
+    type: document.getElementById('manualType')?.value,
+    name: document.getElementById('manualName')?.value?.trim(),
+    buyin: Number(document.getElementById('manualBuyin')?.value || 0),
+    lateReg: Number(document.getElementById('manualLateReg')?.value || 0),
+    guaranteed: Number(document.getElementById('manualGuaranteed')?.value || 0),
+    field: Number(document.getElementById('manualField')?.value || 0),
+    priority: document.getElementById('manualPriority')?.value || 'medium'
+  };
+}
+
+async function refreshManualTournamentsUI() {
+  window.manualTournaments = await loadManualTournamentsFromSupabasePublic();
+  renderManualList();
+
+  // Atualiza lista principal também (desde que applyFilters use a fonte mesclada)
+  if (typeof applyFilters === 'function') applyFilters();
+}
+
+document.getElementById('btnManualRefresh')?.addEventListener('click', async () => {
+  try {
+    await refreshManualTournamentsUI();
+    if (typeof showNotification === 'function') showNotification('OK', 'Manuais recarregados.', 'success');
+  } catch (e) {
+    console.error(e);
+    if (typeof showNotification === 'function') showNotification('Erro', e.message, 'error');
+  }
+});
+
+document.getElementById('btnManualSave')?.addEventListener('click', async () => {
+  try {
+    const payload = getManualFormPayload();
+    if (!payload.date || !payload.time || !payload.name) {
+      if (typeof showNotification === 'function') showNotification('Aviso', 'Preencha Data, Hora e Nome.', 'warning');
+      return;
+    }
+
+    await saveManualTournamentPublic(payload);
+    await refreshManualTournamentsUI();
+
+    if (typeof showNotification === 'function') showNotification('Salvo!', 'Torneio manual cadastrado.', 'success');
+  } catch (e) {
+    console.error(e);
+    if (typeof showNotification === 'function') showNotification('Erro', e.message, 'error');
+  }
+});
+
+function mergeTournamentsById(apiList, manualList) {
+  const api = Array.isArray(apiList) ? apiList : [];
+  const manual = Array.isArray(manualList) ? manualList : [];
+
+  const map = new Map();
+  for (const t of api) map.set(String(t.id), t);
+  for (const t of manual) map.set(String(t.id), t); // manual sobrescreve se mesmo id
+
+  return Array.from(map.values());
+}
+
 
 const storageModule = {
    async saveUserState(data) {
@@ -2830,7 +3019,8 @@ window.resetTournamentsPagination = async function() {
         [...api, ...manual].forEach(t => map.set(Number(t.id), t));
         return Array.from(map.values());
     }    
-    
+    window.allTournamentsData = mergeTournamentsById(window.allTournamentsData, window.manualTournaments);
+
     function applyFilters() {     
         const source = getMergedTournamentsSource();
         const rooms = Array.from(document.querySelectorAll('.room-filter:checked')).map(e => e.value);
@@ -3657,7 +3847,9 @@ window.saveCashout = async function() {
 
         const registeredTournaments = allBuyinIds
             .map(id => {
-                const source = Array.isArray(window.allTournamentsData) ? window.allTournamentsData : window.filteredTournaments || [];
+                const source = getMergedTournamentsSource();
+                console.log('[Manual] carregados:', (window.manualTournaments || []).length);
+
                 const tournament = dataSource.find(t => t.id === id);
                 // ✅ se não achar torneio, cria um "placeholder" só para métricas
                 if (!tournament) {
@@ -4113,7 +4305,7 @@ if (document.querySelector('.view-btn[data-view="bankroll"].active')) {
 
                 // carrega manuais do Supabase
                 if (typeof loadManualTournamentsFromSupabase === 'function') {
-                window.manualTournaments = await loadManualTournamentsFromSupabase();
+                window.manualTournaments = await loadManualTournamentsFromSupabasePublic();
                 console.log('[Init] Manual tournaments:', window.manualTournaments.length);
                 } else {
                 console.warn('[Init] loadManualTournamentsFromSupabase não existe');
