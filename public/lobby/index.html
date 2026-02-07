@@ -41,6 +41,21 @@
             --clubgg: #271c0d;
             --qqpk: #236e6e;
         }
+        .sidebar-section-content{
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px 16px;
+        }
+
+        .checkbox-item{
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        @media (max-width: 520px){
+            .sidebar-section-content{ grid-template-columns: 1fr; }
+        }
 
         body {
             font-family: 'Georgia', 'Garamond', serif;
@@ -138,7 +153,8 @@
         }
 
         .sidebar-section-content {
-            display: block;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             max-height: 500px;
             overflow: hidden;
             transition: max-height 0.3s ease;
@@ -1062,6 +1078,64 @@
                 margin-left: 280px;
             }
         }
+        
+        .session-card{
+        border: 1px solid var(--border);
+        background: rgba(201,169,97,0.03);
+        border-radius: 6px;
+        overflow: hidden;
+        margin-bottom: 10px;
+        }
+
+        .session-header{
+        display:flex;
+        justify-content: space-between;
+        align-items:center;
+        padding: 12px 14px;
+        cursor: pointer;
+        }
+
+        .session-title{
+        color: var(--secondary);
+        font-weight: 700;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: .6px;
+        }
+
+        .session-meta{
+        color: var(--text-secondary);
+        font-size: 12px;
+        }
+
+        .session-details{
+        display:none;
+        padding: 12px 14px 14px;
+        border-top: 1px solid var(--border);
+        }
+
+        .session-card.open .session-details{
+        display:block;
+        }
+
+        .session-table{
+        width:100%;
+        border-collapse: collapse;
+        font-size: 12px;
+        }
+
+        .session-table th, .session-table td{
+        padding: 8px 8px;
+        border-bottom: 1px solid var(--border);
+        }
+
+        .session-actions{
+        display:flex;
+        gap:8px;
+        }
+
+
+
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -1305,6 +1379,11 @@
                         <div class="export-buttons" id="exportButtons" style="display: none;">
                             <button class="btn-export csv" onclick="exportCSV()">CSV</button>
                             <button class="btn-export pdf" onclick="exportPDF()">PDF</button>
+                        </div>
+                        <div style="display:flex; gap:10px; margin-top:10px; justify-content:flex-end;">
+                            <button class="btn-primary" id="btnEndSession" style="padding:8px 12px; font-size:12px;">
+                                Encerrar Sessão
+                            </button>
                         </div>
                     </div>
                     <div id="historyContainer" style="color: var(--text-secondary); font-size: 12px; text-align: center; padding: 20px;">Nenhum torneio registrado ainda</div>
@@ -2219,6 +2298,17 @@ window.loadUserData = async function () {
     // snapshot salvo (se existir)
     window.registeredMeta = window.registeredMeta || window.POKER?.registeredMeta || {};
 
+    // ===== RESTAURAR SESSÕES (Supabase) =====
+    const st = userState?.state?.state || {};
+
+    window.sessions = Array.isArray(st.sessions) ? st.sessions : [];
+
+    if (st.currentSession && Array.isArray(st.currentSession.tournamentIds)) {
+    window.currentSession = st.currentSession;
+    }
+
+    if (typeof ensureCurrentSession === "function") ensureCurrentSession();
+
     Object.keys(window.buyins || {}).forEach((idStr) => {
     const id = Number(idStr);
 
@@ -2232,6 +2322,8 @@ window.loadUserData = async function () {
         window.registeredTournaments.set(id, snap);
         return;
     }
+    
+    
 
     // 2) Tentar match na lista atual (se existir)
     const tournament =
@@ -2265,8 +2357,6 @@ window.loadUserData = async function () {
     const badge = document.getElementById('registeredCountBadge');
     if (badge) badge.textContent = window.registeredTournaments.size;
 
-
-
     // ===== 5) Render / dashboard =====
     if (typeof renderTable === 'function') {
       console.log('[Storage] Renderizando tabela...');
@@ -2274,6 +2364,17 @@ window.loadUserData = async function () {
         renderTable();
         if (typeof updateControlDashboard === 'function') updateControlDashboard();
       }, 100);
+    }
+
+    function ensureCurrentSession(){
+    if (!window.currentSession || !Array.isArray(window.currentSession.tournamentIds)){
+        const now = new Date().toISOString();
+        window.currentSession = {
+        id: crypto?.randomUUID ? crypto.randomUUID() : `sess-${Date.now()}`,
+        startedAt: now,
+        tournamentIds: []
+        };
+    }
     }
 
     // ===== 6) Métricas bankroll =====
@@ -3376,7 +3477,7 @@ window.renderTable = async function() {
         if (!(window.registeredTournaments instanceof Map)) window.registeredTournaments = new Map();
         if (!window.buyins) window.buyins = {};
         if (!window.cashouts) window.cashouts = {};
-
+      
         const t =
             (window.filteredTournaments || []).find(x => Number(x.id) === tid) ||
             (window.allTournamentsData || []).find(x => Number(x.id) === tid) ||
@@ -3393,6 +3494,11 @@ window.renderTable = async function() {
             delete window.buyins[tid];
             delete window.registeredMeta[tid];
             window.registeredTournaments.delete(tid);
+            // >>> REMOVER DA SESSÃO ATUAL
+            ensureCurrentSession();
+            window.currentSession.tournamentIds =
+                (window.currentSession.tournamentIds || []).filter(id => Number(id) !== Number(tid));
+            // <<<
         } else if (isFinalized) {
             // já tem cashout (0 ou >0) -> não é pendente
             showNotification('Aviso', 'Este torneio já tem cashout (incluindo 0).', 'warning');
@@ -3405,7 +3511,10 @@ window.renderTable = async function() {
                 rebuyCount: 0,
                 totalInvested: Number(t?.buyin ?? 0),
             };
-
+            ensureCurrentSession();
+            if (!window.currentSession.tournamentIds.includes(tid)){
+                window.currentSession.tournamentIds.push(tid);
+            }
             window.registeredMeta[tid] = t ? {
                 id: tid,
                 name: t.name,
@@ -3452,7 +3561,10 @@ window.renderTable = async function() {
             }
 
             // ✅ CORREÇÃO: Usar .values() do Map
-            const registered = Array.from(window.registeredTournaments.values());
+            //const registered = Array.from(window.registeredTournaments.values());
+            const allIds = Object.keys(window.buyins || {}).map(Number);
+            const registered = allIds.map(id => getTournamentForHistory(id)).filter(Boolean);
+
             
             // Atualizar badge
             const badge = document.getElementById('registeredCountBadge');
@@ -3566,6 +3678,188 @@ window.renderTable = async function() {
         // Chamar renderizar a tabela de torneios registrados no topo
         renderRegisteredTournamentsTable();
     }
+// ===== SESSIONS (Control) =====
+window.sessions = window.sessions || []; // persistido no saveCurrentUserState
+
+function safeNumber(v, fallback = 0){
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function getAllPlayedTournamentIds(){
+  // "Jogados" = tudo que tem buyin registrado
+  return Object.keys(window.buyins || {}).map(k => Number(k)).filter(n => Number.isFinite(n));
+}
+
+function computeSessionSummary(ids){
+  const buyins = window.buyins || {};
+  const cashouts = window.cashouts || {};
+
+  let invested = 0;
+  let cash = 0;
+
+  ids.forEach(id => {
+    const b = buyins[id] || buyins[String(id)];
+    const inv = safeNumber(b?.totalInvested ?? b?.baseBuyin ?? 0, 0);
+    invested += inv;
+
+    const c = cashouts[id] ?? cashouts[String(id)];
+    // cashout null = pendente; undefined = não existe; ambos contam como 0 no resumo
+    cash += (c === null || c === undefined) ? 0 : safeNumber(c, 0);
+  });
+
+  const profit = cash - invested;
+  const roi = invested > 0 ? (profit / invested) * 100 : 0;
+  return { invested, cash, profit, roi };
+}
+
+function renderSessions(){
+  const container = document.getElementById("historyContainer");
+  if (!container) return;
+
+  const sessions = Array.isArray(window.sessions) ? window.sessions : [];
+  if (sessions.length === 0){
+    container.innerHTML = `<div style="color: var(--text-secondary); font-size: 12px; text-align: center; padding: 20px">
+      Nenhuma sessão encerrada ainda.
+    </div>`;
+    return;
+  }
+
+  // mais recente primeiro
+  const ordered = [...sessions].sort((a,b) => new Date(b.endedAt || b.createdAt || 0) - new Date(a.endedAt || a.createdAt || 0));
+
+  container.innerHTML = ordered.map((s, idx) => {
+    const ids = Array.isArray(s.tournamentIds) ? s.tournamentIds : [];
+    const sum = computeSessionSummary(ids);
+
+    const endedLabel = s.endedAt ? new Date(s.endedAt).toLocaleString("pt-BR") : "—";
+    const title = `Sessão #${ordered.length - idx}`;
+
+    const rows = ids.map(id => {
+      const t = (typeof getTournamentForHistory === "function") ? getTournamentForHistory(id) : (window.registeredMeta?.[id] || { id });
+      const b = window.buyins?.[id] || window.buyins?.[String(id)];
+      const baseBuyin = safeNumber(t?.buyin ?? b?.baseBuyin ?? 0, 0);
+      const rebuyCount = safeNumber(b?.rebuyCount ?? 0, 0);
+      const totalInvested = safeNumber(b?.totalInvested ?? baseBuyin, 0);
+      const c = window.cashouts?.[id] ?? window.cashouts?.[String(id)];
+      const cashout = (c === null || c === undefined) ? null : safeNumber(c, 0);
+      const result = (cashout === null) ? null : (cashout - totalInvested);
+      const roi = (cashout === null || totalInvested <= 0) ? null : (result / totalInvested) * 100;
+
+      const resColor = (result === null) ? "var(--text-secondary)" : (result >= 0 ? "var(--success)" : "var(--danger)");
+
+      return `
+        <tr>
+          <td>${t?.name || `Torneio ${id}`}</td>
+          <td>${t?.site || "-"}</td>
+          <td>${t?.type || "-"}</td>
+          <td style="text-align:right">${baseBuyin.toFixed(2)}</td>
+          <td style="text-align:center; color: var(--secondary); font-weight:600">${rebuyCount || "-"}</td>
+          <td style="text-align:right; font-weight:600">${totalInvested.toFixed(2)}</td>
+          <td style="text-align:right">${cashout === null ? "Pendente" : cashout.toFixed(2)}</td>
+          <td style="text-align:right; color:${resColor}; font-weight:600">${result === null ? "-" : result.toFixed(2)}</td>
+          <td style="text-align:right; color:${resColor}; font-weight:600">${roi === null ? "-" : roi.toFixed(1) + "%"}</td>
+        </tr>
+      `;
+    }).join("");
+
+    return `
+      <div class="session-card" data-session-id="${s.id}">
+        <div class="session-header" onclick="toggleSessionDetails('${s.id}')">
+          <div>
+            <div class="session-title">${title}</div>
+            <div class="session-meta">${endedLabel} • ${ids.length} torneios</div>
+          </div>
+          <div class="session-actions">
+            <div class="session-meta" style="text-align:right">
+              Inv: ${sum.invested.toFixed(2)} • Cash: ${sum.cash.toFixed(2)}<br>
+              <span style="color:${sum.profit >= 0 ? 'var(--success)' : 'var(--danger)'}; font-weight:700">
+                ${sum.profit.toFixed(2)} (ROI ${sum.roi.toFixed(1)}%)
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="session-details">
+          <table class="session-table">
+            <thead>
+              <tr style="color: var(--secondary); text-transform: uppercase; font-size: 10px; letter-spacing: .5px;">
+                <th>Torneio</th><th>Sala</th><th>Tipo</th>
+                <th style="text-align:right">Buy-in</th>
+                <th style="text-align:center">Rebuy</th>
+                <th style="text-align:right">Investido</th>
+                <th style="text-align:right">Cashout</th>
+                <th style="text-align:right">Resultado</th>
+                <th style="text-align:right">ROI</th>
+              </tr>
+            </thead>
+            <tbody>${rows || `<tr><td colspan="9" style="color:var(--text-secondary); padding:10px; text-align:center">Sem torneios.</td></tr>`}</tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+window.toggleSessionDetails = function(sessionId){
+  const el = document.querySelector(`.session-card[data-session-id="${sessionId}"]`);
+  if (el) el.classList.toggle("open");
+};
+
+async function endSession(){
+  window.ensureCurrentSession?.();
+
+  const ids = Array.isArray(window.currentSession?.tournamentIds)
+    ? [...window.currentSession.tournamentIds]
+    : [];
+
+  if (ids.length === 0){
+    if (typeof showNotification === "function")
+      showNotification("Aviso", "Sessão vazia. Registre torneios antes de encerrar.", "warning");
+    return;
+  }
+
+  const now = new Date().toISOString();
+
+  const closed = {
+    id: window.currentSession.id,
+    startedAt: window.currentSession.startedAt,
+    endedAt: now,
+    tournamentIds: ids
+  };
+
+  window.sessions = Array.isArray(window.sessions) ? window.sessions : [];
+  window.sessions.push(closed);
+
+  // abre nova sessão automaticamente
+  window.currentSession = {
+    id: crypto?.randomUUID ? crypto.randomUUID() : `sess-${Date.now()}`,
+    startedAt: now,
+    tournamentIds: []
+  };
+
+  // Persistir no Supabase
+  if (typeof window.saveCurrentUserState === "function"){
+    await window.saveCurrentUserState({
+      sessions: window.sessions,
+      currentSession: window.currentSession
+    });
+  }
+
+  renderSessions();
+  if (typeof showNotification === "function")
+    showNotification("Sessão encerrada", `Sessão salva com ${ids.length} torneios.`, "success");
+}
+
+
+document.getElementById("btnEndSession")?.addEventListener("click", endSession);
+
+// Hook: sempre que Control atualizar, renderiza as sessões (ao invés de ficar branco)
+const _origUpdateControlDashboard = window.updateControlDashboard;
+window.updateControlDashboard = function(){
+  try { if (typeof _origUpdateControlDashboard === "function") _origUpdateControlDashboard(); } catch(e){ console.error(e); }
+  try { renderSessions(); } catch(e){ console.error(e); }
+};
 
 function openCashoutModal(id) {
   const tid = Number(id);
@@ -3733,7 +4027,7 @@ window.saveCashout = async function() {
 
         let html = `
             <div style="font-family: Georgia, serif; padding: 20px; color: #333;">
-                <h1 style="text-align:center; color:#8b7355; margin-bottom: 10px;">🎯 Pega Blinder Lobby</h1>
+                <h1 style="text-align:center; color:#8b7355; margin-bottom: 10px;"> Pega Blinder Lobby</h1>
                 <p style="text-align:center; color: #333; margin-bottom: 20px;"><strong>Data:</strong> ${today}</p>
                 <hr style="border: none; border-top: 2px solid #8b7355; margin: 20px 0;">
                 <h2 style="color: #8b7355; margin-top: 20px;">Resumo Financeiro</h2>
