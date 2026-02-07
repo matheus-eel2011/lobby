@@ -2301,13 +2301,22 @@ window.loadUserData = async function () {
     // ===== RESTAURAR SESSÕES (Supabase) =====
     const st = userState?.state?.state || {};
 
+    window.sessionsMeta =
+    (st.sessionsMeta && !Array.isArray(st.sessionsMeta) && typeof st.sessionsMeta === "object")
+        ? st.sessionsMeta
+        : {};
+
     window.sessions = Array.isArray(st.sessions) ? st.sessions : [];
 
-    if (st.currentSession && Array.isArray(st.currentSession.tournamentIds)) {
+    if (
+    st.currentSession &&
+    typeof st.currentSession === "object" &&
+    Array.isArray(st.currentSession.tournamentIds)
+    ) {
     window.currentSession = st.currentSession;
     }
 
-    if (typeof ensureCurrentSession === "function") ensureCurrentSession();
+    if (typeof window.ensureCurrentSession === "function") window.ensureCurrentSession();
 
     Object.keys(window.buyins || {}).forEach((idStr) => {
     const id = Number(idStr);
@@ -3736,7 +3745,12 @@ function renderSessions(){
     const title = `Sessão #${ordered.length - idx}`;
 
     const rows = ids.map(id => {
-      const t = (typeof getTournamentForHistory === "function") ? getTournamentForHistory(id) : (window.registeredMeta?.[id] || { id });
+    const t =  
+        window.sessionsMeta?.[s.id]?.[id] ||
+        ((typeof getTournamentForHistory === "function") ? getTournamentForHistory(id) : null) ||
+        window.registeredMeta?.[id] ||
+        { id };
+
       const b = window.buyins?.[id] || window.buyins?.[String(id)];
       const baseBuyin = safeNumber(t?.buyin ?? b?.baseBuyin ?? 0, 0);
       const rebuyCount = safeNumber(b?.rebuyCount ?? 0, 0);
@@ -3831,6 +3845,21 @@ async function endSession(){
   window.sessions = Array.isArray(window.sessions) ? window.sessions : [];
   window.sessions.push(closed);
 
+  // 1) Snapshot dos torneios dessa sessão (pra não depender da API depois)
+  window.sessionsMeta = (window.sessionsMeta && !Array.isArray(window.sessionsMeta)
+   && typeof window.sessionsMeta === "object") ? window.sessionsMeta : {};
+
+  const metaById = {};
+  (closed.tournamentIds || []).forEach(id => {
+    const fromHistory = (typeof getTournamentForHistory === "function") ? getTournamentForHistory(id) : null;
+    const fromRegisteredMeta = window.registeredMeta?.[id];
+    const fromRegisteredMap = window.registeredTournaments instanceof Map ? window.registeredTournaments.get(Number(id)) : null;
+
+    metaById[id] = fromRegisteredMeta || fromHistory || fromRegisteredMap || { id };
+
+  });
+  window.sessionsMeta[closed.id] = metaById;
+  
   // abre nova sessão automaticamente
   window.currentSession = {
     id: crypto?.randomUUID ? crypto.randomUUID() : `sess-${Date.now()}`,
@@ -3842,7 +3871,8 @@ async function endSession(){
   if (typeof window.saveCurrentUserState === "function"){
     await window.saveCurrentUserState({
       sessions: window.sessions,
-      currentSession: window.currentSession
+      currentSession: window.currentSession,
+      sessionsMeta: window.sessionsMeta
     });
   }
 
@@ -3931,7 +3961,7 @@ window.saveCashout = async function() {
 
         // 🆕 REMOVER DO REGISTERED (torneio finalizado)
         window.registeredTournaments?.delete(Number(window.currentCashoutId));
-        delete window.registeredMeta?.[Number(window.currentCashoutId)];
+        //delete window.registeredMeta?.[Number(window.currentCashoutId)];
 
             console.log(`[Cashout] ✅ Torneio ${window.currentCashoutId} removido de registered`);
             
