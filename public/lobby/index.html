@@ -1377,8 +1377,11 @@
                     <div class="grind-title">
                         Histórico de Registros
                         <div class="export-buttons" id="exportButtons" style="display: none;">
-                            <button class="btn-export csv" onclick="exportCSV()">CSV</button>
-                            <button class="btn-export pdf" onclick="exportPDF()">PDF</button>
+                            <button class="btn-export csv" onclick="exportCSVSession()">CSV Sessão</button>
+                            <button class="btn-export pdf" onclick="exportPDFSession()">PDF Sessão</button>
+                            <button class="btn-export csv" onclick="exportCSVGlobal()">CSV Global</button>
+                            <button class="btn-export pdf" onclick="exportPDFGlobal()">PDF Global</button>
+
                         </div>
                         <div style="display:flex; gap:10px; margin-top:10px; justify-content:flex-end;">
                             <button class="btn-primary" id="btnEndSession" style="padding:8px 12px; font-size:12px;">
@@ -4143,6 +4146,233 @@ window.saveCashout = async function() {
             showNotification('⚠️ Aviso', 'Biblioteca PDF não carregada. Exportando como CSV...', 'warning');
             exportCSV();
         }
+    }
+    function getGlobalTournamentsList() {
+        const buyins = window.buyins || {};
+        const cashouts = window.cashouts || {};
+
+        const ids = Object.keys(buyins)
+            .map((k) => Number(k))
+            .filter((n) => !Number.isNaN(n));
+
+        return ids.map((id) => {
+            // tenta pegar dados “bonitos” (nome/site/type/date/time) se existir
+            let t = null;
+            if (typeof window.getTournamentForHistory === 'function') {
+            try { t = window.getTournamentForHistory(id); } catch (e) { t = null; }
+            }
+
+            const buyinRow = buyins[id] || buyins[String(id)] || {};
+            const baseBuyin = Number(buyinRow.baseBuyin ?? t?.buyin ?? 0);
+            const totalInvested = Number(buyinRow.totalInvested ?? baseBuyin ?? 0);
+            const rebuyCount = Number(buyinRow.rebuyCount ?? 0);
+
+            const cashVal = cashouts[id] ?? cashouts[String(id)];
+            const cashout = (cashVal === null || cashVal === undefined) ? null : Number(cashVal);
+
+            return {
+            id,
+            name: t?.name ?? `Torneio ${id}`,
+            site: t?.site ?? '-',
+            type: t?.type ?? '-',
+            date: t?.date ?? '',
+            time: t?.time ?? '',
+            baseBuyin,
+            rebuyCount,
+            totalInvested,
+            cashout
+            };
+        });
+    }
+
+    function exportCSVSession() {
+        const list = Array.from(window.registeredTournaments?.values?.() || []);
+        if (list.length === 0) return showNotification('Aviso', 'Nenhum torneio na sessão para exportar.', 'warning');
+
+        const buyins = window.buyins || {};
+        const cashouts = window.cashouts || {};
+        const today = new Date().toLocaleDateString('pt-BR');
+
+        let csv = 'ID,Torneio,Sala,Tipo,Investido,Cashout,Resultado,ROI,Data\n';
+
+        list.forEach((t) => {
+            const b = buyins[t.id] || buyins[String(t.id)] || {};
+            const invested = Number(b.totalInvested ?? t.buyin ?? 0);
+            const cashVal = cashouts[t.id] ?? cashouts[String(t.id)];
+            const cashout = (cashVal === null || cashVal === undefined) ? '' : Number(cashVal);
+            const result = (cashout === '') ? '' : (Number(cashout) - invested).toFixed(2);
+            const roi = (cashout === '' || invested <= 0) ? '' : (((Number(cashout) - invested) / invested) * 100).toFixed(1);
+
+            csv += `${t.id},"${String(t.name).replaceAll('"','""')}",${t.site},${t.type},${invested.toFixed(2)},${cashout},${result},${roi},${today}\n`;
+        });
+
+        const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.download = `pega-blinder-sessao-${today.replaceAll('/','-')}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(() => { document.body.removeChild(link); URL.revokeObjectURL(url); }, 500);
+    }
+
+    function exportPDFSession() {
+        const list = Array.from(window.registeredTournaments?.values?.() || []);
+        if (list.length === 0) return showNotification('Aviso', 'Nenhum torneio na sessão para exportar.', 'warning');
+
+        // Reaproveita sua infra html2pdf
+        const today = new Date().toLocaleDateString('pt-BR');
+        const buyins = window.buyins || {};
+        const cashouts = window.cashouts || {};
+
+        const rowsHtml = list.map((t) => {
+            const b = buyins[t.id] || buyins[String(t.id)] || {};
+            const invested = Number(b.totalInvested ?? t.buyin ?? 0);
+            const cashVal = cashouts[t.id] ?? cashouts[String(t.id)];
+            const cashout = (cashVal === null || cashVal === undefined) ? null : Number(cashVal);
+            const result = (cashout === null) ? null : (cashout - invested);
+            const roi = (cashout === null || invested <= 0) ? null : (result / invested * 100);
+
+            return `<tr>
+            <td>${t.name}</td><td>${t.site}</td><td>${t.type}</td>
+            <td style="text-align:right">${invested.toFixed(2)}</td>
+            <td style="text-align:right">${cashout === null ? '-' : cashout.toFixed(2)}</td>
+            <td style="text-align:right">${result === null ? '-' : result.toFixed(2)}</td>
+            <td style="text-align:right">${roi === null ? '-' : roi.toFixed(1)}</td>
+            </tr>`;
+        }).join('');
+
+        const html = `
+            <div style="font-family: Georgia, serif; padding: 20px; color:#333">
+            <h1 style="text-align:center; color:#8b7355">Pega Blinder</h1>
+            <p style="text-align:center"><strong>Sessão</strong> - ${today}</p>
+            <table style="width:100%; border-collapse:collapse; font-size:11px">
+                <thead>
+                <tr style="background:#1a1813; color:#c9a961">
+                    <th style="padding:8px; border:1px solid #ddd; text-align:left">Torneio</th>
+                    <th style="padding:8px; border:1px solid #ddd; text-align:left">Sala</th>
+                    <th style="padding:8px; border:1px solid #ddd; text-align:left">Tipo</th>
+                    <th style="padding:8px; border:1px solid #ddd; text-align:right">Investido</th>
+                    <th style="padding:8px; border:1px solid #ddd; text-align:right">Cashout</th>
+                    <th style="padding:8px; border:1px solid #ddd; text-align:right">Resultado</th>
+                    <th style="padding:8px; border:1px solid #ddd; text-align:right">ROI</th>
+                </tr>
+                </thead>
+                <tbody>${rowsHtml}</tbody>
+            </table>
+            </div>
+        `;
+
+        const element = document.createElement('div');
+        element.innerHTML = html;
+
+        if (!window.html2pdf) return exportCSVSession();
+
+        window.html2pdf().set({
+            margin: 10,
+            filename: `pega-blinder-sessao-${today.replaceAll('/','-')}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, allowTaint: true },
+            jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+        }).from(element).save();
+    }
+
+    function exportCSVGlobal() {
+        const list = getGlobalTournamentsList();
+        if (list.length === 0) return showNotification('Aviso', 'Nenhum registro global para exportar.', 'warning');
+
+        let csv = 'ID,Torneio,Sala,Tipo,Data,Hora,Investido,Cashout,Resultado,ROI\n';
+
+        list
+            .sort((a,b) => String(a.date||'').localeCompare(String(b.date||'')) || String(a.time||'').localeCompare(String(b.time||'')))
+            .forEach((t) => {
+            const invested = Number(t.totalInvested ?? 0);
+            const cashout = (t.cashout === null || t.cashout === undefined) ? '' : Number(t.cashout);
+            const result = (cashout === '') ? '' : (Number(cashout) - invested).toFixed(2);
+            const roi = (cashout === '' || invested <= 0) ? '' : (((Number(cashout) - invested) / invested) * 100).toFixed(1);
+
+            csv += `${t.id},"${String(t.name).replaceAll('"','""')}",${t.site},${t.type},${t.date || ''},${t.time || ''},${invested.toFixed(2)},${cashout},${result},${roi}\n`;
+            });
+
+        const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.download = `pega-blinder-global-${new Date().toISOString().slice(0,10)}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(() => { document.body.removeChild(link); URL.revokeObjectURL(url); }, 500);
+    }
+
+    function exportPDFGlobal() {
+        const list = getGlobalTournamentsList();
+        if (list.length === 0) return showNotification('Aviso', 'Nenhum registro global para exportar.', 'warning');
+
+        const sorted = list.sort((a,b) => String(a.date||'').localeCompare(String(b.date||'')) || String(a.time||'').localeCompare(String(b.time||'')));
+
+        const totalInvested = sorted.reduce((s,t) => s + Number(t.totalInvested ?? 0), 0);
+        const totalCashout = sorted.reduce((s,t) => s + Number(t.cashout ?? 0), 0);
+        const profit = totalCashout - totalInvested;
+        const roi = totalInvested > 0 ? (profit / totalInvested * 100) : 0;
+
+        const rowsHtml = sorted.map((t) => {
+            const invested = Number(t.totalInvested ?? 0);
+            const cashout = (t.cashout === null) ? null : Number(t.cashout ?? 0);
+            const result = (t.cashout === null) ? null : (cashout - invested);
+            const roiLine = (t.cashout === null || invested <= 0) ? null : (result / invested * 100);
+
+            return `<tr>
+            <td>${t.date || ''} ${t.time || ''}</td>
+            <td>${t.name}</td><td>${t.site}</td><td>${t.type}</td>
+            <td style="text-align:right">${invested.toFixed(2)}</td>
+            <td style="text-align:right">${t.cashout === null ? '-' : cashout.toFixed(2)}</td>
+            <td style="text-align:right">${result === null ? '-' : result.toFixed(2)}</td>
+            <td style="text-align:right">${roiLine === null ? '-' : roiLine.toFixed(1)}</td>
+            </tr>`;
+        }).join('');
+
+        const html = `
+            <div style="font-family: Georgia, serif; padding: 20px; color:#333">
+            <h1 style="text-align:center; color:#8b7355">Pega Blinder</h1>
+            <p style="text-align:center"><strong>Global</strong> - ${new Date().toLocaleString('pt-BR')}</p>
+
+            <table style="width:100%; border-collapse:collapse; margin: 10px 0">
+                <tr><td style="padding:8px; border:1px solid #ddd"><strong>Total investido</strong></td><td style="padding:8px; border:1px solid #ddd; text-align:right">${totalInvested.toFixed(2)}</td></tr>
+                <tr><td style="padding:8px; border:1px solid #ddd"><strong>Total cashout</strong></td><td style="padding:8px; border:1px solid #ddd; text-align:right">${totalCashout.toFixed(2)}</td></tr>
+                <tr><td style="padding:8px; border:1px solid #ddd"><strong>Lucro</strong></td><td style="padding:8px; border:1px solid #ddd; text-align:right">${profit.toFixed(2)}</td></tr>
+                <tr><td style="padding:8px; border:1px solid #ddd"><strong>ROI</strong></td><td style="padding:8px; border:1px solid #ddd; text-align:right">${roi.toFixed(1)}</td></tr>
+            </table>
+
+            <table style="width:100%; border-collapse:collapse; font-size:10.5px">
+                <thead>
+                <tr style="background:#1a1813; color:#c9a961">
+                    <th style="padding:8px; border:1px solid #ddd; text-align:left">Quando</th>
+                    <th style="padding:8px; border:1px solid #ddd; text-align:left">Torneio</th>
+                    <th style="padding:8px; border:1px solid #ddd; text-align:left">Sala</th>
+                    <th style="padding:8px; border:1px solid #ddd; text-align:left">Tipo</th>
+                    <th style="padding:8px; border:1px solid #ddd; text-align:right">Investido</th>
+                    <th style="padding:8px; border:1px solid #ddd; text-align:right">Cashout</th>
+                    <th style="padding:8px; border:1px solid #ddd; text-align:right">Resultado</th>
+                    <th style="padding:8px; border:1px solid #ddd; text-align:right">ROI</th>
+                </tr>
+                </thead>
+                <tbody>${rowsHtml}</tbody>
+            </table>
+            </div>
+        `;
+
+        const element = document.createElement('div');
+        element.innerHTML = html;
+
+        if (!window.html2pdf) return exportCSVGlobal();
+
+        window.html2pdf().set({
+            margin: 10,
+            filename: `pega-blinder-global-${new Date().toISOString().slice(0,10)}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, allowTaint: true },
+            jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+        }).from(element).save();
     }
 
     function showNotification(title, message, type = 'success') {
