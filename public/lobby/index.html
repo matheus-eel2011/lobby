@@ -3482,6 +3482,19 @@ window.renderTable = async function() {
         }).join('');
     }
    
+    window.ensureCurrentSession = function () {
+        if (
+            window.currentSession &&
+            Array.isArray(window.currentSession.tournamentIds)
+        ) return;
+
+        window.currentSession = {
+            id: crypto?.randomUUID ? crypto.randomUUID() : `sess-${Date.now()}`,
+            startedAt: new Date().toISOString(),
+            tournamentIds: []
+        };
+    };
+
     async function toggleRegister(id) {
         const tid = Number(id);
 
