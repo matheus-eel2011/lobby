@@ -1007,19 +1007,18 @@ export const getTournaments = async () => {
     const KKPOKERConfig = {
       mainSeries: [
         { id: 1000, date: "2026-02-08", time: "10:00", name: "40K MYSTERY GLORY", type: "MYSTERY", buyin: 100, guaranteed: 40000, priority: "medium", lateReg: 180 },
-        { id: 1001, date: "2026-02-08", time: "14:00", name: "20K GLORY PKO", type: "REG KO", buyin: 100, guaranteed: 20000, priority: "medium", lateReg: 180 },
-        
+        { id: 1001, date: "2026-02-08", time: "14:00", name: "20K GLORY PKO", type: "REG KO", buyin: 100, guaranteed: 20000, priority: "medium", lateReg: 180 },      
       ],
       //✅ Big diários
       bigDailies: [
-        { time: "12:00", name: "$3K CLASSIC", buyin: 30, guaranteed: 3000, lateReg: 150 },
+        { time: "12:00", name: "$3K Classic1", buyin: 30, guaranteed: 3000, lateReg: 150 },
         { time: "22:00", name: "$2K CLASSIC", buyin: 20, guaranteed: 2000, lateReg: 150 },
       ],
       
       //✅ Bounty diários
       bountyDailies: [
-        { time: "16:00", name: "$5K Warrior", buyin: 30, guaranteed: 3000, lateReg: 150 },
-        { time: "08:00", name: "$5K Warrior", buyin: 20, guaranteed: 2000, lateReg: 150 },
+        { time: "16:00", name: "$5K Warrior1", buyin: 30, guaranteed: 3000, lateReg: 150 },
+        { time: "08:00", name: "$5K Warrior1", buyin: 20, guaranteed: 2000, lateReg: 150 },
       ]
     };
     dates.forEach(date => {
