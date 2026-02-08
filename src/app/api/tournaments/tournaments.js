@@ -1000,29 +1000,37 @@ export const getTournaments = async () => {
       });
     });
   }        
-  function addkkpokerTournaments(tournaments, startId) {
+  function addKKPOKERTournaments(tournaments, startId) {
     let id = startId;
 
     // ✅ CONFIG: Templates de kkpoker com lateReg explícito
-    const kkpokerConfig = {
+    const KKPOKERConfig = {
       mainSeries: [
-        { id: 1, date: "2026-02-08", time: "10:00", name: "40K MYSTERY GLORY", type: "MYSTERY", buyin: 100, guaranteed: 40000, priority: "medium", lateReg: 180 },
-        { id: 2, date: "2026-02-08", time: "14", name: "20K GLORY PKO", type: "REG KO", buyin: 100, guaranteed: 20000, priority: "medium", lateReg: 180 },
+        { id: 1000, date: "2026-02-08", time: "10:00", name: "40K MYSTERY GLORY", type: "MYSTERY", buyin: 100, guaranteed: 40000, priority: "medium", lateReg: 180 },
+        { id: 1001, date: "2026-02-08", time: "14:00", name: "20K GLORY PKO", type: "REG KO", buyin: 100, guaranteed: 20000, priority: "medium", lateReg: 180 },
         
       ],
       //✅ Big diários
       bigDailies: [
         { time: "12:00", name: "$3K CLASSIC", buyin: 30, guaranteed: 3000, lateReg: 150 },
         { time: "22:00", name: "$2K CLASSIC", buyin: 20, guaranteed: 2000, lateReg: 150 },
+      ],
+      
+      //✅ Bounty diários
+      bountyDailies: [
+        { time: "16:00", name: "$5K Warrior", buyin: 30, guaranteed: 3000, lateReg: 150 },
+        { time: "08:00", name: "$5K Warrior", buyin: 20, guaranteed: 2000, lateReg: 150 },
       ]
-      };
-    // Big Dailies
-      kkpokerConfig.bigDailies.forEach(template => {
+    };
+    dates.forEach(date => {
+      const dateStr = formatDateString(date);
+        // Big Dailies
+      KKPOKERConfig.bigDailies.forEach(template => {
         tournaments.push({
           id: id++,
           date: dateStr,
           time: template.time,
-          site: "kkpoker",
+          site: "KKPOKER",
           name: template.name,
           type: "REG",
           buyin: template.buyin,
@@ -1032,31 +1040,16 @@ export const getTournaments = async () => {
           lateReg: template.lateReg,
         });
       });
-      // Hyper Dailies
-      kkpokerConfig.hyperDailies.forEach(template => {
-        tournaments.push({
-          id: id++,
-          date: dateStr,
-          time: template.time,
-          site: "kkpoker",
-          name: template.name,
-          type: "HYPER",
-          buyin: template.buyin,
-          guaranteed: template.guaranteed,
-          priority: "very-high",
-          status: "Aberto",
-          lateReg: template.lateReg,
-        });
-      });
+              
       // Bountys Dailies
-      kkpokerConfig.bountyhunterdailies.forEach(template => {
+      KKPOKERConfig.bountyDailies.forEach(template => {
         tournaments.push({
           id: id++,
           date: dateStr,
           time: template.time,
-          site: "kkpoker",
+          site: "KKPOKER",
           name: template.name,
-          type: "TURBO KO",
+          type: "REG KO",
           buyin: template.buyin,
           guaranteed: template.guaranteed,
           priority: "medium",
@@ -1064,23 +1057,118 @@ export const getTournaments = async () => {
           lateReg: template.lateReg,
         });
       });
-    // ✅ Adicionar Main Event Series (fixos, com datas)
-    kkpokerConfig.mainSeries.forEach(tournament => {
-      tournaments.push({
-        id: tournament.id,
-        date: tournament.date,
-        time: tournament.time,
-        site: "kkpoker",
-        name: tournament.name,
-        type: tournament.type,
-        buyin: tournament.buyin,
-        guaranteed: tournament.guaranteed,
-        priority: tournament.priority,
-        status: "Aberto",
-        lateReg: tournament.lateReg || LATE_REG_DEFAULTS[tournament.type] || 30,
+      // ✅ Adicionar Main Event Series (fixos, com datas)
+      KKPOKERConfig.mainSeries.forEach(tournament => {
+        tournaments.push({
+          id: tournament.id,
+          date: tournament.date,
+          time: tournament.time,
+          site: "KKPOKER",
+          name: tournament.name,
+          type: tournament.type,
+          buyin: tournament.buyin,
+          guaranteed: tournament.guaranteed,
+          priority: tournament.priority,
+          status: "Aberto",
+          lateReg: tournament.lateReg || LATE_REG_DEFAULTS[tournament.type] || 30,
+        });
       });
-    });
+    })  
+    return id;
   }  
+  function addCoinPokerTournaments(tournaments, startId) {
+    let id = startId;
+
+    // ✅ CONFIG: Templates de kkpoker com lateReg explícito
+    const CoinPokerConfig = {
+      mainSeries: [
+        { id: 10000, date: "2026-02-08", time: "09:08", name: "T22 Mini Sunday Special Asia", type: "REG", buyin: 22, guaranteed: 6000, priority: "very-high", lateReg: 150 },
+        { id: 10001, date: "2026-02-08", time: "12:05", name: "T25 Mini Sunday Warm-up", type: "REG", buyin: 25, guaranteed: 10000, priority: "very-high", lateReg: 150 },
+        { id: 10002, date: "2026-02-08", time: "13:05", name: "T50 Mini Sunday Coin Hunter", type: "REG KO", buyin: 50, guaranteed: 15000, priority: "very-high", lateReg: 150 },
+        { id: 10003, date: "2026-02-08", time: "14:05", name: "T25 Sunday Special", type: "REG", buyin: 25, guaranteed: 10000, priority: "very-high", lateReg: 150 },
+        { id: 10004, date: "2026-02-08", time: "15:05", name: "T50 Sunday Main Event", type: "REG", buyin: 50, guaranteed: 20000, priority: "very-high", lateReg: 150 },
+        { id: 10005, date: "2026-02-08", time: "15:30", name: "T15 SUNDAY CUP", type: "REG", buyin: 15, guaranteed: 7500, priority: "very-high", lateReg: 150 },
+      ],
+      //✅ Big diários
+      bigDailies: [
+        { time: "11:05", name: "T10 CoinPoker Mini Kickoff", buyin: 10, guaranteed: 3000, lateReg: 150 },
+        
+      ],
+      
+      //✅ Bounty diários
+      bountyDailies: [
+        { time: "14:00", name: "DOJO", buyin: 10, guaranteed: 3000, lateReg: 150 },
+       
+      ]
+    };
+    dates.forEach(date => {
+      const dateStr = formatDateString(date);
+        // Big Dailies
+      CoinPokerConfig.bigDailies.forEach(template => {
+        tournaments.push({
+          id: id++,
+          date: dateStr,
+          time: template.time,
+          site: "CoinPoker",
+          name: template.name,
+          type: "REG",
+          buyin: template.buyin,
+          guaranteed: template.guaranteed,
+          priority: "very-high",
+          status: "Aberto",
+          lateReg: template.lateReg,
+        });
+      });
+              
+      // Bountys Dailies
+      CoinPokerConfig.bountyDailies.forEach(template => {
+        tournaments.push({
+          id: id++,
+          date: dateStr,
+          time: template.time,
+          site: "CoinPoker",
+          name: template.name,
+          type: "REG KO",
+          buyin: template.buyin,
+          guaranteed: template.guaranteed,
+          priority: "medium",
+          status: "Aberto",
+          lateReg: template.lateReg,
+        });
+      });
+      // ✅ Adicionar Main Event Series (fixos, com datas)
+      CoinPokerConfig.mainSeries.forEach(tournament => {
+        tournaments.push({
+          id: tournament.id,
+          date: tournament.date,
+          time: tournament.time,
+          site: "CoinPoker",
+          name: tournament.name,
+          type: tournament.type,
+          buyin: tournament.buyin,
+          guaranteed: tournament.guaranteed,
+          priority: tournament.priority,
+          status: "Aberto",
+          lateReg: tournament.lateReg || LATE_REG_DEFAULTS[tournament.type] || 30,
+        });
+      });
+    })  
+    return id;
+  } 
+  //}
+  //function addqqpkTournaments(tournaments, startId) {
+    //let id = startId;
+  //} 
+  //function addjackpokerTournaments(tournaments, startId) {
+    //let id = startId;
+  //}       
+  //function addclubggTournaments(tournaments, startId) {
+    //let id = startId;
+  //} 
+  //function addsupremaTournaments(tournaments, startId) {
+    //let id = startId;
+  //} 
+      
   // ============================================
   // ✅ MAIN: EXECUTAR TODAS AS FUNÇÕES
   // ============================================
@@ -1091,13 +1179,8 @@ export const getTournaments = async () => {
   id = add888PokerTournaments(tournaments, id);
   id = addChampionTournaments(tournaments, id);
   id = addpartypokerTournaments(tournaments, id);
-  id = addcoinpokerTournaments(tournaments, id);
-  id = addkkpokerTournaments(tournaments, id);
-  id = addqqpkTournaments(tournaments, id);
-  id = addjackpokerTournaments(tournaments, id);
-  id = addclubggTournaments(tournaments, id);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  id = addsupremaTournaments(tournaments, id);
-  
+  id = addKKPOKERTournaments(tournaments, id);
+  id = addCoinPokerTournaments(tournaments, id);
+   
   return tournaments;
 }
