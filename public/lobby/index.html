@@ -3483,17 +3483,24 @@ window.renderTable = async function() {
     }
    
     window.ensureCurrentSession = function () {
+        // Se já existe e tem estrutura válida, mantém
         if (
             window.currentSession &&
+            typeof window.currentSession === "object" &&
             Array.isArray(window.currentSession.tournamentIds)
-        ) return;
+        ) {
+            return;
+        }
 
+        // Se não veio nada do Supabase ou veio quebrado, cria uma nova
+        const now = new Date();
         window.currentSession = {
-            id: crypto?.randomUUID ? crypto.randomUUID() : `sess-${Date.now()}`,
-            startedAt: new Date().toISOString(),
+            id: crypto?.randomUUID ? crypto.randomUUID() : `sess-${now.getTime()}`,
+            startedAt: now.toISOString(),
             tournamentIds: []
         };
     };
+
 
     async function toggleRegister(id) {
         const tid = Number(id);
