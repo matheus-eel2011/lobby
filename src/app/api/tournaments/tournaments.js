@@ -60,22 +60,7 @@ export const getTournaments = async () => {
       mainSeries: [
         { id: 44, date: "2026-01-13", time: "09:30", name: "$25 Bounty Snowstorm Deepstack Turbo", type: "REG KO", buyin: 25, guaranteed: 50000, priority: "medium", lateReg: 150 }, 
         { id: 313, date: "2026-01-26", time: "11:00", name: "$54 Bounty Fifty Stack", type: "REG KO", buyin: 54, guaranteed: 75000, priority: "medium", lateReg: 150 },
-        { id: 314, date: "2026-01-26", time: "12:00", name: "$44 Frost Forty Stack", type: "REG", buyin: 44, guaranteed: 50000, priority: "medium", lateReg: 150 },
-        { id: 315, date: "2026-01-26", time: "12:30", name: "$15 Bounty Hunters Holiday Special", type: "REG KO", buyin: 15, guaranteed: 100000, priority: "medium", lateReg: 150 },
-        { id: 316, date: "2026-01-26", time: "13:00", name: "$88 Double Eights [2-Stack]", type: "REG", buyin: 88, guaranteed: 75000, priority: "medium", lateReg: 150 },
-        { id: 317, date: "2026-01-26", time: "13:30", name: "$55 Omaholic 5-Card Double Stack", type: "REG", buyin: 55, guaranteed: 10000, priority: "medium", lateReg: 150 },
-        { id: 318, date: "2026-01-26", time: "14:00", name: "$250 Daily Winter Freezeout", type: "REG", buyin: 250, guaranteed: 50000, priority: "medium", lateReg: 150 },
-        { id: 319, date: "2026-01-26", time: "14:30", name: "$215 Bounty Hunters Winter Games", type: "REG KO", buyin: 215, guaranteed: 125000, priority: "medium", lateReg: 150 },
-        { id: 320, date: "2026-01-26", time: "15:05", name: "$150 Monday Merry Monster Stack", type: "REG", buyin: 150, guaranteed: 150000, priority: "medium", lateReg: 150 },
-        { id: 321, date: "2026-01-26", time: "15:05", name: "$15 Monday Merry Monster Stack", type: "REG", buyin: 15, guaranteed: 60000, priority: "medium", lateReg: 150 },
-        { id: 322, date: "2026-01-26", time: "16:00", name: "$108 Omaholic Bounty Daily Main", type: "REG KO", buyin: 108, guaranteed: 15000, priority: "medium", lateReg: 150 },
-        { id: 323, date: "2026-01-26", time: "16:30", name: "$32 Bounty King Frozen Throne", type: "REG KO", buyin: 32, guaranteed: 60000, priority: "medium", lateReg: 150 },
-        { id: 324, date: "2026-01-26", time: "17:00", name: "$77 Snowy Sevens Turbo", type: "HYPER", buyin: 77, guaranteed: 50000, priority: "medium", lateReg: 60 },
-        { id: 325, date: "2026-01-26", time: "17:30", name: "$54 Bounty Snowball [Big Bounties]", type: "REG KO", buyin: 54, guaranteed: 75000, priority: "medium", lateReg: 150 },
-        { id: 326, date: "2026-01-26", time: "18:00", name: "$108 Holiday Heater [Bounty Turbo]", type: "REG KO", buyin: 108, guaranteed: 50000, priority: "medium", lateReg: 150 },
-        { id: 327, date: "2026-01-26", time: "18:30", name: "$150 Omaholic Heater [Bounty Turbo]", type: "REG KO", buyin: 150, guaranteed: 15000, priority: "medium", lateReg: 150 },
-        { id: 328, date: "2026-01-26", time: "19:00", name: "$66 Snowy Super Six [Bounty Turbo]", type: "REG KO", buyin: 66, guaranteed: 60000, priority: "medium", lateReg: 150 },
-        { id: 329, date: "2026-01-26", time: "20:00", name: "$50 Winter Tick Tock BOOM [Levels Decrease]", type: "HYPER", buyin: 50, guaranteed: 25000, priority: "medium", lateReg: 60 },
+
       ],
                
       // ✅ GGMasters (REG) - 3 torneios com tempos diferentes
@@ -990,114 +975,12 @@ export const getTournaments = async () => {
   function addChampionTournaments(tournaments, startId) {
     let id = startId;
 
-    // ✅ CONFIG: Templates de partypoker com lateReg explícito
+    // ✅ CONFIG: Templates de champion com lateReg explícito
     const championConfig = {
       mainSeries: [
         { id: 1, date: "2026-01-28", time: "09:00", name: "€5 MYSTERY [6-Max]", type: "MYSTERY", buyin: 5, guaranteed: 1000, priority: "medium", lateReg: 120 },
         { id: 2, date: "2026-01-28", time: "09:00", name: "€10 BOUNTY HUNTER PRIME", type: "REG KO", buyin: 10, guaranteed: 1500, priority: "medium", lateReg: 120 },
-        { id: 4, date: "2026-01-28", time: "10:00", name: "€1,000 GTD - Rebuy", type: "REG", buyin: 5, guaranteed: 1000, priority: "high", lateReg: 120 },
-        { id: 5, date: "2026-01-28", time: "10:00", name: "€10,000 GTD 8-MAX", type: "REG", buyin: 20, guaranteed: 10000, priority: "high", lateReg: 120 },
-        { id: 6, date: "2026-01-28", time: "10:30", name: "€15,000 [Mystery Mini|D1]", type: "MYSTERY", buyin: 5, guaranteed: 15000, priority: "medium", lateReg: 120 },
-        { id: 7, date: "2026-01-28", time: "10:30", name: "€7.5 MYSTERY XL", type: "MYSTERY", buyin: 7.50, guaranteed: 3500, priority: "medium", lateReg: 120 },
-        { id: 9, date: "2026-01-28", time: "11:00", name: "€10 BOUNTY HUNTER PRIME", type: "REG KO", buyin: 10, guaranteed: 2000, priority: "medium", lateReg: 120 },
-        { id: 10, date: "2026-01-28", time: "11:00", name: "€5 REBUY/ADDON [8-MAX]", type: "REG", buyin: 5, guaranteed: 1000, priority: "high", lateReg: 120 },
-        { id: 16, date: "2026-01-28", time: "11:30", name: "€11,000 GTD MYSTERY", type: "MYSTERY", buyin: 10, guaranteed: 11000, priority: "medium", lateReg: 120 },
-        { id: 19, date: "2026-01-28", time: "12:30", name: "€15,000 [Mystery Mini|D1]", type: "MYSTERY", buyin: 5, guaranteed: 15000, priority: "medium", lateReg: 120 },
-        { id: 20, date: "2026-01-28", time: "12:30", name: "€5 MYSTERY [6-Max]", type: "MYSTERY", buyin: 5, guaranteed: 1000, priority: "medium", lateReg: 120 },
-        { id: 22, date: "2026-01-28", time: "13:05", name: "€6,000 GTD LUCKY SEVEN XL", type: "REG", buyin: 15, guaranteed: 6000, priority: "high", lateReg: 120 },
-        { id: 25, date: "2026-01-28", time: "13:30", name: "€3,000 GTD Bounty Hunter", type: "REG KO", buyin: 12.50, guaranteed: 3000, priority: "medium", lateReg: 120 },
-        { id: 26, date: "2026-01-28", time: "17:00", name: "€1,000 GTD Fists of Fury-Rebuy", type: "REG", buyin: 5, guaranteed: 1000, priority: "high", lateReg: 120 },
-        { id: 27, date: "2026-01-28", time: "17:15", name: "1,000€ [Sunset Classic]", type: "REG", buyin: 15, guaranteed: 1000, priority: "high", lateReg: 120 },
-        { id: 29, date: "2026-01-28", time: "17:15", name: "€5 SUPER SECRET [75% MYSTERY]", type: "MYSTERY", buyin: 5, guaranteed: 1000, priority: "medium", lateReg: 120 },
-        { id: 31, date: "2026-01-28", time: "17:35", name: "IRISH OPEN 2x€150 [PCKG...]", type: "PKO", buyin: 15, guaranteed: 300, priority: "medium", lateReg: 120 },
-        { id: 32, date: "2026-01-28", time: "18:00", name: "€4,000 GTD ULTRA 7-MAX", type: "REG", buyin: 50, guaranteed: 4000, priority: "high", lateReg: 120 },
-        { id: 33, date: "2026-01-28", time: "18:00", name: "€20 REBUY [HYPER]", type: "HYPER", buyin: 20, guaranteed: 1000, priority: "very low", lateReg: 120 },
-        { id: 34, date: "2026-01-28", time: "18:00", name: "Lucky Seven Turbo", type: "TURBO", buyin: 10, guaranteed: 2000, priority: "very low", lateReg: 120 },
-        { id: 35, date: "2026-01-28", time: "18:00", name: "€6,000 GTD ULTRAMINI 7-MAX", type: "REG", buyin: 10, guaranteed: 6000, priority: "high", lateReg: 120 },
-        { id: 36, date: "2026-01-28", time: "18:30", name: "€15,000 [Mystery Mini|D1]", type: "MYSTERY", buyin: 5, guaranteed: 15000, priority: "medium", lateReg: 120 },
-        { id: 37, date: "2026-01-28", time: "18:35", name: "IRISH OPEN 2x€150 [PCKG...]", type: "PKO", buyin: 15, guaranteed: 300, priority: "medium", lateReg: 120 },
-        { id: 38, date: "2026-01-28", time: "18:35", name: "€3,000 BOUNTY HUNTER", type: "REG KO", buyin: 15, guaranteed: 3000, priority: "medium", lateReg: 120 },
-        { id: 39, date: "2026-01-28", time: "19:00", name: "SUNSET ELIMINATOR", type: "TURBO KO", buyin: 7.50, guaranteed: 1000, priority: "very low", lateReg: 120 },
-        { id: 40, date: "2026-01-28", time: "19:00", name: "Night Bounty XL [7-Max]", type: "REG KO", buyin: 25, guaranteed: 2000, priority: "medium", lateReg: 120 },
-        { id: 45, date: "2026-01-28", time: "16:00", name: "€4,000 GTD | Fists of Fury", type: "REG", buyin: 10, guaranteed: 4000, priority: "high", lateReg: 120 },
-        { id: 46, date: "2026-01-28", time: "16:00", name: "€20 KNOCKOUT [TURBO]", type: "TURBO KO", buyin: 20, guaranteed: 1000, priority: "very low", lateReg: 120 },
-        { id: 48, date: "2026-01-28", time: "16:15", name: "€4,000 GTD BOUNTY HUNTER", type: "REG KO", buyin: 15, guaranteed: 4000, priority: "medium", lateReg: 120 },
-        { id: 51, date: "2026-01-28", time: "16:30", name: "Lucky Seven [7-Max]", type: "REG", buyin: 15, guaranteed: 3000, priority: "high", lateReg: 120 },
-        { id: 52, date: "2026-01-28", time: "16:30", name: "€15,000 [Mystery Mini|D1]", type: "MYSTERY", buyin: 5, guaranteed: 15000, priority: "medium", lateReg: 120 },
-        { id: 53, date: "2026-01-28", time: "16:35", name: "IRISH OPEN 2x€150 [PCKG...]", type: "PKO", buyin: 15, guaranteed: 300, priority: "medium", lateReg: 120 },
-        { id: 54, date: "2026-01-28", time: "17:00", name: "€1,000 GTD Fists of Fury-Rebuy", type: "REG", buyin: 5, guaranteed: 1000, priority: "high", lateReg: 120 },
-        { id: 55, date: "2026-01-28", time: "13:30", name: "€1,750 GTD - Rebuy", type: "REG", buyin: 5, guaranteed: 1750, priority: "high", lateReg: 120 },
-        { id: 56, date: "2026-01-28", time: "13:30", name: "€3,000 GTD Bounty Hunter", type: "REG KO", buyin: 12.50, guaranteed: 3000, priority: "medium", lateReg: 120 },
-        { id: 57, date: "2026-01-28", time: "14:00", name: "€5 MYSTERY BOUNTY", type: "MYSTERY", buyin: 5, guaranteed: 1500, priority: "medium", lateReg: 120 },
-        { id: 58, date: "2026-01-28", time: "14:00", name: "€20,000 GTD MYSTERY XL", type: "MYSTERY", buyin: 12.50, guaranteed: 20000, priority: "medium", lateReg: 120 },
-        { id: 59, date: "2026-01-28", time: "14:00", name: "€15,000 GTD MIDWEEK MYSTERY", type: "MYSTERY", buyin: 10, guaranteed: 15000, priority: "medium", lateReg: 120 },
-        { id: 60, date: "2026-01-28", time: "14:00", name: "€2,500 [Micro Highroller]", type: "REG", buyin: 5, guaranteed: 2500, priority: "high", lateReg: 120 },
-        { id: 62, date: "2026-01-28", time: "14:30", name: "€10,000 GTD WEDNESDAY SPECIAL", type: "REG", buyin: 25, guaranteed: 10000, priority: "high", lateReg: 120 },
-        { id: 63, date: "2026-01-28", time: "14:30", name: "€15,000 [Mystery Mini|D1]", type: "MYSTERY", buyin: 5, guaranteed: 15000, priority: "medium", lateReg: 120 },
-        { id: 64, date: "2026-01-28", time: "14:30", name: "£1 | €7.5 MINI OPENER", type: "REG", buyin: 7.50, guaranteed: 4000, priority: "high", lateReg: 120 },
-        { id: 65, date: "2026-01-28", time: "15:00", name: "€22,500 GTD DAILY PKO MAIN", type: "PKO", buyin: 50, guaranteed: 22500, priority: "medium", lateReg: 120 },
-        { id: 66, date: "2026-01-28", time: "15:00", name: "€5,000 BOUNTY HUNTER", type: "REG KO", buyin: 10, guaranteed: 5000, priority: "medium", lateReg: 120 },
-        { id: 67, date: "2026-01-28", time: "15:15", name: "€5 SUPER SECRET [75% MYSTERY]", type: "MYSTERY", buyin: 5, guaranteed: 1000, priority: "medium", lateReg: 120 },
-        { id: 68, date: "2026-01-28", time: "15:15", name: "€10 BIG CLASSIC", type: "REG", buyin: 10, guaranteed: 1500, priority: "high", lateReg: 120 },
-        { id: 69, date: "2026-01-28", time: "19:15", name: "€5 SUPER SECRET [75% MYSTERY]", type: "MYSTERY", buyin: 5, guaranteed: 1000, priority: "medium", lateReg: 120 },
-        { id: 70, date: "2026-01-28", time: "19:30", name: "€30 MYSTERY [6-Max]", type: "MYSTERY", buyin: 30, guaranteed: 3000, priority: "medium", lateReg: 120 },
-        { id: 71, date: "2026-01-28", time: "19:30", name: "€1,000 GTD Fists of Fury-Rebuy", type: "REG", buyin: 5, guaranteed: 1000, priority: "high", lateReg: 120 },
-        { id: 73, date: "2026-01-28", time: "20:30", name: "€15,000 [Mystery Mini|D1]", type: "MYSTERY", buyin: 5, guaranteed: 15000, priority: "medium", lateReg: 120 },
-        { id: 74, date: "2026-01-28", time: "20:30", name: "€20 MYSTERY HYPER [6-MAX]", type: "HYPER", buyin: 20, guaranteed: 1500, priority: "very low", lateReg: 120 },
-        { id: 75, date: "2026-01-28", time: "20:30", name: "Progressive Knockout [7-Max]", type: "REG KO", buyin: 12.50, guaranteed: 1250, priority: "medium", lateReg: 120 },
-        { id: 76, date: "2026-01-28", time: "21:00", name: "€20 MIDNIGHT BOUNTY [7-Max]", type: "REG KO", buyin: 20, guaranteed: 2000, priority: "medium", lateReg: 120 },
-        { id: 77, date: "2026-01-28", time: "21:00", name: "€12.5 CAIPIRINHA CLASH", type: "REG", buyin: 12.50, guaranteed: 1000, priority: "high", lateReg: 120 },
-        { id: 78, date: "2026-01-28", time: "21:30", name: "€200 GTD Turbo", type: "TURBO", buyin: 5, guaranteed: 200, priority: "very low", lateReg: 120 },
-        { id: 79, date: "2026-01-28", time: "22:00", name: "MIDNIGHT BOUNTY [7-Max]", type: "REG KO", buyin: 50, guaranteed: 1000, priority: "medium", lateReg: 120 },
-        { id: 81, date: "2026-01-28", time: "22:30", name: "€15,000 [Mystery Mini|D1]", type: "MYSTERY", buyin: 5, guaranteed: 15000, priority: "medium", lateReg: 120 },
-        { id: 82, date: "2026-01-29", time: "09:00", name: "€5 MYSTERY [6-Max]", type: "MYSTERY", buyin: 5, guaranteed: 1250, priority: "medium", lateReg: 120 },
-        { id: 83, date: "2026-01-29", time: "09:00", name: "€10 BOUNTY HUNTER PRIME", type: "REG KO", buyin: 10, guaranteed: 1500, priority: "medium", lateReg: 120 },
-        { id: 84, date: "2026-01-29", time: "10:30", name: "€15,000 [Mystery Mini|D1]", type: "MYSTERY", buyin: 5, guaranteed: 15000, priority: "medium", lateReg: 120 },
-        { id: 85, date: "2026-01-29", time: "11:00", name: "€10 BOUNTY HUNTER PRIME", type: "REG KO", buyin: 10, guaranteed: 2000, priority: "medium", lateReg: 120 },
-        { id: 87, date: "2026-01-29", time: "12:00", name: "€20,000 GTD ELIMINATOR", type: "REG", buyin: 30, guaranteed: 20000, priority: "high", lateReg: 120 },
-        { id: 88, date: "2026-01-29", time: "12:30", name: "€15,000 [Mystery Mini|D1]", type: "MYSTERY", buyin: 5, guaranteed: 15000, priority: "medium", lateReg: 120 },
-        { id: 89, date: "2026-01-29", time: "12:30", name: "€5 MYSTERY [6-Max]", type: "MYSTERY", buyin: 5, guaranteed: 1000, priority: "medium", lateReg: 120 },
-        { id: 91, date: "2026-01-29", time: "13:00", name: "€45,000 GTD ULTRA", type: "REG", buyin: 50, guaranteed: 45000, priority: "high", lateReg: 120 },
-        { id: 92, date: "2026-01-29", time: "13:30", name: "€3,000 GTD Bounty Hunter", type: "REG KO", buyin: 12.50, guaranteed: 3000, priority: "medium", lateReg: 120 },
-        { id: 93, date: "2026-01-29", time: "14:00", name: "€5 MYSTERY BOUNTY", type: "MYSTERY", buyin: 5, guaranteed: 1500, priority: "medium", lateReg: 120 },
-        { id: 95, date: "2026-01-29", time: "14:30", name: "€15,000 [Mystery Mini|D1]", type: "MYSTERY", buyin: 5, guaranteed: 15000, priority: "medium", lateReg: 120 },
-        { id: 96, date: "2026-01-29", time: "14:30", name: "€5,000 [Thursday Throwdown]", type: "REG KO", buyin: 10, guaranteed: 5000, priority: "medium", lateReg: 120 },
-        { id: 97, date: "2026-01-29", time: "14:30", name: "€12,500 GTD THURSDAY SPECIAL", type: "REG", buyin: 25, guaranteed: 12500, priority: "high", lateReg: 120 },
-        { id: 98, date: "2026-01-29", time: "15:15", name: "€10 BIG CLASSIC", type: "REG", buyin: 10, guaranteed: 1500, priority: "high", lateReg: 120 },
-        { id: 99, date: "2026-01-29", time: "16:30", name: "Lucky Seven [7-Max]", type: "REG", buyin: 15, guaranteed: 3000, priority: "high", lateReg: 120 },
-        { id: 100, date: "2026-01-29", time: "16:30", name: "€15,000 [Mystery Mini|D1]", type: "MYSTERY", buyin: 5, guaranteed: 15000, priority: "medium", lateReg: 120 },
-        { id: 102, date: "2026-01-29", time: "18:00", name: "Lucky Seven Turbo", type: "TURBO", buyin: 10, guaranteed: 2000, priority: "very low", lateReg: 120 },
-        { id: 103, date: "2026-01-29", time: "18:30", name: "€15,000 [Mystery Mini|D1]", type: "MYSTERY", buyin: 5, guaranteed: 15000, priority: "medium", lateReg: 120 },
-        { id: 104, date: "2026-01-29", time: "18:30", name: "€10 MYSTERY FINISHER [6-Max]", type: "MYSTERY", buyin: 10, guaranteed: 2750, priority: "medium", lateReg: 120 },
-        { id: 105, date: "2026-01-29", time: "19:00", name: "SUNSET ELIMINATOR", type: "TURBO KO", buyin: 7.50, guaranteed: 1000, priority: "very low", lateReg: 120 },
-        { id: 106, date: "2026-01-29", time: "19:00", name: "Night Bounty XL [7-Max]", type: "REG KO", buyin: 25, guaranteed: 2000, priority: "medium", lateReg: 120 },
-        { id: 107, date: "2026-01-29", time: "19:30", name: "€30 MYSTERY [6-Max]", type: "MYSTERY", buyin: 30, guaranteed: 2000, priority: "medium", lateReg: 120 },
-        { id: 108, date: "2026-01-29", time: "20:30", name: "Progressive Knockout [7-Max]", type: "REG KO", buyin: 12.50, guaranteed: 1250, priority: "medium", lateReg: 120 },
-        { id: 109, date: "2026-01-29", time: "20:30", name: "€15,000 [Mystery Mini|D1]", type: "MYSTERY", buyin: 5, guaranteed: 15000, priority: "medium", lateReg: 120 },
-        { id: 110, date: "2026-01-29", time: "21:00", name: "MIDNIGHT BOUNTY [7-Max]", type: "REG KO", buyin: 20, guaranteed: 1000, priority: "medium", lateReg: 120 },
-        { id: 111, date: "2026-01-30", time: "09:00", name: "€10 BOUNTY HUNTER PRIME", type: "REG KO", buyin: 10, guaranteed: 1500, priority: "medium", lateReg: 120 },
-        { id: 112, date: "2026-01-30", time: "10:30", name: "€15,000 [Mystery Mini|D1]", type: "MYSTERY", buyin: 5, guaranteed: 15000, priority: "medium", lateReg: 120 },
-        { id: 114, date: "2026-01-30", time: "11:00", name: "€10 BOUNTY HUNTER PRIME", type: "REG KO", buyin: 10, guaranteed: 2500, priority: "medium", lateReg: 120 },
-        { id: 117, date: "2026-01-30", time: "12:30", name: "€15,000 [Mystery Mini|D1]", type: "MYSTERY", buyin: 5, guaranteed: 15000, priority: "medium", lateReg: 120 },
-        { id: 118, date: "2026-01-30", time: "12:30", name: "€5 MYSTERY [6-Max]", type: "MYSTERY", buyin: 5, guaranteed: 1000, priority: "medium", lateReg: 120 },
-        { id: 120, date: "2026-01-30", time: "13:00", name: "€45,000 GTD ULTRA", type: "REG", buyin: 50, guaranteed: 45000, priority: "high", lateReg: 120 },
-        { id: 122, date: "2026-01-30", time: "14:00", name: "€5 MYSTERY BOUNTY", type: "MYSTERY", buyin: 5, guaranteed: 2000, priority: "medium", lateReg: 120 },
-        { id: 124, date: "2026-01-30", time: "14:30", name: "€15,000 [Mystery Mini|D1]", type: "MYSTERY", buyin: 5, guaranteed: 15000, priority: "medium", lateReg: 120 },
-        { id: 125, date: "2026-01-30", time: "14:30", name: "€10,000 GTD FRIDAY SPECIAL", type: "REG", buyin: 25, guaranteed: 10000, priority: "high", lateReg: 120 },
-        { id: 126, date: "2026-01-30", time: "14:30", name: "€10,000 GTD FRIDAY SPECIAL", type: "REG", buyin: 25, guaranteed: 10000, priority: "high", lateReg: 120 },
-        { id: 127, date: "2026-01-30", time: "15:00", name: "€22,500 GTD DAILY PKO MAIN", type: "PKO", buyin: 50, guaranteed: 22500, priority: "medium", lateReg: 120 },
-        { id: 128, date: "2026-01-30", time: "15:00", name: "FRIDAY MYSTERY €5 [6-Max]", type: "MYSTERY", buyin: 5, guaranteed: 3500, priority: "medium", lateReg: 120 },
-        { id: 129, date: "2026-01-30", time: "15:15", name: "€10 BIG CLASSIC", type: "REG", buyin: 10, guaranteed: 1500, priority: "high", lateReg: 120 },
-        { id: 130, date: "2026-01-30", time: "16:15", name: "MYSTERY €20 TURBO", type: "TURBO", buyin: 20, guaranteed: 2000, priority: "very low", lateReg: 120 },
-        { id: 131, date: "2026-01-30", time: "16:30", name: "€15,000 [Mystery Mini|D1]", type: "MYSTERY", buyin: 5, guaranteed: 15000, priority: "medium", lateReg: 120 },
-        { id: 132, date: "2026-01-30", time: "16:30", name: "Lucky Seven [7-Max]", type: "REG", buyin: 15, guaranteed: 3000, priority: "high", lateReg: 120 },
-        { id: 135, date: "2026-01-30", time: "18:00", name: "Lucky Seven Turbo", type: "TURBO", buyin: 10, guaranteed: 2000, priority: "very low", lateReg: 120 },
-        { id: 136, date: "2026-01-30", time: "18:30", name: "€15,000 [Mystery Mini|D1]", type: "MYSTERY", buyin: 5, guaranteed: 15000, priority: "medium", lateReg: 120 },
-        { id: 137, date: "2026-01-30", time: "18:30", name: "€10 MYSTERY FINISHER [6-Max]", type: "MYSTERY", buyin: 10, guaranteed: 3500, priority: "medium", lateReg: 120 },
-        { id: 138, date: "2026-01-30", time: "19:00", name: "SUNSET ELIMINATOR", type: "TURBO KO", buyin: 7.50, guaranteed: 1000, priority: "very low", lateReg: 120 },
-        { id: 139, date: "2026-01-30", time: "19:00", name: "Night Bounty XL [7-Max]", type: "REG KO", buyin: 25, guaranteed: 2000, priority: "medium", lateReg: 120 },
-        { id: 140, date: "2026-01-30", time: "19:30", name: "€30 MYSTERY [6-Max]", type: "MYSTERY", buyin: 30, guaranteed: 2000, priority: "medium", lateReg: 120 },
-      
+        
       ],
     };
     // ✅ Adicionar Main Event Series (fixos, com datas)
@@ -1117,7 +1000,87 @@ export const getTournaments = async () => {
       });
     });
   }        
+  function addkkpokerTournaments(tournaments, startId) {
+    let id = startId;
 
+    // ✅ CONFIG: Templates de kkpoker com lateReg explícito
+    const kkpokerConfig = {
+      mainSeries: [
+        { id: 1, date: "2026-02-08", time: "10:00", name: "40K MYSTERY GLORY", type: "MYSTERY", buyin: 100, guaranteed: 40000, priority: "medium", lateReg: 180 },
+        { id: 2, date: "2026-02-08", time: "14", name: "20K GLORY PKO", type: "REG KO", buyin: 100, guaranteed: 20000, priority: "medium", lateReg: 180 },
+        
+      ],
+      //✅ Big diários
+      bigDailies: [
+        { time: "12:00", name: "$3K CLASSIC", buyin: 30, guaranteed: 3000, lateReg: 150 },
+        { time: "22:00", name: "$2K CLASSIC", buyin: 20, guaranteed: 2000, lateReg: 150 },
+      ]
+      };
+    // Big Dailies
+      kkpokerConfig.bigDailies.forEach(template => {
+        tournaments.push({
+          id: id++,
+          date: dateStr,
+          time: template.time,
+          site: "kkpoker",
+          name: template.name,
+          type: "REG",
+          buyin: template.buyin,
+          guaranteed: template.guaranteed,
+          priority: "very-high",
+          status: "Aberto",
+          lateReg: template.lateReg,
+        });
+      });
+      // Hyper Dailies
+      kkpokerConfig.hyperDailies.forEach(template => {
+        tournaments.push({
+          id: id++,
+          date: dateStr,
+          time: template.time,
+          site: "kkpoker",
+          name: template.name,
+          type: "HYPER",
+          buyin: template.buyin,
+          guaranteed: template.guaranteed,
+          priority: "very-high",
+          status: "Aberto",
+          lateReg: template.lateReg,
+        });
+      });
+      // Bountys Dailies
+      kkpokerConfig.bountyhunterdailies.forEach(template => {
+        tournaments.push({
+          id: id++,
+          date: dateStr,
+          time: template.time,
+          site: "kkpoker",
+          name: template.name,
+          type: "TURBO KO",
+          buyin: template.buyin,
+          guaranteed: template.guaranteed,
+          priority: "medium",
+          status: "Aberto",
+          lateReg: template.lateReg,
+        });
+      });
+    // ✅ Adicionar Main Event Series (fixos, com datas)
+    kkpokerConfig.mainSeries.forEach(tournament => {
+      tournaments.push({
+        id: tournament.id,
+        date: tournament.date,
+        time: tournament.time,
+        site: "kkpoker",
+        name: tournament.name,
+        type: tournament.type,
+        buyin: tournament.buyin,
+        guaranteed: tournament.guaranteed,
+        priority: tournament.priority,
+        status: "Aberto",
+        lateReg: tournament.lateReg || LATE_REG_DEFAULTS[tournament.type] || 30,
+      });
+    });
+  }  
   // ============================================
   // ✅ MAIN: EXECUTAR TODAS AS FUNÇÕES
   // ============================================
@@ -1128,6 +1091,13 @@ export const getTournaments = async () => {
   id = add888PokerTournaments(tournaments, id);
   id = addChampionTournaments(tournaments, id);
   id = addpartypokerTournaments(tournaments, id);
+  id = addcoinpokerTournaments(tournaments, id);
+  id = addkkpokerTournaments(tournaments, id);
+  id = addqqpkTournaments(tournaments, id);
+  id = addjackpokerTournaments(tournaments, id);
+  id = addclubggTournaments(tournaments, id);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  id = addsupremaTournaments(tournaments, id);
   
   return tournaments;
 }
