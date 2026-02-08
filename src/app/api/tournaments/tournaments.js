@@ -1051,7 +1051,7 @@ export const getTournaments = async () => {
           type: "REG KO",
           buyin: template.buyin,
           guaranteed: template.guaranteed,
-          priority: "medium",
+          priority: "high",
           status: "Aberto",
           lateReg: template.lateReg,
         });
