@@ -2097,7 +2097,7 @@ function ensureUid(t) {
   const key = `${t.site}|${t.date}|${t.time}|${t.name}|${t.buyin}`;
   let hash = 0;
   for (let i = 0; i < key.length; i++) hash = ((hash << 5) - hash) + key.charCodeAt(i), hash |= 0;
-  return `t_${Math.abs(hash).toString(36)}`;
+  return `t${Math.abs(hash).toString(36)}`;
 }
 
 
@@ -2481,7 +2481,7 @@ window.loadUserData = async function () {
     Object.keys(window.buyins || {}).forEach((key) => {
         // 👈 key pode ser "123" (antigo) ou "t_abc123" (novo)
         const uid = key;
-        const isNewUidFormat = key.startsWith('t_'); // detecta formato novo
+        const isNewUidFormat = key.startsWith('t'); // detecta formato novo
         const numericId = isNewUidFormat ? NaN : Number(key); // id numérico se for formato antigo
 
         // pendente = cashout null/undefined
@@ -3160,7 +3160,7 @@ async function loadTournamentsFromAPI({ reset = false } = {}) {
             hash = ((hash << 5) - hash) + key.charCodeAt(i);
             hash |= 0;
         }
-        return `t_${Math.abs(hash).toString(36)}`;
+        return `t${Math.abs(hash).toString(36)}`;
     }
 
 
