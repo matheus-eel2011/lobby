@@ -1097,6 +1097,8 @@ export const getTournaments = async () => {
       //✅ Big diários
       bigDailies: [
         { time: "11:05", name: "T10 CoinPoker Mini Kickoff", buyin: 10, guaranteed: 3000, lateReg: 150 },
+        { time: "13:30", name: "T10 6-Max Prime", buyin: 10, guaranteed: 1750, lateReg: 110 },
+        { time: "14:05", name: "T25 Mini CoinMasters", buyin: 25, guaranteed: 10000, lateReg: 150 },       
         
       ],
       
