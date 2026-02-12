@@ -2223,7 +2223,10 @@ const storageModule = {
     },
 }
 window.storageModule = storageModule
-window.getUid = (t) => t.uid ? String(t.uid) : String(t.id || '');
+window.getUid = (t) => {
+  const uid = t?.uid ?? t?.id;
+  return uid === null || uid === undefined || uid === '' ? null : String(uid);
+};
 console.log('✅ getUid global disponível');
 /// 1. CARREGAR DADOS DO SUPABASE
 window.loadUserData = async function () {
@@ -4630,7 +4633,49 @@ window.saveCashout = async function() {
         setTimeout(() => toast.remove(), 4000);
     }
 
+    function backfillDatesFromLoadedTournaments() {
+        const uids = Object.keys(window.buyins || {});
+        window.registeredMeta = window.registeredMeta || {};
 
+        const api = Array.isArray(window.allTournamentsData) ? window.allTournamentsData : [];
+        const manual = Array.isArray(window.manualTournaments) ? window.manualTournaments : [];
+        const catalog = [...manual, ...api];
+
+        // índices para match rápido
+        const byUid = new Map();
+        const byId = new Map();
+
+        for (const t of catalog) {
+            if (!t) continue;
+            if (t.uid) byUid.set(String(t.uid), t);
+            if (t.id !== undefined && t.id !== null) byId.set(String(t.id), t);
+        }
+
+        let filled = 0;
+
+        for (const uid of uids) {
+            const already = window.registeredMeta?.[uid]?.date || window.buyins?.[uid]?.date;
+            if (already) continue;
+
+            // tenta por uid (novo) e depois por id (legado numérico salvo como string)
+            const t = byUid.get(String(uid)) || byId.get(String(uid)) || null;
+            const date = t?.date || null;
+            const time = t?.time || null;
+
+            if (date) {
+            window.registeredMeta[uid] = { ...(window.registeredMeta[uid] || {}), date, time };
+            window.buyins[uid] = { ...(window.buyins[uid] || {}), date, time };
+            filled++;
+            }
+        }
+
+        console.log('[Backfill] dates preenchidas:', filled, 'de', uids.length);
+        return { filled, total: uids.length };
+    }
+
+    // ✅ Exporta globalmente (para poder chamar de qualquer bloco)
+    window.backfillDatesFromLoadedTournaments = backfillDatesFromLoadedTournaments;
+    console.log('[Init] ✅ backfillDatesFromLoadedTournaments exportada:', typeof window.backfillDatesFromLoadedTournaments);
 
     // ===== GESTÃO DE BANKROLL =====
     let bankrollChart = null;
@@ -4670,19 +4715,6 @@ window.saveCashout = async function() {
         console.log('[Manual] carregados:', (window.manualTournaments || []).length);
 
         const historyTournaments = allBuyinUids.map(uid => getTournamentForHistory(uid)).filter(Boolean);
-        // Busca por uid (novo) OU id numérico (antigo)
-            //const tournament = dataSource.find(t => t.uid === uid || String(t.id) === uid);
-            
-            //if (!tournament) {
-                //const invested = Number(window.buyins?.[uid]?.totalInvested || window.buyins?.[uid]?.baseBuyin || 0);
-                //return {
-                    //uid,  // Use uid aqui
-                    //name: `Torneio #${uid.slice(0,8)} (histórico)`,
-                    //buyin: invested,
-                    //_placeholder: true,
-                //};
-            //}
-            //return tournament;    
         
         console.log('[Bankroll] Torneios no histórico (buyins):', historyTournaments.length);
         console.log('[Bankroll] 📌 Pendentes (registeredTournaments.size):', window.registeredTournaments?.size ?? 0);
@@ -4693,6 +4725,8 @@ window.saveCashout = async function() {
             // Zerar DOM...
             return;
         }
+
+
 
         // 2. CÁLCULOS ✅ Use uid em vez de .id
         let totalInvested = 0;
@@ -4875,8 +4909,11 @@ function getTournamentForHistory(key) {
 
 
 
-// ========== TABELA MÊS A MÊS (corrigida) ==========
-// ✅ CORREÇÃO: UID string em todos os acessos
+// ========== TABELA MÊS A MÊS (corrigida + robusta) ==========
+// - Usa UID (string) para buyins/cashouts
+// - Resolve date via registeredMeta[uid] (fallback: registeredMeta[id], fallback final: t.date)
+// - Parse de YYYY-MM-DD seguro (evita shift de timezone)
+// - Agrupa por chave ordenável YYYY-MM e renderiza ordenado
 function updateMonthlyStats(tournamentsInput) {
   const tbody = document.getElementById('bankrollMonthlyBody');
   if (!tbody) {
@@ -4884,70 +4921,104 @@ function updateMonthlyStats(tournamentsInput) {
     return;
   }
 
-  // ✅ CORREÇÃO: UIDs como string
-  const allBuyinUids = Object.keys(window.buyins || {});  // Strings!
+  // ✅ Fonte do histórico (não depende da paginação)
+  const allBuyinUids = Object.keys(window.buyins || {}); // strings
   const tournaments = Array.isArray(tournamentsInput)
     ? tournamentsInput
-    : allBuyinUids.map(getTournamentForHistory);  // Passa uid string
+    : allBuyinUids.map(getTournamentForHistory);
 
-  const tournamentsWithDate = tournaments.filter(t => t && t.date);
+  // Resolve { uid, date, d } de forma consistente
+  const resolved = (Array.isArray(tournaments) ? tournaments : [])
+    .map(t => {
+      if (!t) return null;
 
-  console.log('[Monthly] 🔍 Torneios para tabela mensal (com data):', tournamentsWithDate.length);
+      const uid = getUid(t);
+      if (!uid) return null;
 
-  if (tournamentsWithDate.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-secondary)">Sem dados</td></tr>';
+      const meta =
+        window.registeredMeta?.[uid] ??
+        window.registeredMeta?.[String(t.id ?? '')] ??
+        null;
+      const buyinRec = window.buyins?.[uid];
+      const dateStr = meta?.date ?? buyinRec?.date ?? t.date ?? null;
+      if (!dateStr) return null;
+
+      // ✅ Parse seguro para "YYYY-MM-DD" (local)
+      let d;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        const [y, m, day] = dateStr.split('-').map(Number);
+        d = new Date(y, m - 1, day);
+      } else {
+        d = new Date(dateStr);
+      }
+      if (Number.isNaN(d.getTime())) return null;
+
+      // ✅ Chave ordenável (YYYY-MM) + label amigável pt-BR
+      const y = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const sortKey = `${y}-${mm}`;
+      const label = d.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+
+      return { t, uid, d, sortKey, label };
+    })
+    .filter(Boolean);
+
+  console.log('[Monthly] 🔍 Torneios para tabela mensal (com data):', resolved.length);
+
+  if (resolved.length === 0) {
+    tbody.innerHTML =
+      '<tr><td colspan="6" style="text-align: center; color: var(--text-secondary)">Sem dados</td></tr>';
     return;
   }
 
+  // monthly[YYYY-MM] = { label, tournaments, invested, cashout }
   const monthly = {};
 
-  tournamentsWithDate.forEach(t => {
-    const d = new Date(t.date);
-    if (Number.isNaN(d.getTime())) return;
-
-    const monthKey = d.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
-
-    if (!monthly[monthKey]) {
-      monthly[monthKey] = { tournaments: 0, invested: 0, cashout: 0 };
+  resolved.forEach(({ t, uid, sortKey, label }) => {
+    if (!monthly[sortKey]) {
+      monthly[sortKey] = { label, tournaments: 0, invested: 0, cashout: 0 };
     }
 
-    const uid = getUid(t);  // ✅ PADRONIZA
-    const buyinRec = window.buyins?.[uid];  // ✅ UID STRING
+    const buyinRec = window.buyins?.[uid];
     const invested = Number(buyinRec?.totalInvested ?? buyinRec?.baseBuyin ?? t.buyin ?? 0);
 
-    const cashVal = window.cashouts?.[uid];  // ✅ UID STRING
+    const cashVal = window.cashouts?.[uid];
     const cashout = (cashVal === null || cashVal === undefined) ? 0 : Number(cashVal);
 
-    monthly[monthKey].tournaments++;
-    monthly[monthKey].invested += invested;
-    monthly[monthKey].cashout += cashout;
+    monthly[sortKey].tournaments++;
+    monthly[sortKey].invested += invested;
+    monthly[sortKey].cashout += cashout;
   });
 
+  // Render
   tbody.innerHTML = '';
 
-  Object.entries(monthly).forEach(([month, stats]) => {
-    const profit = stats.cashout - stats.invested;
-    const roi = stats.invested > 0 ? (profit / stats.invested) * 100 : 0;
+  Object.entries(monthly)
+    .sort(([a], [b]) => a.localeCompare(b)) // YYYY-MM ordena cronológico
+    .forEach(([_, stats]) => {
+      const profit = stats.cashout - stats.invested;
+      const roi = stats.invested > 0 ? (profit / stats.invested) * 100 : 0;
 
-    const row = `
-      <tr>
-        <td style="padding: 8px 0; color: var(--text-primary); font-weight: 500">${month}</td>
-        <td style="padding: 8px 0; text-align: right">${stats.tournaments}</td>
-        <td style="padding: 8px 0; text-align: right">$${stats.invested.toFixed(2)}</td>
-        <td style="padding: 8px 0; text-align: right">$${stats.cashout.toFixed(2)}</td>
-        <td style="padding: 8px 0; text-align: right; color: ${profit >= 0 ? 'var(--success)' : 'var(--danger)'}">
-          $${profit.toFixed(2)}
-        </td>
-        <td style="padding: 8px 0; text-align: right; font-weight: 600">
-          ${roi.toFixed(1)}%
-        </td>
-      </tr>
-    `;
-    tbody.innerHTML += row;
-  });
+      const row = `
+        <tr>
+          <td style="padding: 8px 0; color: var(--text-primary); font-weight: 500">${stats.label}</td>
+          <td style="padding: 8px 0; text-align: right">${stats.tournaments}</td>
+          <td style="padding: 8px 0; text-align: right">$${stats.invested.toFixed(2)}</td>
+          <td style="padding: 8px 0; text-align: right">$${stats.cashout.toFixed(2)}</td>
+          <td style="padding: 8px 0; text-align: right; color: ${profit >= 0 ? 'var(--success)' : 'var(--danger)'}">
+            $${profit.toFixed(2)}
+          </td>
+          <td style="padding: 8px 0; text-align: right; font-weight: 600">
+            ${roi.toFixed(1)}%
+          </td>
+        </tr>
+      `;
+      tbody.innerHTML += row;
+    });
 
   console.log('[Monthly] ✅ Tabela mês a mês atualizada:', Object.keys(monthly).length, 'meses');
 }
+
 
 
 // ========== REFRESH COMPLETO ==========
@@ -5102,6 +5173,7 @@ if (document.querySelector('.view-btn[data-view="bankroll"].active')) {
             try {
                 console.log('[Init] Carregando dados do usuário...');
                 await window.loadUserData();
+
                 // garante array mesmo se falhar
                 window.manualTournaments = [];
 
@@ -5110,25 +5182,58 @@ if (document.querySelector('.view-btn[data-view="bankroll"].active')) {
                 window.manualTournaments = await loadManualTournamentsFromSupabasePublic();
                 console.log('[Init] Manual tournaments:', window.manualTournaments.length);
                 } else {
-                console.warn('[Init] loadManualTournamentsFromSupabase não existe');
+                console.warn('[Init] loadManualTournamentsFromSupabasePublic não existe');
                 }
 
-                // IMPORTANTE: aqui você ainda não tem certeza que a API já carregou.
-                // Então ou você chama loadTournamentsFromAPI agora, ou deixa ela rodar e aplicar filtros depois.
+                // carrega 1ª página da API (via seu mecanismo de paginação)
                 if (typeof window.resetTournamentsPagination === 'function') {
-                await window.resetTournamentsPagination(); // isso chama loadTournamentsFromAPI(reset=true) no seu código
+                await window.resetTournamentsPagination(); // chama loadTournamentsFromAPI(reset=true) no seu código
+                } else {
+                console.warn('[Init] resetTournamentsPagination não é função');
                 }
 
-                // agora sim: filtros enxergam API + manuais (desde que applyFilters use a fonte mesclada)
-                if (typeof applyFilters === 'function') applyFilters();
+                // agora filtros enxergam API + manuais (desde que applyFilters use a fonte mesclada)
+                if (typeof applyFilters === 'function') {
+                applyFilters();
+                } else {
+                console.warn('[Init] applyFilters não é função');
+                }
 
                 console.log('[Init] ✅ Dados do usuário + manuais + API carregados');
+
+                // ---------- BACKFILL (1 única vez) ----------
+                const apiCount = Array.isArray(window.allTournamentsData) ? window.allTournamentsData.length : 0;
+                const manualCount = Array.isArray(window.manualTournaments) ? window.manualTournaments.length : 0;
+
+                if (apiCount > 0 || manualCount > 0) {
+                if (typeof window.backfillDatesFromLoadedTournaments === 'function') {
+                    const bf = window.backfillDatesFromLoadedTournaments();
+                    console.log('[Init] Backfill result:', bf);
+                } else {
+                    console.warn('[Init] backfillDatesFromLoadedTournaments não está em window');
+                }
+                } else {
+                console.warn('[Init] Backfill pulado: catálogo ainda vazio (api+manual=0)');
+                }
+
+                const missingAfter = Object.keys(window.buyins || {})
+                .filter(uid => !(window.registeredMeta?.[uid]?.date || window.buyins?.[uid]?.date)).length;
+
+                console.log('[Init] Missing dates after backfill:', missingAfter);
+
+                // (Opcional) Se missingAfter caiu e você quer persistir a migração:
+                // if (missingAfter === 0 && typeof window.saveCurrentUserState === 'function') {
+                //   await window.saveCurrentUserState();
+                //   console.log('[Init] ✅ Estado salvo após backfill');
+                // }
+
             } catch (error) {
                 console.error('[Init] ❌ Erro ao carregar dados:', error);
             }
             } else {
             console.warn('[Init] ⚠️ loadUserData não é função');
-        }
+            }
+
 
         // ============================================
         // 5. CRIAR ALIASES (window.buyins, window.cashouts, etc)
