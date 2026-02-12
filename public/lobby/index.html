@@ -1608,6 +1608,7 @@
         <div class="modal-field">
             <label class="modal-label">Rebuys (quanto você comprou)</label>
             <input type="number" id="rebuyCount" class="modal-input" placeholder="0" min="0" step="1" value="0"
+                   **oninput="updateInvestedAmount()" onchange="updateInvestedAmount()"**
                    style="width: 100%; padding: 12px; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 2px; color: var(--text-primary); font-size: 14px;">
             <small style="color: var(--text-secondary); font-size: 11px; display: block; margin-top: 4px;">
                 Ex: se você fez 2 rebuys além do buy-in inicial, digite 2
@@ -1911,31 +1912,35 @@ function getDayOfWeekFromYYYYMMDD(dateStr) {
   return new Date(y, m - 1, d).getDay(); // 0=Dom ... 6=Sáb
 }
 
+
 async function loadManualTournamentsFromSupabasePublic() {
-  const res = await fetch('/api/storage/manual-tournaments-public');
-  const text = await res.text();
+    const res = await fetch('/api/storage/manual-tournaments-public');
+    const text = await res.text();
 
-  let json;
-  try {
-    json = JSON.parse(text);
-  } catch (e) {
-    throw new Error(`Resposta não-JSON (HTTP ${res.status}): ${text.slice(0, 120)}`);
-  }
+    let json;
+    try { json = JSON.parse(text); }
+    catch (e) { throw new Error(`Resposta não-JSON (HTTP ${res.status}): ${text.slice(0, 120)}`); }
 
-  if (!res.ok) throw new Error(json?.error || `HTTP ${res.status}`);
-  if (!json?.success) throw new Error(json?.error || 'Falha ao carregar torneios manuais');
+    if (!res.ok) throw new Error(json?.error || `HTTP ${res.status}`);
+    if (!json?.success) throw new Error(json?.error || 'Falha ao carregar torneios manuais');
 
-  const raw = Array.isArray(json.data) ? json.data
-            : (json.data && typeof json.data === "object") ? [json.data]
-            : [];
+    const raw = Array.isArray(json.data) ? json.data
+                : (json.data && typeof json.data === "object") ? [json.data]
+                : [];
 
-  return raw.map(t => ({
-    ...t,
-    lateReg: t.lateReg ?? t.late_reg ?? 0,
-    day: t.day ?? getDayOfWeekFromYYYYMMDD(t.date),
-    createdAt: t.createdAt ?? t.created_at,
-  }));
+    return raw.map(t => {
+        const obj = {
+            ...t,
+            lateReg: t.lateReg ?? t.late_reg ?? 0,
+            day: t.day ?? getDayOfWeekFromYYYYMMDD(t.date),
+            createdAt: t.createdAt ?? t.created_at,
+        };
+        obj.uid = ensureUid(obj);
+    return obj;
+    });
 }
+
+
 
 
 
@@ -2038,16 +2043,38 @@ document.getElementById('btnManualSave')?.addEventListener('click', async () => 
   }
 });
 
-function mergeTournamentsById(apiList, manualList) {
-  const api = Array.isArray(apiList) ? apiList : [];
-  const manual = Array.isArray(manualList) ? manualList : [];
-
-  const map = new Map();
-  for (const t of api) map.set(String(t.id), t);
-  for (const t of manual) map.set(String(t.id), t); // manual sobrescreve se mesmo id
-
-  return Array.from(map.values());
+function ensureUid(t) {
+  if (t.uid) return String(t.uid);
+  // mesmo critério do getStableTournamentId
+  const key = `${t.site}|${t.date}|${t.time}|${t.name}|${t.buyin}`;
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) hash = ((hash << 5) - hash) + key.charCodeAt(i), hash |= 0;
+  return `t_${Math.abs(hash).toString(36)}`;
 }
+
+
+
+function mergeTournamentsById(apiList, manualList) {
+    const api = Array.isArray(apiList) ? apiList : [];
+    const manual = Array.isArray(manualList) ? manualList : [];
+
+    const map = new Map();
+    
+    // ✅ API: usa getUid(t) para chave unificada
+    for (const t of api) {
+        const uid = getUid(t);  // t.uid || String(t.id)
+        map.set(uid, t);
+    }
+    
+    // ✅ Manual: sobrescreve com getUid(t)
+    for (const t of manual) {
+        const uid = getUid(t);
+        map.set(uid, t);  // Manual sobrescreve API se mesmo uid
+    }
+
+    return Array.from(map.values());
+}
+
 
 
 const storageModule = {
@@ -2174,7 +2201,7 @@ const storageModule = {
             } catch (error) {
                 console.error('[Storage] Erro:', error);
             }
-        },
+    },
     async saveUsersToStorage(usersList) {
         if (!window.CURRENTUSERID) return;
 
@@ -2196,6 +2223,8 @@ const storageModule = {
     },
 }
 window.storageModule = storageModule
+window.getUid = (t) => t.uid ? String(t.uid) : String(t.id || '');
+console.log('✅ getUid global disponível');
 /// 1. CARREGAR DADOS DO SUPABASE
 window.loadUserData = async function () {
   if (!window.CURRENTUSERID) {
@@ -2298,69 +2327,167 @@ window.loadUserData = async function () {
     if (!(window.registeredTournaments instanceof Map)) window.registeredTournaments = new Map();
     window.registeredTournaments.clear();
 
+    window.registeredMeta = (window.registeredMeta && typeof window.registeredMeta === 'object')
+    ? window.registeredMeta
+    : {};
+
+    const buyins = window.buyins || {};
+    const cashouts = window.cashouts || {};
+    const filtered = Array.isArray(window.filteredTournaments) ? window.filteredTournaments : [];
+    const all = Array.isArray(window.allTournamentsData) ? window.allTournamentsData : [];
+
+    Object.keys(buyins).forEach((uid) => {
+    // Só reconstrói se existe chave de cashout (inclui null/0)
+    const val = cashouts[uid];
+    if (val === undefined) return; // nem registrado corretamente
+    if (val !== null) return;      // finalizado (inclui 0 e >0)
+
+
+    const isNewUidFormat = String(uid).startsWith('t');
+    const numericId = isNewUidFormat ? NaN : Number(uid);
+
+    // 1) Preferir snapshot/meta persistido (se existir)
+    const meta = window.registeredMeta[uid];
+    if (meta && meta.name) {
+        window.registeredTournaments.set(uid, meta);
+        console.log(`[Init] ✅ Restaurado (meta) ${uid}:`, meta.name);
+        return;
+    }
+
+    // 2) Tentar achar no "live" (filtered/all) por uid novo OU id numérico antigo
+    const tournament =
+        filtered.find(t =>
+        t?.uid === uid || (!isNewUidFormat && Number(t?.id) === numericId)
+        ) ||
+        all.find(t =>
+        t?.uid === uid || (!isNewUidFormat && Number(t?.id) === numericId)
+        ) ||
+        null;
+
+    if (tournament) {
+        window.registeredTournaments.set(uid, tournament);
+
+        // ✅ Backfill do registeredMeta para nunca mais virar "Torneio X"
+        window.registeredMeta[uid] = {
+        uid,
+        id: Number(tournament.id ?? numericId),
+        name: tournament.name,
+        site: tournament.site,
+        type: tournament.type,
+        buyin: Number(tournament.buyin ?? buyins[uid]?.baseBuyin ?? 0),
+        date: tournament.date,
+        time: tournament.time,
+        };
+
+        console.log(`[Init] ✅ Restaurado (live) ${uid}:`, tournament.name);
+        return;
+    }
+
+    // 3) Último fallback: stub legível (mas já com buyin/investido)
+    const inv = Number(buyins[uid]?.totalInvested ?? buyins[uid]?.baseBuyin ?? 0);
+
+    const stub = {
+        uid,
+        id: numericId,
+        name: `Torneio ${String(uid).slice(0, 12)}`,
+        site: '-',
+        type: '-',
+        buyin: inv,
+        date: '',
+        time: '',
+        placeholder: true,
+    };
+
+    window.registeredTournaments.set(uid, stub);
+    console.warn('[Init] ⚠️ Stub criado (sem match live/meta):', uid, stub.name);
+    });
+
+
     // snapshot salvo (se existir)
     window.registeredMeta = window.registeredMeta || window.POKER?.registeredMeta || {};
 
-    // ===== RESTAURAR SESSÕES (Supabase) =====
+    // ===== 5) RESTAURAR SESSÕES (Supabase) =====
     const st = userState?.state?.state || {};
 
     window.sessionsMeta =
-    (st.sessionsMeta && !Array.isArray(st.sessionsMeta) && typeof st.sessionsMeta === "object")
-        ? st.sessionsMeta
-        : {};
+        (st.sessionsMeta && !Array.isArray(st.sessionsMeta) && typeof st.sessionsMeta === "object")
+            ? st.sessionsMeta
+            : {};
 
     window.sessions = Array.isArray(st.sessions) ? st.sessions : [];
 
     if (
-    st.currentSession &&
-    typeof st.currentSession === "object" &&
-    Array.isArray(st.currentSession.tournamentIds)
+        st.currentSession &&
+        typeof st.currentSession === "object" &&
+        Array.isArray(st.currentSession.tournamentIds)
     ) {
-    window.currentSession = st.currentSession;
+        window.currentSession = st.currentSession;
     }
 
     if (typeof window.ensureCurrentSession === "function") window.ensureCurrentSession();
 
-    Object.keys(window.buyins || {}).forEach((idStr) => {
-    const id = Number(idStr);
+    // ✅ RECONSTRUÇÃO HÍBRIDA: suporta id antigo E uid novo
+    Object.keys(window.buyins || {}).forEach((key) => {
+        // 👈 key pode ser "123" (antigo) ou "t_abc123" (novo)
+        const uid = key;
+        const isNewUidFormat = key.startsWith('t_'); // detecta formato novo
+        const numericId = isNewUidFormat ? NaN : Number(key); // id numérico se for formato antigo
 
-    // pendente = cashout null/undefined
-    const cashVal = window.cashouts?.[id];
-    if (cashVal !== null && cashVal !== undefined) return;
+        // pendente = cashout null/undefined
+        const cashVal = window.cashouts?.[uid];
+        if (cashVal !== null && cashVal !== undefined) return;
 
-    // 1) Preferir snapshot persistido
-    const snap = window.registeredMeta?.[id];
-    if (snap) {
-        window.registeredTournaments.set(id, snap);
-        return;
-    }
-    
-    
+        // 1) Preferir snapshot persistido (funciona com qualquer formato)
+        const snap = window.registeredMeta?.[uid];
+        if (snap) {
+            window.registeredTournaments.set(uid, snap);
+            return;
+        }
 
-    // 2) Tentar match na lista atual (se existir)
-    const tournament =
-        (window.filteredTournaments || []).find(t => Number(t.id) === id) ||
-        (window.allTournamentsData || []).find(t => Number(t.id) === id) ||
-        null;
+        // 2) Tentar match na lista atual (nova com uid OU antiga com id)
+        const tournament =
+            (window.filteredTournaments || []).find(t => 
+                t.uid === uid || 
+                (!isNewUidFormat && Number(t.id) === numericId)
+            ) ||
+            (window.allTournamentsData || []).find(t => 
+                t.uid === uid || 
+                (!isNewUidFormat && Number(t.id) === numericId)
+            ) ||
+            null;
 
-    if (tournament) {
-        window.registeredTournaments.set(id, tournament);
-        return;
-    }
+        if (tournament) {
+            window.registeredTournaments.set(uid, tournament);
+            // ✅ backfill do meta (para não virar placeholder nunca mais)
+            window.registeredMeta ||= {};
+            if (!window.registeredMeta[uid]) {
+                window.registeredMeta[uid] = {
+                uid,
+                id: Number(tournament.id ?? NaN),
+                name: tournament.name,
+                site: tournament.site,
+                type: tournament.type,
+                buyin: Number(tournament.buyin ?? 0),
+                date: tournament.date,
+                time: tournament.time,
+                };
+            }
+            return;
+        }
 
-    // 3) Fallback: stub (não some)
-    const base = window.buyins?.[id] || {};
-    window.registeredTournaments.set(id, {
-        id,
-        name: `Torneio #${id}`,
-        site: '-',
-        type: '-',
-        buyin: base.baseBuyin ?? base.totalInvested ?? 0,
-        date: '',
-        time: ''
-    });
+        // 3) Fallback: stub com nome legível
+        const base = window.buyins?.[uid] || {}; window.registeredTournaments.set(uid, {
+            uid: uid,           // 👈 sempre salva o identificador usado
+            id: numericId,      // id original da API (se antigo)
+            name: `Torneio ${uid.slice(0, 12)}`, // nome legível (corta uid longo)
+            site: '-',
+            type: '-',
+            buyin: base.baseBuyin ?? base.totalInvested ?? 0,
+            date: '',
+            time: ''
+        });
 
-    console.warn('[Init] ⚠️ Torneio pendente sem match na lista, stub:', id);
+        console.warn('[Init] ⚠️ Torneio pendente sem match na lista, stub:', uid);
     });
 
     console.log('[Init] ✅ Pendentes reconstruídos:', window.registeredTournaments.size);
@@ -2368,6 +2495,7 @@ window.loadUserData = async function () {
     // badge
     const badge = document.getElementById('registeredCountBadge');
     if (badge) badge.textContent = window.registeredTournaments.size;
+
 
     // ===== 5) Render / dashboard =====
     if (typeof renderTable === 'function') {
@@ -2939,6 +3067,22 @@ async function loadTournamentsFromAPI({ reset = false } = {}) {
 
     const payload = await fetchTournamentsPage(nextPage);
 
+    function makeTournamentKey(t) {
+        return `${t.site}|${t.date}|${t.time}|${t.name}|${t.buyin}`;
+    }
+
+    // hash curto em base36, estável para o mesmo torneio
+    function getStableTournamentId(t) {
+        const key = makeTournamentKey(t);
+        let hash = 0;
+        for (let i = 0; i < key.length; i++) {
+            hash = ((hash << 5) - hash) + key.charCodeAt(i);
+            hash |= 0;
+        }
+        return `t_${Math.abs(hash).toString(36)}`;
+    }
+
+
     // Normaliza seus torneios no formato que o app espera
     const tournaments = (payload.tournaments || []).map((t, idx) => {
       const yearMonthDay = (t.date || '1970-01-01').split('-');
@@ -2948,9 +3092,16 @@ async function loadTournamentsFromAPI({ reset = false } = {}) {
 
       const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
       const dayOfWeek = dateObj.getDay();
-
+      const uid = getStableTournamentId({
+        site: t.site || 'GGPoker',
+        date: t.date,
+        time: t.time || '00:00',
+        name: t.name || 'Torneio',
+        buyin: parseFloat(t.buyin || 0)
+        });
       return {
         id: t.id ?? (idx + 1),
+        uid: uid,
         time: t.time || '00:00',
         date: t.date,
         site: t.site || 'GGPoker',
@@ -3054,15 +3205,19 @@ window.resetTournamentsPagination = async function() {
         updateControlDashboard();
 
         if (updateInterval) clearInterval(updateInterval);
+        // ✅ SUPORTE UID + ID NUMÉRICO
         updateInterval = setInterval(() => {
             document.querySelectorAll('tr[data-tournament-row-id]').forEach(row => {
-                const id = parseInt(row.dataset.tournamentRowId);
-                const t = window.filteredTournaments.find(x => x.id === id);
+                const rowId = row.dataset.tournamentRowId;  // String "t_b5y9ix" ou "123"
+                const t = window.filteredTournaments.find(x => x.uid === rowId || String(x.id) === rowId) ||
+                        Array.from(window.registeredTournaments.values()).find(x => x.uid === rowId);
                 if (!t) return;
+                
                 const statusCell = row.querySelector('[data-status-cell]');
                 if (statusCell) statusCell.innerHTML = renderStatusWithCountdown(t);
             });
         }, 1000);
+
     }
 
     function setupEventListeners() {
@@ -3145,15 +3300,11 @@ window.resetTournamentsPagination = async function() {
     }
 
     function getMergedTournamentsSource() {
-        const api = Array.isArray(window.allTournamentsData) ? window.allTournamentsData : [];
-        const manual = Array.isArray(window.manualTournaments) ? window.manualTournaments : [];
-
-        // dedupe por id
-        const map = new Map();
-        [...api, ...manual].forEach(t => map.set(Number(t.id), t));
-        return Array.from(map.values());
-    }    
-    window.allTournamentsData = mergeTournamentsById(window.allTournamentsData, window.manualTournaments);
+    const api = Array.isArray(window.allTournamentsData) ? window.allTournamentsData : [];
+    const manual = Array.isArray(window.manualTournaments) ? window.manualTournaments : [];
+    return mergeTournamentsById(api, manual); // usa getUid
+    }
+    
 
     function applyFilters() {     
         const source = getMergedTournamentsSource();
@@ -3174,8 +3325,9 @@ window.resetTournamentsPagination = async function() {
             t.status = statusInfo.status;
             t.timeRemaining = statusInfo.timeRemaining;
 
-       
-            const isRegistered = window.registeredTournaments?.has(Number(t.id)) || false;        
+            
+            const uidKey = getUid(t);
+            const isRegistered = window.registeredTournaments?.has(uidKey) || false;      
             if (isRegistered) {
                 return rooms.includes(t.site) &&
                     types.includes(t.type) &&
@@ -3262,33 +3414,57 @@ window.resetTournamentsPagination = async function() {
 
         tbody.innerHTML = window.filteredTournaments.map(t => {
             const typeClass = t.type.toLowerCase().replace(' ', '-');
+            const uid = getUid(t); // CPF do torneio
+
+            const isRegistered = window.registeredTournaments.has(uid);
+            const cashoutVal = window.cashouts?.[uid] ?? 0;
+            const btnText = cashoutVal > 0 ? '✏️ Editar' : '💰 Cashout';
+            const btnDisabled = !isRegistered ? 'disabled' : '';
 
             return `
-                <tr data-tournament-row-id="${t.id}" class="${window.registeredTournaments.has(t.id) ? 'registered' : ''}">
-                    <td><span style="color: var(--secondary); font-weight: 700;">${t.time}</span></td>
-                    <td><span style="color: var(--text-secondary);">${t.date}</span></td>
-                    <td><span class="site-badge site-${t.site.toLowerCase().replace(/\s/g, '')}">${t.site}</span></td>
-                    <td><span style="color: var(--secondary); font-weight: 600;">${t.name}</span></td>
-                    <td><span class="badge badge-${typeClass}">${t.type}</span></td>
-                    <td>$${t.buyin}</td>
-                    <td>$${(t.guaranteed / 1000).toFixed(0)}K</td>
-                    <td>${t.field}</td>
-                    <td><span class="badge badge-priority badge-${t.priority}">${priorityLabels[t.priority]}</span></td>
-                    <td data-status-cell>${renderStatusWithCountdown(t)}</td>
-                    <td><button class="btn-register ${window.registeredTournaments.has(t.id) ? 'active' : ''}" data-id="${t.id}">${window.registeredTournaments.has(t.id) ? '✅ Registrado' : 'Registrar'}</button></td>
-                    <td><button class="btn-cashout ${!window.registeredTournaments.has(t.id) ? 'disabled' : ''}" onclick="openCashoutModal(${t.id})" ${!window.registeredTournaments.has(t.id) ? 'disabled' : ''}>💰 Cashout</button></td>
+                <tr data-tournament-row-id="${uid}" class="${isRegistered ? 'registered' : ''}">
+                <td><span style="color: var(--secondary); font-weight: 700;">${t.time}</span></td>
+                <td><span style="color: var(--text-secondary);">${t.date}</span></td>
+                <td><span class="site-badge site-${t.site.toLowerCase().replace(/\s/g, '')}">${t.site}</span></td>
+                <td><span style="color: var(--secondary); font-weight: 600;">${t.name}</span></td>
+                <td><span class="badge badge-${typeClass}">${t.type}</span></td>
+                <td>$${t.buyin}</td>
+                <td>$${(t.guaranteed / 1000).toFixed(0)}K</td>
+                <td>${t.field}</td>
+                <td><span class="badge badge-priority badge-${t.priority}">${priorityLabels[t.priority]}</span></td>
+                <td data-status-cell>${renderStatusWithCountdown(t)}</td>
+                <td>
+                    <button
+                    class="btn-register ${isRegistered ? 'active' : ''}"
+                    data-id="${t.id}"
+                    data-uid="${uid}">
+                    ${isRegistered ? '✅ Registrado' : 'Registrar'}
+                    </button>
+                </td>
+                <td>
+                    <button class="btn-cashout ${btnDisabled}"
+                            data-uid="${uid}"
+                            onclick="openCashoutModal('${uid}')"
+                            ${btnDisabled}
+                            style="padding: 4px 8px; font-size: 10px;">
+                        ${btnText}
+                    </button>
+                </td>
                 </tr>
             `;
         }).join('');
 
+        // listeners de registro continuam usando o id visual;
+        // o toggleRegister resolve o uid internamente
         document.querySelectorAll('.btn-register').forEach(btn => {
             btn.addEventListener('click', e => {
-                const id = parseInt(e.target.dataset.id);
+                const id = parseInt(e.target.dataset.id, 10);
                 toggleRegister(id);
                 updateControlDashboard();
             });
         });
-    }
+    }    
+
 // WRAPPER PARA renderTable - SEM SALVAMENTOS AUTOMÁTICOS
 const origRenderTable = window.renderTable;
 window.renderTable = async function() {
@@ -3318,29 +3494,36 @@ window.renderTable = async function() {
         // 3️⃣ ⭐ SINCRONIZAR DOM
         // ✅ CORREÇÃO 1: registeredTournaments ao invés de registered
         const registeredTournaments = Array.from(window.registeredTournaments.values())
-            .filter(t => t && window.cashouts[t.id] !== undefined);
+            .filter(t => t && window.cashouts[t.uid] !== undefined);
         
         console.log('[Render] Torneios registrados:', registeredTournaments.length);
 
+
         if (registeredTournaments.length > 0) {
             // ✅ CORREÇÃO 2: Valores numéricos seguros
+            
+            const getUid = (t) => t.uid || String(t.id || '');
             const totalBuyin = registeredTournaments.reduce((sum, t) => {
-                const invested = (window.buyins[t.id]?.totalInvested || t.buyin || 0);
+                const uid = getUid(t);
+                const invested = (window.buyins[uid]?.totalInvested || t.buyin || 0);
                 return sum + Number(invested);
             }, 0);
-            
-            const totalCashout = registeredTournaments.reduce((sum, t) => 
-                sum + Number(window.cashouts[t.id] || 0), 0);
-            
+
+            const totalCashout = registeredTournaments.reduce((sum, t) => {
+                const uid = getUid(t);
+                return sum + Number(window.cashouts[uid] || 0);
+            }, 0);
+
             const totalProfit = totalCashout - totalBuyin;
             const roi = totalBuyin > 0 ? (totalProfit / totalBuyin) * 100 : 0;
             const avgBuyin = registeredTournaments.length > 0 ? totalBuyin / registeredTournaments.length : 0;
-            
-            // ✅ CORREÇÃO 3: ITM seguro
+
+            // ✅ CORREÇÃO 3: ITM seguro (cashout > total investido)
             const itmCount = registeredTournaments.filter(t => {
-                const invested = Number(window.buyins[t.id]?.totalInvested || t.buyin || 0);
-                const cashout = Number(window.cashouts[t.id] || 0);
-                return cashout > invested;
+                const uid = getUid(t);
+                const invested = Number(window.buyins[uid]?.totalInvested || t.buyin || 0);
+                const cashout = Number(window.cashouts[uid] || 0);
+                return cashout > invested;  // ✅ ITM: lucro > 0 [web:24]
             }).length;
             const itmPercent = registeredTournaments.length > 0 ? (itmCount / registeredTournaments.length) * 100 : 0;
             
@@ -3403,84 +3586,55 @@ window.renderTable = async function() {
 
 
     function renderRegisteredTournamentsTable() {
-        // ✅ PROTEÇÃO: Inicializar se não existir
-        if (!window.registeredTournaments) {
-            console.log('[Render] ⚠️ registeredTournaments não existe, inicializando...');
-            window.registeredTournaments = new Map();
-        }
-
-        // ✅ CORREÇÃO: Usar registeredTournaments ao invés de registered
-        const registeredTournaments = Array.from(window.registeredTournaments.values())
-            .filter(t => t); // Filtrar valores válidos
+        if (!(window.registeredTournaments instanceof Map)) window.registeredTournaments = new Map();
 
         const tbody = document.getElementById('registeredTournamentsBody');
         const badge = document.getElementById('registeredCountBadge');
+        if (!tbody) return;
 
-        // Atualizar badge
-        if (badge) {
-            badge.textContent = registeredTournaments.length;
-        }
+        // ✅ só pendentes (cashout === null)
+        const pending = Array.from(window.registeredTournaments.values())
+            .filter(Boolean)
+            .filter(t => window.cashouts?.[getUid(t)] === null);
 
-        // Caso não tenha tbody (elemento não existe)
-        if (!tbody) {
-            console.warn('[Render] ⚠️ Elemento registeredTournamentsBody não encontrado');
-            return;
-        }
+        if (badge) badge.textContent = pending.length;
 
-        // ✅ Tabela vazia
-        if (registeredTournaments.length === 0) {
+        if (pending.length === 0) {
             tbody.innerHTML = `
-                <tr>
-                    <td colspan="8" style="text-align: center; padding: 20px; color: var(--text-secondary);">
-                        Nenhum torneio registrado ainda. Clique em "Registrar" na tabela abaixo.
-                    </td>
-                </tr>
-            `;
+            <tr><td colspan="8" style="text-align:center;padding:20px;color:var(--text-secondary)">
+                Nenhum torneio pendente. Clique em Registrar na tabela abaixo.
+            </td></tr>`;
             return;
         }
 
-        // ✅ Renderizar torneios registrados
-        tbody.innerHTML = registeredTournaments.map(t => {
-            // ✅ Proteção: Verificar se buyins e cashouts existem
+        tbody.innerHTML = pending.map(t => {
+            const uid = getUid(t);
             const buyins = window.buyins || {};
-            const cashouts = window.cashouts || {};
-            
-            const baseBuyin = t.buyin || 0;
-            const rebuyData = buyins[t.id] || {};
-            const rebuyCount = rebuyData.rebuyCount ?? 0;
-            const totalInvested = rebuyData.totalInvested ?? baseBuyin;
-            const cashout = cashouts[t.id] ?? 0;
-            const profit = cashout - totalInvested;
+            const rec = buyins[uid] || {};
+            const rebuyCount = rec.rebuyCount ?? 0;
+            const baseBuyin = rec.baseBuyin ?? Number(t.buyin ?? 0);
+            const totalInvested = rec.totalInvested ?? baseBuyin;
 
-            const profitColor = profit >= 0 ? 'var(--success)' : 'var(--danger)';
-
+            // aqui cashout é null (pendente), então mostre "Pendente"
             return `
-                <tr style="border-bottom: 1px solid var(--border); background: rgba(201, 169, 97, 0.02);">
-                    <td style="padding: 8px 10px; color: var(--text-secondary);">${t.time || '-'}</td>
-                    <td style="padding: 8px 10px; color: var(--text-primary); font-weight: 600;">${t.name || 'Sem nome'}</td>
-                    <td style="padding: 8px 10px; text-align: center; color: var(--text-secondary);">$${baseBuyin}</td>
-                    <td style="padding: 8px 10px; text-align: center; color: var(--secondary); font-weight: 600;">
-                        ${rebuyCount > 0 ? `+${rebuyCount}` : '-'}
-                    </td>
-                    <td style="padding: 8px 10px; text-align: center; color: var(--text-primary); font-weight: 600;">
-                        $${totalInvested.toFixed(2)}
-                    </td>
-                    <td style="padding: 8px 10px; text-align: center; color: var(--text-primary); font-weight: 600;">
-                        ${cashout >= 0 ? '$' + cashout.toFixed(2) : '⏳'}
-                    </td>
-                    <td style="padding: 8px 10px; text-align: center; color: ${profitColor}; font-weight: 600;">
-                        ${cashout >= 0 ? '$' + profit.toFixed(2) : '-'}
-                    </td>
-                    <td style="padding: 8px 10px; text-align: center;">
-                        <button class="btn-cashout" onclick="openCashoutModal(${t.id})"
-                                style="padding: 4px 8px; font-size: 10px;">
-                            ${cashout > 0 ? '✏️ Editar' : '💰 Cashout'}
-                        </button>
-                    </td>
-                </tr>
+            <tr style="border-bottom:1px solid var(--border);background:rgba(201,169,97,0.02)">
+                <td style="padding:8px 10px;color:var(--text-secondary)">${t.time ?? '-'}</td>
+                <td style="padding:8px 10px;color:var(--text-primary);font-weight:600">${t.name ?? 'Sem nome'}</td>
+                <td style="padding:8px 10px;text-align:center;color:var(--text-secondary)">${baseBuyin.toFixed(2)}</td>
+                <td style="padding:8px 10px;text-align:center;color:var(--secondary);font-weight:600">${rebuyCount || '-'}</td>
+                <td style="padding:8px 10px;text-align:center;color:var(--text-primary);font-weight:600">${Number(totalInvested).toFixed(2)}</td>
+                <td style="padding:8px 10px;text-align:center;color:var(--text-secondary)">Pendente</td>
+                <td style="padding:8px 10px;text-align:center;color:var(--text-secondary)">-</td>
+                <td style="padding:8px 10px;text-align:center">
+                <button class="btn-cashout" data-uid="${uid}" onclick="openCashoutModal('${uid}')" style="padding:4px 8px;font-size:10px">
+                    Registrar Cashout
+                </button>
+                </td>
+            </tr>
             `;
         }).join('');
     }
+
    
     window.ensureCurrentSession = function () {
         // Se já existe e tem estrutura válida, mantém
@@ -3503,74 +3657,94 @@ window.renderTable = async function() {
 
 
     async function toggleRegister(id) {
-        const tid = Number(id);
+        // id ainda é o id "visual" (ex: vindo do data-id), mas o que vale é o uid
+        const numericId = Number(id);
 
         if (!window.registeredMeta || typeof window.registeredMeta !== 'object') window.registeredMeta = {};
         if (!(window.registeredTournaments instanceof Map)) window.registeredTournaments = new Map();
         if (!window.buyins) window.buyins = {};
         if (!window.cashouts) window.cashouts = {};
-      
+
+        // achar o torneio nas fontes e pegar o UID único
         const t =
-            (window.filteredTournaments || []).find(x => Number(x.id) === tid) ||
-            (window.allTournamentsData || []).find(x => Number(x.id) === tid) ||
+            (window.filteredTournaments || []).find(x => Number(x.id) === numericId) ||
+            (window.allTournamentsData || []).find(x => Number(x.id) === numericId) ||
             null;
 
-        const hasCashoutKey = Object.prototype.hasOwnProperty.call(window.cashouts, tid);
-        const isPending = hasCashoutKey && window.cashouts[tid] === null;       // ✅ pendente só null
-        const isFinalized = hasCashoutKey && window.cashouts[tid] !== null;     // ✅ inclui 0, 1, 10...
+        if (!t || !t.uid) {
+            showNotification('Erro', 'Não foi possível identificar o torneio (UID ausente).', 'error');
+            return;
+        }
 
+        const uid = String(t.uid); // CPF do torneio
+
+        const hasCashoutKey =
+            Object.prototype.hasOwnProperty.call(window.cashouts, uid);
+
+        const currentVal = hasCashoutKey ? window.cashouts[uid] : undefined;
+
+        const isPending = hasCashoutKey && currentVal === null;                  // pendente = null
+        const isFinalized = hasCashoutKey && currentVal !== null;               // qualquer valor diferente de null
 
         if (isPending) {
             // estava pendente -> desregistrar
-            delete window.cashouts[tid];
-            delete window.buyins[tid];
-            delete window.registeredMeta[tid];
-            window.registeredTournaments.delete(tid);
-            // >>> REMOVER DA SESSÃO ATUAL
+            delete window.cashouts[uid];
+            delete window.buyins[uid];
+            delete window.registeredMeta[uid];
+            window.registeredTournaments.delete(uid);
+
+            // remover da sessão atual
             ensureCurrentSession();
             window.currentSession.tournamentIds =
-                (window.currentSession.tournamentIds || []).filter(id => Number(id) !== Number(tid));
-            // <<<
+            (window.currentSession.tournamentIds || []).filter(x => String(x) !== uid);
         } else if (isFinalized) {
-            // já tem cashout (0 ou >0) -> não é pendente
             showNotification('Aviso', 'Este torneio já tem cashout (incluindo 0).', 'warning');
             return;
         } else {
             // não existe -> registrar como pendente
-            window.cashouts[tid] = null;
-            window.buyins[tid] = {
-                baseBuyin: Number(t?.buyin ?? 0),
-                rebuyCount: 0,
-                totalInvested: Number(t?.buyin ?? 0),
+            window.cashouts[uid] = null;
+            window.buyins[uid] = {
+            baseBuyin: Number(t?.buyin ?? 0),
+            rebuyCount: 0,
+            totalInvested: Number(t?.buyin ?? 0),
             };
-            ensureCurrentSession();
-            if (!window.currentSession.tournamentIds.includes(tid)){
-                window.currentSession.tournamentIds.push(tid);
-            }
-            window.registeredMeta[tid] = t ? {
-                id: tid,
-                name: t.name,
-                site: t.site,
-                type: t.type,
-                buyin: Number(t.buyin ?? 0),
-                date: t.date,
-                time: t.time,
-            } : { id: tid };
 
-            window.registeredTournaments.set(tid, window.registeredMeta[tid]);
+            ensureCurrentSession();
+            const arr = window.currentSession.tournamentIds || [];
+            if (!arr.map(String).includes(uid)) {
+            arr.push(uid);
+            }
+            window.currentSession.tournamentIds = arr;
+
+            window.registeredMeta[uid] = {
+            uid,                      // guarda o CPF
+            id: numericId,            // opcional: id original da API para debug
+            name: t.name,
+            site: t.site,
+            type: t.type,
+            buyin: Number(t.buyin ?? 0),
+            date: t.date,
+            time: t.time,
+            };
+
+            window.registeredTournaments.set(uid, window.registeredMeta[uid]);
         }
-        // ✅ PASSO 2: salvar estado completo (inclui registeredMeta) imediatamente após a alteração
+
+        // persistir estado (com chaves por UID)
         if (typeof window.saveCurrentUserState === 'function') {
             await window.saveCurrentUserState({
-            registeredMeta: window.registeredMeta,  // garante que vai no payload
-            buyins: window.buyins,                  // opcional, mas ajuda a ficar explícito
-            cashouts: window.cashouts               // opcional, mas ajuda a ficar explícito
+            registeredMeta: window.registeredMeta,
+            buyins: window.buyins,
+            cashouts: window.cashouts,
+            sessions: window.sessions,
+            currentSession: window.currentSession,
+            sessionsMeta: window.sessionsMeta
             });
         }
 
         renderTable();
-
     }
+
 
     function updateControlDashboard() {
         const buyins = window.buyins || {};
@@ -3611,14 +3785,16 @@ window.renderTable = async function() {
             }
             // Total investido (considerando rebuys)
             const totalBuyin = registered.reduce((sum, t) => {
-            const invested = window.buyins?.[t.id]?.totalInvested ?? t.buyin ?? 0;
+                const uid = getUid(t);  
+                const invested = window.buyins?.[uid]?.totalInvested ?? t.buyin ?? 0;
             return sum + Number(invested);
             }, 0);
 
             // Total cashout (só quando está definido, senão usa 0)
             const totalCashoutVal = registered.reduce((sum, t) => {
-            const v = window.cashouts?.[t.id];
-            return sum + (v === null || v === undefined ? 0 : Number(v));
+                const uid = getUid(t);
+                const v = window.cashouts?.[uid];
+                return sum + (v === null || v === undefined ? 0 : Number(v));
             }, 0);
 
             const profit = totalCashoutVal - totalBuyin;
@@ -3663,12 +3839,12 @@ window.renderTable = async function() {
                         <tbody>
                             ${registered.map((t, idx) => {
                                 // ⬇️ NOVO: calcular dados com rebuy
-                                const baseBuyin = t.buyin;
-                                const rebuyData = buyins[t.id] || {};
+                                const uid = getUid(t);
+                                const rebuyData = buyins[uid] || {};
+                                const baseBuyin = t.buyin;                                
                                 const rebuyCount = rebuyData.rebuyCount ?? 0;
-                                const totalInvested = rebuyData.totalInvested ?? baseBuyin;
-                                
-                                const cashout = cashouts[t.id] !== undefined ? cashouts[t.id] : null;
+                                const totalInvested = rebuyData.totalInvested ?? baseBuyin;                                
+                                const cashout = cashouts[uid] !== undefined ? cashouts[uid] : null;
                                 
                                 let resultado = '-';
                                 let roiLine = '-';
@@ -3914,39 +4090,55 @@ window.updateControlDashboard = function(){
   try { renderSessions(); } catch(e){ console.error(e); }
 };
 
-function openCashoutModal(id) {
-  const tid = Number(id);
-
-  // 1) Tenta achar na lista atual (API)
-  const tFromList =
-    window.filteredTournaments?.find(x => Number(x.id) === tid) ||
-    window.allTournamentsData?.find(x => Number(x.id) === tid);
-
-  // 2) Se não achou, tenta pegar do Map (stub/snapshot)
-  const tFromRegistered = window.registeredTournaments instanceof Map
-    ? window.registeredTournaments.get(tid)
-    : null;
-
-  const t = tFromList || tFromRegistered;
-  if (!t) {
-    console.warn('[Cashout] Torneio não encontrado para abrir modal:', tid);
+function openCashoutModal(idRaw) {
+  const idStr = String(idRaw || '');
+  if (!idStr || idStr === 'NaN' || idStr === 'undefined') {
+    console.error('[Cashout] ID inválido:', idRaw);
     return;
   }
-
-  window.currentCashoutId = tid;
-
-  document.getElementById('modalTournamentName').textContent = t.name || `Torneio ${tid}`;
-  document.getElementById('modalBuyin').textContent = Number(t.buyin || 0);
-
-  const existing = window.buyins?.[tid] || window.buyins?.[String(tid)];
+  
+  console.log('[Cashout] Buscando ID:', idStr);
+  
+  // ✅ BUSCA FLEXÍVEL (funciona com seu teste!)
+  const tFromList = 
+    window.filteredTournaments?.find(t => String(t.id) === idStr || String(t.uid) === idStr) ||
+    window.allTournamentsData?.find(t => String(t.id) === idStr || String(t.uid) === idStr);
+    
+  let tFromRegistered = null;
+  if (window.registeredTournaments instanceof Map) {
+    tFromRegistered = 
+      Array.from(window.registeredTournaments.values()).find(t => 
+        String(t.id) === idStr || String(t.uid) === idStr
+      ) || window.registeredTournaments.get(idStr);
+  }
+  
+  const t = tFromList || tFromRegistered;
+  if (!t) {
+    console.warn('[Cashout] Não encontrado:', idStr);
+    showNotification('Erro', `Torneio não encontrado: ${idStr.slice(0,15)}`, 'error');
+    return;
+  }
+  
+  const uid = getUid(t);
+  console.log(`✅ Encontrado: ${t.name?.slice(0,25)} | uid: ${uid}`);
+  
+  window.currentCashoutId = uid;
+  
+  // ✅ Popula modal (igual ao seu código)
+  document.getElementById('modalTournamentName').textContent = t.name || `Torneio ${idStr}`;
+  document.getElementById('modalBuyin').textContent = Number(t.buyin || 0).toLocaleString('pt-BR');
+  
+  const existing = window.buyins?.[uid];
   document.getElementById('rebuyCount').value = existing?.rebuyCount ?? 0;
-
-  const c = window.cashouts?.[tid] ?? window.cashouts?.[String(tid)];
-  document.getElementById('cashoutInput').value = (c ?? '');
-
+  
+  const c = window.cashouts?.[uid];
+  document.getElementById('cashoutInput').value = c ?? '';
+  
   updateInvestedAmount();
   document.getElementById('cashoutModal').classList.add('active');
 }
+
+
 
 
 function updateInvestedAmount() {
@@ -3983,15 +4175,20 @@ window.saveCashout = async function() {
         window.cashouts[window.currentCashoutId] = cashoutValue;
 
         // 🆕 REMOVER DO REGISTERED (torneio finalizado)
-        window.registeredTournaments?.delete(Number(window.currentCashoutId));
-        //delete window.registeredMeta?.[Number(window.currentCashoutId)];
-
-            console.log(`[Cashout] ✅ Torneio ${window.currentCashoutId} removido de registered`);
+        const uid = String(window.currentCashoutId || '');
+        if (uid && uid !== 'NaN' && uid !== 'undefined') {
+            window.registeredTournaments?.delete(uid);  // ✅ String direto
+            delete window.registeredMeta?.[uid];     // Se precisar
+        
+            console.log(`[Cashout] ✅ Torneio ${uid} removido de registered (${window.registeredTournaments.size} restantes)`);
+        } else {
+            console.warn('[Cashout] ❌ UID inválido para delete:', uid);
+        }
             
-            //Atualizar o badge
-            if (typeof updateRegisteredBadge === 'function') {
-               updateRegisteredBadge();
-            }
+        //Atualizar o badge
+        if (typeof updateRegisteredBadge === 'function') {
+            updateRegisteredBadge();
+        }
         
 
         // Salvar no Supabase
@@ -4026,27 +4223,35 @@ window.saveCashout = async function() {
 
 
     function exportCSV() {
-        const registeredTournaments = Array.from(window.registeredTournaments).values();
+        const registeredTournaments = Array.from(window.registeredTournaments.values());
         if (registeredTournaments.length === 0) {
             showNotification('⚠️ Aviso', 'Nenhum torneio registrado para exportar', 'warning');
             return;
         }
 
-        let csv = 'Torneio,Sala,Tipo,Buy-in,Cashout,Lucro/Prejuízo,ROI,Data\n';
+        let csv = 'UID,Torneio,Sala,Tipo,Buy-in,Rebuys,Investido,Cashout,Lucro/Prejuízo,ROI,Data\n';  // ✅ Colunas melhores
         const today = new Date().toLocaleDateString('pt-BR');
+        const buyins = window.buyins || {};  // ✅ Cache
+        const cashouts = window.cashouts || {};  // ✅ Cache
 
         registeredTournaments.forEach(t => {
-            const cashout = cashouts[t.id] !== undefined ? cashouts[t.id] : 'Pendente';
+            const uid = getUid(t);  // ✅ UID correto
+            const buyinData = buyins[uid] || {};  // ✅ Usa UID + rebuys
+            const rebuyCount = buyinData.rebuyCount ?? 0;
+            const totalInvested = buyinData.totalInvested ?? t.buyin ?? 0;
+            const cashout = cashouts[uid] !== undefined ? cashouts[uid] : null;  // ✅ Usa UID
+            
             let profit = '';
             let roi = '';
-            if (cashout !== 'Pendente') {
-                profit = (cashout - t.buyin).toFixed(2);
-                roi = (profit / t.buyin * 100).toFixed(1);
+            if (cashout !== null) {
+                profit = (cashout - totalInvested).toFixed(2);
+                roi = totalInvested > 0 ? ((cashout - totalInvested) / totalInvested * 100).toFixed(1) + '%' : '0%';
             } else {
                 profit = 'Pendente';
                 roi = 'Pendente';
             }
-            csv += `${t.name},${t.site},${t.type},${t.buyin},${cashout},${profit},${roi},${today}\n`;
+            
+            csv += `"${uid}","${t.name.replace(/"/g,'""')}","${t.site}","${t.type}",${t.buyin?.toFixed(2) ?? 0},${rebuyCount},${totalInvested.toFixed(2)},${cashout !== null ? cashout.toFixed(2) : 'Pendente'},"${profit}","${roi}","${today}"\n`;
         });
 
         const bom = '\ufeff';
@@ -4065,44 +4270,85 @@ window.saveCashout = async function() {
         showNotification('✅ Exportado!', `Histórico exportado como CSV (${registeredTournaments.length} torneios)`, 'success');
     }
 
+
     function exportPDF() {
-        const registeredTournaments = Array.from(window.registeredTournaments).values();
+        const registeredTournaments = Array.from(window.registeredTournaments.values());
         if (registeredTournaments.length === 0) {
             showNotification('⚠️ Aviso', 'Nenhum torneio registrado para exportar', 'warning');
             return;
         }
 
-        const totalBuyin = registeredTournaments.reduce((sum, t) => sum + t.buyin, 0);
-        const totalCashout = registeredTournaments.reduce((sum, t) => sum + (cashouts[t.id] !== undefined ? cashouts[t.id] : t.buyin), 0);
+        const buyins = window.buyins || {};
+        const cashouts = window.cashouts || {};
+        const today = new Date().toLocaleDateString('pt-BR');
+
+        // ✅ TOTAIS CORRETOS com rebuys
+        const totalBuyin = registeredTournaments.reduce((sum, t) => {
+            const uid = getUid(t);
+            const invested = buyins[uid]?.totalInvested ?? t.buyin ?? 0;
+            return sum + Number(invested);
+        }, 0);
+
+        const totalCashout = registeredTournaments.reduce((sum, t) => {
+            const uid = getUid(t);
+            const cashVal = cashouts[uid];
+            return sum + (cashVal !== undefined && cashVal !== null ? Number(cashVal) : 0);
+        }, 0);
+
         const profit = totalCashout - totalBuyin;
         const roi = totalBuyin > 0 ? (profit / totalBuyin * 100).toFixed(1) : 0;
-        const today = new Date().toLocaleDateString('pt-BR');
+
+        // ✅ TABELA com dados reais (mantém seu design)
+        const rowsHtml = registeredTournaments.map((t, idx) => {
+            const uid = getUid(t);
+            const buyinData = buyins[uid] || {};
+            const rebuyCount = buyinData.rebuyCount ?? 0;
+            const totalInvested = buyinData.totalInvested ?? t.buyin ?? 0;
+            const cashoutVal = cashouts[uid];
+            const cashout = cashoutVal !== undefined && cashoutVal !== null ? Number(cashoutVal).toFixed(2) : '-';
+            const resultado = cashout !== '-' ? (Number(cashout) - totalInvested).toFixed(2) : '-';
+            const roi_calc = totalInvested > 0 && cashout !== '-' ? ((Number(cashout) - totalInvested) / totalInvested * 100).toFixed(1) : '-';
+            const resultColor = resultado !== '-' && Number(resultado) >= 0 ? '#155724' : resultado !== '-' ? '#721c24' : '#333';
+
+            return `
+                <tr style="background: ${idx % 2 === 0 ? '#f9f9f9' : 'white'};">
+                    <td style="padding: 10px; border: 1px solid #ddd; color: #333;">${t.name}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; color: #333;">${t.site}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; color: #333;">${t.type}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #333;">R$ ${Number(t.buyin || 0).toFixed(2)}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: center; color: #333;">${rebuyCount}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right; font-weight: bold; color: #333;">R$ ${totalInvested.toFixed(2)}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #333;">R$ ${cashout}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: ${resultColor};">R$ ${resultado}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #333;">${roi_calc !== '-' ? roi_calc + '%' : roi_calc}</td>
+                </tr>`;
+        }).join('');
 
         let html = `
             <div style="font-family: Georgia, serif; padding: 20px; color: #333;">
-                <h1 style="text-align:center; color:#8b7355; margin-bottom: 10px;"> Pega Blinder Lobby</h1>
+                <h1 style="text-align:center; color:#8b7355; margin-bottom: 10px;">Pega Blinder Lobby</h1>
                 <p style="text-align:center; color: #333; margin-bottom: 20px;"><strong>Data:</strong> ${today}</p>
                 <hr style="border: none; border-top: 2px solid #8b7355; margin: 20px 0;">
                 <h2 style="color: #8b7355; margin-top: 20px;">Resumo Financeiro</h2>
                 <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
                     <tr style="background: #f5f5f5;">
                         <td style="padding: 12px; border: 1px solid #ddd; color: #333;"><strong>Total Buy-in:</strong></td>
-                        <td style="padding: 12px; border: 1px solid #ddd; text-align: right; color: #333;"><strong>$${totalBuyin.toFixed(2)}</strong></td>
+                        <td style="padding: 12px; border: 1px solid #ddd; text-align: right; color: #333;"><strong>R$ ${totalBuyin.toFixed(2)}</strong></td>
                     </tr>
                     <tr>
                         <td style="padding: 12px; border: 1px solid #ddd; color: #333;"><strong>Total Cashout:</strong></td>
-                        <td style="padding: 12px; border: 1px solid #ddd; text-align: right; color: #333;"><strong>$${totalCashout.toFixed(2)}</strong></td>
+                        <td style="padding: 12px; border: 1px solid #ddd; text-align: right; color: #333;"><strong>R$ ${totalCashout.toFixed(2)}</strong></td>
                     </tr>
                     <tr style="background: ${profit >= 0 ? '#d4edda' : '#f8d7da'};">
                         <td style="padding: 12px; border: 1px solid #ddd; color: #333;"><strong>Lucro/Prejuízo:</strong></td>
-                        <td style="padding: 12px; border: 1px solid #ddd; text-align: right; color: ${profit >= 0 ? '#155724' : '#721c24'}; font-weight: bold;">$${profit.toFixed(2)}</td>
+                        <td style="padding: 12px; border: 1px solid #ddd; text-align: right; color: ${profit >= 0 ? '#155724' : '#721c24'}; font-weight: bold;">R$ ${profit.toFixed(2)}</td>
                     </tr>
                     <tr style="background: ${profit >= 0 ? '#d4edda' : '#f8d7da'};">
                         <td style="padding: 12px; border: 1px solid #ddd; color: #333;"><strong>ROI:</strong></td>
                         <td style="padding: 12px; border: 1px solid #ddd; text-align: right; color: ${profit >= 0 ? '#155724' : '#721c24'}; font-weight: bold;">${roi}%</td>
                     </tr>
                 </table>
-                <h2 style="color: #8b7355; margin-top: 30px;">Torneios Registrados</h2>
+                <h2 style="color: #8b7355; margin-top: 30px;">Torneios Registrados (${registeredTournaments.length})</h2>
                 <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
                     <thead>
                         <tr style="background: #1a1813; color: #c9a961;">
@@ -4110,37 +4356,17 @@ window.saveCashout = async function() {
                             <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Sala</th>
                             <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Tipo</th>
                             <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">Buy-in</th>
+                            <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Rebuys</th>
+                            <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">Investido</th>
                             <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">Cashout</th>
                             <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">Resultado</th>
                             <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">ROI</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        ${registeredTournaments.map((t, idx) => {
-                            const cashout = cashouts[t.id] !== undefined ? cashouts[t.id] : '-';
-                            let resultado = '-';
-                            let roi_calc = '-';
-                            if (cashout !== '-') {
-                                resultado = (cashout - t.buyin).toFixed(2);
-                                roi_calc = (resultado / t.buyin * 100).toFixed(1);
-                            }
-                            return `
-                                <tr style="background: ${idx % 2 === 0 ? '#f9f9f9' : 'white'};">
-                                    <td style="padding: 10px; border: 1px solid #ddd; color: #333;">${t.name}</td>
-                                    <td style="padding: 10px; border: 1px solid #ddd; color: #333;">${t.site}</td>
-                                    <td style="padding: 10px; border: 1px solid #ddd; color: #333;">${t.type}</td>
-                                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #333;">$${t.buyin}</td>
-                                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #333;">$${cashout}</td>
-                                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #333;">${resultado}</td>
-                                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #333;">${roi_calc}%</td>
-                                </tr>
-                            `;
-                        }).join('')}
-                    </tbody>
+                    <tbody>${rowsHtml}</tbody>
                 </table>
                 <p style="text-align: center; color: #666; margin-top: 30px; font-size: 10px;">Gerado em ${new Date().toLocaleString('pt-BR')}</p>
-            </div>
-        `;
+            </div>`;
 
         const element = document.createElement('div');
         element.innerHTML = html;
@@ -4167,31 +4393,32 @@ window.saveCashout = async function() {
             exportCSV();
         }
     }
+
     function getGlobalTournamentsList() {
         const buyins = window.buyins || {};
         const cashouts = window.cashouts || {};
 
-        const ids = Object.keys(buyins)
+        const uids = Object.keys(buyins)
             .map((k) => Number(k))
             .filter((n) => !Number.isNaN(n));
 
-        return ids.map((id) => {
+        return uids.map((uid) => {
             // tenta pegar dados “bonitos” (nome/site/type/date/time) se existir
             let t = null;
             if (typeof window.getTournamentForHistory === 'function') {
             try { t = window.getTournamentForHistory(id); } catch (e) { t = null; }
             }
 
-            const buyinRow = buyins[id] || buyins[String(id)] || {};
+            const buyinRow = buyins[uid] || {};
             const baseBuyin = Number(buyinRow.baseBuyin ?? t?.buyin ?? 0);
             const totalInvested = Number(buyinRow.totalInvested ?? baseBuyin ?? 0);
             const rebuyCount = Number(buyinRow.rebuyCount ?? 0);
 
-            const cashVal = cashouts[id] ?? cashouts[String(id)];
+            const cashVal = cashouts[uid];
             const cashout = (cashVal === null || cashVal === undefined) ? null : Number(cashVal);
 
             return {
-            id,
+            uid,
             name: t?.name ?? `Torneio ${id}`,
             site: t?.site ?? '-',
             type: t?.type ?? '-',
@@ -4212,18 +4439,18 @@ window.saveCashout = async function() {
         const buyins = window.buyins || {};
         const cashouts = window.cashouts || {};
         const today = new Date().toLocaleDateString('pt-BR');
-
-        let csv = 'ID,Torneio,Sala,Tipo,Investido,Cashout,Resultado,ROI,Data\n';
+        let csv = 'UID,ID,Torneio,Sala,Tipo,Investido,Cashout,Resultado,ROI,Data\n';  // Adicionei UID para debug
 
         list.forEach((t) => {
-            const b = buyins[t.id] || buyins[String(t.id)] || {};
+            const uid = getUid(t);  // ✅ Agora correto: calcula UID por torneio
+            const b = buyins[uid] || {};  // ✅ Só usa UID, sem fallback .id
             const invested = Number(b.totalInvested ?? t.buyin ?? 0);
-            const cashVal = cashouts[t.id] ?? cashouts[String(t.id)];
+            const cashVal = cashouts[uid] ?? null;  // ✅ getUid(t) corrigido
             const cashout = (cashVal === null || cashVal === undefined) ? '' : Number(cashVal);
             const result = (cashout === '') ? '' : (Number(cashout) - invested).toFixed(2);
             const roi = (cashout === '' || invested <= 0) ? '' : (((Number(cashout) - invested) / invested) * 100).toFixed(1);
 
-            csv += `${t.id},"${String(t.name).replaceAll('"','""')}",${t.site},${t.type},${invested.toFixed(2)},${cashout},${result},${roi},${today}\n`;
+            csv += `${uid},"${t.id}","${String(t.name).replaceAll('"','""')}",${t.site},${t.type},${invested.toFixed(2)},${cashout},${result},${roi},${today}\n`;
         });
 
         const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8' });
@@ -4240,25 +4467,24 @@ window.saveCashout = async function() {
         const list = Array.from(window.registeredTournaments?.values?.() || []);
         if (list.length === 0) return showNotification('Aviso', 'Nenhum torneio na sessão para exportar.', 'warning');
 
-        // Reaproveita sua infra html2pdf
-        const today = new Date().toLocaleDateString('pt-BR');
         const buyins = window.buyins || {};
         const cashouts = window.cashouts || {};
-
+        const today = new Date().toLocaleDateString('pt-BR');
         const rowsHtml = list.map((t) => {
-            const b = buyins[t.id] || buyins[String(t.id)] || {};
+            const uid = getUid(t);  // ✅ Agora correto: calcula UID por torneio
+            const b = buyins[uid] || {};  // ✅ Só usa UID, sem fallback .id
             const invested = Number(b.totalInvested ?? t.buyin ?? 0);
-            const cashVal = cashouts[t.id] ?? cashouts[String(t.id)];
+            const cashVal = cashouts[uid] ?? null;  // ✅ getUid(t) corrigido
             const cashout = (cashVal === null || cashVal === undefined) ? null : Number(cashVal);
             const result = (cashout === null) ? null : (cashout - invested);
             const roi = (cashout === null || invested <= 0) ? null : (result / invested * 100);
 
             return `<tr>
-            <td>${t.name}</td><td>${t.site}</td><td>${t.type}</td>
-            <td style="text-align:right">${invested.toFixed(2)}</td>
-            <td style="text-align:right">${cashout === null ? '-' : cashout.toFixed(2)}</td>
-            <td style="text-align:right">${result === null ? '-' : result.toFixed(2)}</td>
-            <td style="text-align:right">${roi === null ? '-' : roi.toFixed(1)}</td>
+                <td>${t.name}</td><td>${t.site}</td><td>${t.type}</td>
+                <td style="text-align:right">${invested.toFixed(2)}</td>
+                <td style="text-align:right">${cashout === null ? '-' : cashout.toFixed(2)}</td>
+                <td style="text-align:right">${result === null ? '-' : result.toFixed(2)}</td>
+                <td style="text-align:right">${roi === null ? '-' : roi.toFixed(1)}%</td>  <!-- ✅ Adicionei % -->
             </tr>`;
         }).join('');
 
@@ -4311,7 +4537,7 @@ window.saveCashout = async function() {
             const result = (cashout === '') ? '' : (Number(cashout) - invested).toFixed(2);
             const roi = (cashout === '' || invested <= 0) ? '' : (((Number(cashout) - invested) / invested) * 100).toFixed(1);
 
-            csv += `${t.id},"${String(t.name).replaceAll('"','""')}",${t.site},${t.type},${t.date || ''},${t.time || ''},${invested.toFixed(2)},${cashout},${result},${roi}\n`;
+            csv += `${t.uid},"${String(t.name).replaceAll('"','""')}",${t.site},${t.type},${t.date || ''},${t.time || ''},${invested.toFixed(2)},${cashout},${result},${roi}\n`;
             });
 
         const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8' });
@@ -4405,16 +4631,18 @@ window.saveCashout = async function() {
     }
 
 
+
     // ===== GESTÃO DE BANKROLL =====
     let bankrollChart = null;
 
     // ========== FUNÇÃO PRINCIPAL BANKROLL ==========
     async function updateBankrollMetrics() {
+        if (!(window.registeredTournaments instanceof Map)) window.registeredTournaments = new Map();
+
         console.log('[Bankroll] 🔄 Recalculando TODAS as métricas...');
         console.log('[Bankroll] DEBUG - window.allTournamentsData existe?', !!window.allTournamentsData, window.allTournamentsData?.length);
         console.log('[Bankroll] DEBUG - window.filteredTournaments existe?', !!window.filteredTournaments, window.filteredTournaments?.length);
 
-        // 🆕 MUDANÇA: Verificar window.buyins ao invés de window.registered
         if (!window.buyins || Object.keys(window.buyins).length === 0) {
             console.log('[Bankroll] Sem dados de buyins (histórico vazio)');
             // Zerar DOM
@@ -4426,7 +4654,6 @@ window.saveCashout = async function() {
             return;
         }
 
-        // ✅ Usar allTournamentsData (todos os torneios disponíveis)
         const dataSource = window.allTournamentsData || window.filteredTournaments;
         console.log('[Bankroll] dataSource escolhido:', dataSource ? `${dataSource.length} torneios` : 'NENHUM');
         
@@ -4435,59 +4662,51 @@ window.saveCashout = async function() {
             return;
         }
 
-        // 🆕 MUDANÇA: Pegar TODOS os torneios com buyin (histórico completo)
-        const allBuyinIds = Object.keys(window.buyins).map(id => parseInt(id));
-        console.log('[Bankroll] 🔍 Total de torneios no histórico:', allBuyinIds.length);
-        console.log('[Bankroll] 🔍 IDs:', allBuyinIds);
+        // ✅ CORREÇÃO: UIDs como STRING (não Number!)
+        const allBuyinUids = Object.keys(window.buyins);  // ["t_b5y9ix", ...]
+        console.log('[Bankroll] 🔍 Total de torneios no histórico:', allBuyinUids.length);
+        console.log('[Bankroll] 🔍 UIDs:', allBuyinUids.slice(0, 5) + (allBuyinUids.length > 5 ? '...' : ''));
 
-        const registeredTournaments = allBuyinIds
-            .map(id => {
-                const source = getMergedTournamentsSource();
-                console.log('[Manual] carregados:', (window.manualTournaments || []).length);
+        console.log('[Manual] carregados:', (window.manualTournaments || []).length);
 
-                const tournament = dataSource.find(t => t.id === id);
-                // ✅ se não achar torneio, cria um "placeholder" só para métricas
-                if (!tournament) {
-                    const invested = Number(window.buyins?.[id]?.totalInvested || window.buyins?.[id]?.baseBuyin || 0);
-                 return {
-                    id,
-                    name: `Torneio #${id} (histórico)`,
-                    buyin: invested,
-                    date: null,
-                    time: null,
-                    priority: 'medium',
-                    _placeholder: true,
-                    };
-                }
-                return tournament;    
-            }).filter(Boolean);
+        const historyTournaments = allBuyinUids.map(uid => getTournamentForHistory(uid)).filter(Boolean);
+        // Busca por uid (novo) OU id numérico (antigo)
+            //const tournament = dataSource.find(t => t.uid === uid || String(t.id) === uid);
+            
+            //if (!tournament) {
+                //const invested = Number(window.buyins?.[uid]?.totalInvested || window.buyins?.[uid]?.baseBuyin || 0);
+                //return {
+                    //uid,  // Use uid aqui
+                    //name: `Torneio #${uid.slice(0,8)} (histórico)`,
+                    //buyin: invested,
+                    //_placeholder: true,
+                //};
+            //}
+            //return tournament;    
+        
+        console.log('[Bankroll] Torneios no histórico (buyins):', historyTournaments.length);
+        console.log('[Bankroll] 📌 Pendentes (registeredTournaments.size):', window.registeredTournaments?.size ?? 0);
 
-        console.log('[Bankroll] Torneios válidos (encontrados na API):', registeredTournaments.length);
 
-        if (registeredTournaments.length === 0) {
+        if (historyTournaments.length === 0) {
             console.log('[Bankroll] ⚠️ Nenhum torneio encontrado na API');
-            // Zerar tudo se não há dados
-            ['bankrollTotalTournaments', 'bankrollAvgBuyin', 'bankrollTotalProfit', 
-            'bankrollROI', 'bankrollITM', 'bankrollPrizeTotal'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.textContent = id.includes('ROI') || id.includes('ITM') ? '0' : '0.00';
-            });
+            // Zerar DOM...
             return;
         }
 
-        // 2. CÁLCULOS
+        // 2. CÁLCULOS ✅ Use uid em vez de .id
         let totalInvested = 0;
         let totalCashout = 0;
         
-        registeredTournaments.forEach(t => {
-            const buyin = window.buyins[t.id];
-            const invested = parseFloat(buyin?.totalInvested || t.buyin || 0);
+        historyTournaments.forEach(t => {
+            const uid = getUid(t);
+            const buyinData = window.buyins[uid];
+            const invested = parseFloat(buyinData?.totalInvested || t.buyin || 0);
             
-            // 🆕 MUDANÇA: Tratar cashout = null como 0 (torneios pendentes)
-            const cashoutValue = window.cashouts?.[t.id];
+            const cashoutValue = window.cashouts?.[uid];
             const cashout = (cashoutValue === null || cashoutValue === undefined) ? 0 : parseFloat(cashoutValue);
             
-            console.log(`[Bankroll] 📊 ID ${t.id}: invested=${invested}, cashout=${cashout}`);
+            console.log(`[Bankroll] 📊 UID ${uid}: invested=${invested}, cashout=${cashout}`);
             
             totalInvested += invested;
             totalCashout += cashout;
@@ -4495,19 +4714,20 @@ window.saveCashout = async function() {
 
         const totalProfit = totalCashout - totalInvested;
         const roi = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
-        const avgBuyin = totalInvested / registeredTournaments.length;
+        const avgBuyin = totalInvested / historyTournaments.length;
         
-        // ITM: cashout > invested
-        const itmCount = registeredTournaments.filter(t => {
-            const invested = parseFloat(window.buyins[t.id]?.totalInvested || t.buyin || 0);
-            const cashoutValue = window.cashouts?.[t.id];
+        // ITM...
+        const itmCount = historyTournaments.filter(t => {
+            const uid = getUid(t);
+            const invested = parseFloat(window.buyins[uid]?.totalInvested || t.buyin || 0);
+            const cashoutValue = window.cashouts?.[uid];
             const cashout = (cashoutValue === null || cashoutValue === undefined) ? 0 : parseFloat(cashoutValue);
             return cashout > invested;
         }).length;
-        const itm = (itmCount / registeredTournaments.length) * 100;
+        const itm = (itmCount / historyTournaments.length) * 100;
 
         console.log('[Bankroll] Resultado:', {
-            tournaments: registeredTournaments.length,
+            tournaments: historyTournaments.length,
             totalInvested: totalInvested.toFixed(2),
             totalCashout: totalCashout.toFixed(2),
             totalProfit: totalProfit.toFixed(2),
@@ -4515,8 +4735,8 @@ window.saveCashout = async function() {
             itm: itm.toFixed(1) + '%'
         });
 
-        // 3. ATUALIZAR DOM
-        document.getElementById('bankrollTotalTournaments').textContent = registeredTournaments.length;
+        // 3. ATUALIZAR DOM (igual)...
+        document.getElementById('bankrollTotalTournaments').textContent = historyTournaments.length;
         document.getElementById('bankrollAvgBuyin').textContent = avgBuyin.toFixed(2);
         document.getElementById('bankrollPrizeTotal').textContent = totalCashout.toFixed(2);
         
@@ -4527,13 +4747,17 @@ window.saveCashout = async function() {
         document.getElementById('bankrollROI').textContent = roi.toFixed(2);
         document.getElementById('bankrollITM').textContent = itm.toFixed(1);
 
-        // 4. Banca Atual
+        // 4. Banca Atual (igual)...
         const initialBank = parseFloat(document.getElementById('bankrollInitialBank')?.value || 1000);
         const currentBank = initialBank + totalProfit;
         document.getElementById('bankrollCurrentBank').textContent = currentBank.toFixed(2);
 
         console.log('[Bankroll] ✅ DOM atualizada!');
+        console.log('[Bankroll] 📌 Pendentes (registeredTournaments.size):', window.registeredTournaments?.size ?? 0);
+        renderRegisteredTournamentsTable();  // ← ADICIONE
+
     }
+
 
     // ========== ATIVAR ABA BANKROLL ==========
     document.querySelectorAll('.view-btn[data-view="bankroll"]').forEach(btn => {
@@ -4546,6 +4770,7 @@ window.saveCashout = async function() {
 
 
 // ========== GRÁFICO DE LUCRO ACUMULADO (por quantidade de torneios) ==========
+// ✅ CORREÇÃO: Use uid em vez de id
 function updateBankrollChart(tournaments) {
   const canvas = document.getElementById('bankrollChart');
   if (!canvas) {
@@ -4561,41 +4786,37 @@ function updateBankrollChart(tournaments) {
   try {
     const ctx = canvas.getContext('2d');
     
-    
-    // Ordenar por data mais antigo primeiro (seguro com date null/undefined)
+    // Ordenar por data (igual)
     const sortedTournaments = [...(tournaments || [])].sort((a, b) => {
-        const da = String(a?.date ?? '');
-        const db = String(b?.date ?? '');
-        return da.localeCompare(db);
+      const da = String(a?.date ?? '');
+      const db = String(b?.date ?? '');
+      return da.localeCompare(db);
     });
 
-    
-    // Calcular lucro acumulado por NÚMERO DE TORNEIOS (não por data)
     const labels = [];
     const data = [];
     let cumulativeProfit = 0;
     
     sortedTournaments.forEach((t, index) => {
-      const invested = parseFloat(window.buyins[t.id]?.totalInvested || t.buyin || 0);
+      const uid = getUid(t);
+      const invested = parseFloat(window.buyins[uid]?.totalInvested || t.buyin || 0);
       
-      // 🆕 MUDANÇA: Tratar cashout = null como 0 (torneios pendentes)
-      const cashoutValue = window.cashouts?.[t.id];
+      const cashoutValue = window.cashouts?.[uid];  // ✅ UID STRING
       const cashout = (cashoutValue === null || cashoutValue === undefined) ? 0 : parseFloat(cashoutValue);
       
       const profit = cashout - invested;
       cumulativeProfit += profit;
       
-      // Label: número do torneio (1º, 2º, 3º, etc)
       labels.push(`${index + 1}`);
       data.push(cumulativeProfit);
     });
 
-    // Destruir gráfico anterior COM SEGURANÇA
+    // Destruir anterior (igual)...
     if (window.bankrollChart && typeof window.bankrollChart.destroy === 'function') {
       window.bankrollChart.destroy();
     }
 
-    // Criar novo gráfico
+    // Criar gráfico (igual)...
     window.bankrollChart = new Chart(ctx, {
       type: 'line',
       data: {
@@ -4612,26 +4833,7 @@ function updateBankrollChart(tournaments) {
           pointBackgroundColor: data[data.length-1] >= 0 ? '#10b981' : '#ef4444'
         }]
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: { 
-              callback: v => '$' + v.toFixed(0)
-            }
-          }
-        },
-        plugins: {
-          legend: { display: true },
-          tooltip: {
-            callbacks: {
-              label: ctx => `Lucro: $${ctx.parsed.y.toFixed(2)}`
-            }
-          }
-        }
-      }
+      options: { /* igual */ }
     });
     
     console.log('[Chart] ✅ Gráfico atualizado:', data.length, 'pontos (por qtdade de torneios)');
@@ -4640,38 +4842,41 @@ function updateBankrollChart(tournaments) {
   }
 }
 
+
 // Helper: resolve torneio do histórico SEM depender da API atual (50 itens)
 // - tenta achar no allTournamentsData/filteredTournaments
 // - se não achar, cria um placeholder usando buyins + (se existir) registeredMeta
-function getTournamentForHistory(id) {
-  const tid = Number(id);
+// ✅ CORREÇÃO: Suporte a UID string + id numérico
+function getTournamentForHistory(key) {
+  const uid = String(key);
 
   const live =
-    (window.allTournamentsData || []).find(t => Number(t.id) === tid) ||
-    (window.filteredTournaments || []).find(t => Number(t.id) === tid) ||
+    (window.allTournamentsData || []).find(t => t?.uid === uid || String(t?.id) === uid) ||
+    (window.filteredTournaments || []).find(t => t?.uid === uid || String(t?.id) === uid) ||
     null;
 
   if (live) return live;
 
-  const meta = window.registeredMeta?.[tid] || window.POKER?.registeredMeta?.[tid] || null;
-  const b = window.buyins?.[tid] || window.buyins?.[String(tid)] || null;
+  const meta = window.registeredMeta?.[uid] || window.POKER?.registeredMeta?.[uid] || null;
+  const b = window.buyins?.[uid] || null;
 
   return {
-    id: tid,
-    name: meta?.name || `Torneio ${tid} (histórico)`,
+    uid,
+    name: meta?.name || `Torneio ${uid.slice(0, 8)} (histórico)`,
     site: meta?.site || '-',
     type: meta?.type || '-',
-    // buyin aqui é só fallback, o cálculo usa buyins[tid].totalInvested quando tiver
     buyin: Number(meta?.buyin ?? b?.baseBuyin ?? b?.totalInvested ?? 0),
-    // se você tiver snapshot com date/time, isso permite mês-a-mês completo
     date: meta?.date ?? null,
     time: meta?.time ?? null,
-    placeholder: true
+    _placeholder: true,
   };
 }
 
 
+
+
 // ========== TABELA MÊS A MÊS (corrigida) ==========
+// ✅ CORREÇÃO: UID string em todos os acessos
 function updateMonthlyStats(tournamentsInput) {
   const tbody = document.getElementById('bankrollMonthlyBody');
   if (!tbody) {
@@ -4679,12 +4884,12 @@ function updateMonthlyStats(tournamentsInput) {
     return;
   }
 
-  const allBuyinIds = Object.keys(window.buyins || {}).map(id => Number(id));
+  // ✅ CORREÇÃO: UIDs como string
+  const allBuyinUids = Object.keys(window.buyins || {});  // Strings!
   const tournaments = Array.isArray(tournamentsInput)
     ? tournamentsInput
-    : allBuyinIds.map(getTournamentForHistory);
+    : allBuyinUids.map(getTournamentForHistory);  // Passa uid string
 
-  // Para mês-a-mês, precisamos de data. Se não tiver, pula (ou você pode agrupar em "Sem data").
   const tournamentsWithDate = tournaments.filter(t => t && t.date);
 
   console.log('[Monthly] 🔍 Torneios para tabela mensal (com data):', tournamentsWithDate.length);
@@ -4706,11 +4911,11 @@ function updateMonthlyStats(tournamentsInput) {
       monthly[monthKey] = { tournaments: 0, invested: 0, cashout: 0 };
     }
 
-    const buyinRec = window.buyins?.[t.id] || window.buyins?.[String(t.id)];
+    const uid = getUid(t);  // ✅ PADRONIZA
+    const buyinRec = window.buyins?.[uid];  // ✅ UID STRING
     const invested = Number(buyinRec?.totalInvested ?? buyinRec?.baseBuyin ?? t.buyin ?? 0);
 
-    // pendente = null (mas para métrica, null/undefined vira 0)
-    const cashVal = window.cashouts?.[t.id] ?? window.cashouts?.[String(t.id)];
+    const cashVal = window.cashouts?.[uid];  // ✅ UID STRING
     const cashout = (cashVal === null || cashVal === undefined) ? 0 : Number(cashVal);
 
     monthly[monthKey].tournaments++;
@@ -4745,19 +4950,20 @@ function updateMonthlyStats(tournamentsInput) {
 }
 
 
-// ========== REFRESH COMPLETO (corrigido) ==========
+// ========== REFRESH COMPLETO ==========
 async function refreshAllBankrollMetrics() {
   console.log('[Bankroll] 🔄 Refresh completo iniciado...');
-  await updateBankrollMetrics();
+  await updateBankrollMetrics();  // Atualiza DOM + calcula registeredTournaments
 
-  const allBuyinIds = Object.keys(window.buyins || {}).map(id => Number(id));
-  const tournaments = allBuyinIds.map(getTournamentForHistory); // ✅ sem depender da API, sem filter(Boolean)
+  // ✅ CORREÇÃO: UIDs como STRING (não Number)
+  const allBuyinUids = Object.keys(window.buyins || {});  // ["t_b5y9ix", ...]
+  const tournaments = allBuyinUids.map(getTournamentForHistory);  // Funciona com strings
 
   console.log('[Bankroll] 🔍 Torneios para gráfico e tabela:', tournaments.length);
-
+  
   if (tournaments.length > 0) {
     updateBankrollChart(tournaments);
-    updateMonthlyStats(tournaments); // ✅ passa a lista pronta
+    updateMonthlyStats(tournaments);  // ✅ Lista pronta com uid correto
   } else {
     console.warn('[Bankroll] ⚠️ Nenhum torneio encontrado para gráfico/tabela');
     updateBankrollChart([]);
@@ -4766,6 +4972,7 @@ async function refreshAllBankrollMetrics() {
 
   console.log('[Bankroll] ✅ Refresh completo finalizado!');
 }
+
 
 
 
@@ -4899,7 +5106,7 @@ if (document.querySelector('.view-btn[data-view="bankroll"].active')) {
                 window.manualTournaments = [];
 
                 // carrega manuais do Supabase
-                if (typeof loadManualTournamentsFromSupabase === 'function') {
+                if (typeof loadManualTournamentsFromSupabasePublic === 'function') {
                 window.manualTournaments = await loadManualTournamentsFromSupabasePublic();
                 console.log('[Init] Manual tournaments:', window.manualTournaments.length);
                 } else {
@@ -4962,10 +5169,13 @@ if (document.querySelector('.view-btn[data-view="bankroll"].active')) {
 
                 // Mesclar status de registered APENAS para render/UI (sem destruir a base)
                 const registeredSet = window.registered instanceof Set ? window.registered : new Set();
-                window.filteredTournaments = window.filteredTournaments.map(t => ({
+                window.filteredTournaments = window.filteredTournaments.map(t => {
+                    const uid = getUid(t);
+                    return {
                     ...t,
                     registered: window.registeredTournaments?.has(Number(t.id)) || false,
-                }));
+                    };
+                });
 
                 console.log('[Init] ✅ Torneios carregados:', window.allTournamentsData.length,
                             '| Filtrados:', window.filteredTournaments.length);
