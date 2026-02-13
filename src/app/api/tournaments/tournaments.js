@@ -1165,7 +1165,7 @@ export const getTournaments = async () => {
     })  
     return id;
   } 
-  //}
+  
   //function addqqpkTournaments(tournaments, startId) {
     //let id = startId;
   //} 

@@ -3520,9 +3520,18 @@ window.resetTournamentsPagination = async function() {
             const uid = getUid(t); // CPF do torneio
 
             const isRegistered = window.registeredTournaments.has(uid);
-            const cashoutVal = window.cashouts?.[uid] ?? 0;
-            const btnText = cashoutVal > 0 ? '✏️ Editar' : '💰 Cashout';
-            const btnDisabled = !isRegistered ? 'disabled' : '';
+
+            const hasCashoutKey = Object.prototype.hasOwnProperty.call(window.cashouts || {}, uid); 
+            const cashVal = window.cashouts?.[uid]; // undefined | null | number/string
+
+            const isPending = (cashVal === null);
+            const isFinalized = (cashVal !== undefined && cashVal !== null); // inclui 0
+
+            const btnText = isFinalized ? '✏️ Editar' : (isPending ? '⏳ Pendente' : '💰 Cashout');
+
+            // habilita se estiver registrado (pendente) OU se já tiver cashout salvo (edição)
+            const btnDisabled = (!isRegistered && !hasCashoutKey) ? 'disabled' : '';
+
 
             return `
                 <tr data-tournament-row-id="${uid}" class="${isRegistered ? 'registered' : ''}">
@@ -3763,11 +3772,13 @@ window.renderTable = async function() {
             return;
         }
 
-        const uid = String(t.uid); // CPF do torneio
+        const uid = getUid(t);
+        if (!uid) {
+            showNotification('Erro', 'Não foi possível identificar o torneio (UID ausente).', 'error');
+            return;
+        }
 
-        const hasCashoutKey =
-            Object.prototype.hasOwnProperty.call(window.cashouts, uid);
-
+        const hasCashoutKey = Object.prototype.hasOwnProperty.call(window.cashouts || {}, uid);   
         const currentVal = hasCashoutKey ? window.cashouts[uid] : undefined;
 
         const isPending = hasCashoutKey && currentVal === null;                  // pendente = null
@@ -3783,7 +3794,7 @@ window.renderTable = async function() {
             // remover da sessão atual
             ensureCurrentSession();
             window.currentSession.tournamentUids =
-            (window.currentSession.tournamentUids || []).filter(x => String(x) !== uid);
+                (window.currentSession.tournamentUids || []).filter(x => String(x) !== uid);
         } else if (isFinalized) {
             showNotification('Aviso', 'Este torneio já tem cashout (incluindo 0).', 'warning');
             return;
@@ -4677,7 +4688,10 @@ window.saveCashout = async function() {
             const rebuyCount = Number(buyinRow.rebuyCount ?? 0);
 
             const cashVal = cashouts[uid];
-            const cashout = (cashVal === null || cashVal === undefined) ? null : Number(cashVal);
+            const cashout =
+                (cashVal === undefined) ? undefined :
+                (cashVal === null) ? null :
+                Number(cashVal);
 
             return {
             uid,
@@ -4707,10 +4721,14 @@ window.saveCashout = async function() {
             const uid = getUid(t);  // ✅ Agora correto: calcula UID por torneio
             const b = buyins[uid] || {};  // ✅ Só usa UID, sem fallback .id
             const invested = Number(b.totalInvested ?? t.buyin ?? 0);
-            const cashVal = cashouts[uid] ?? null;  // ✅ getUid(t) corrigido
-            const cashout = (cashVal === null || cashVal === undefined) ? '' : Number(cashVal);
-            const result = (cashout === '') ? '' : (Number(cashout) - invested).toFixed(2);
-            const roi = (cashout === '' || invested <= 0) ? '' : (((Number(cashout) - invested) / invested) * 100).toFixed(1);
+            const cashVal = cashouts[uid]; // undefined | null | number/string
+            const cashout =
+                cashVal === undefined ? undefined :
+                cashVal === null ? null :
+                Number(cashVal);
+            const hasCashoutNumber = typeof cashout === 'number' && Number.isFinite(cashout);
+            const result = hasCashoutNumber ? (cashout - invested).toFixed(2) : '';
+            const roi = (hasCashoutNumber && invested > 0) ? (((cashout - invested) / invested) * 100).toFixed(1) : '';
 
             csv += `${uid},"${t.id}","${String(t.name).replaceAll('"','""')}",${t.site},${t.type},${invested.toFixed(2)},${cashout},${result},${roi},${today}\n`;
         });
