@@ -1793,6 +1793,27 @@
         // ============================================
         updateAliases();
         
+        function normalizeUidKey(k) {
+            const s = String(k);
+            return s.startsWith('t_') ? ('t' + s.slice(2)) : s;
+        }
+
+        function remapKeys(obj) {
+            const out = {};
+            for (const [k, v] of Object.entries(obj || {})) out[normalizeUidKey(k)] = v;
+            return out;
+        }
+
+        function normalizePokerDataUids(pokerData) {
+            if (!pokerData) return pokerData;
+            return {
+                ...pokerData,
+                buyins: remapKeys(pokerData.buyins),
+                cashouts: remapKeys(pokerData.cashouts),
+                registeredMeta: remapKeys(pokerData.registeredMeta),
+            };
+        }
+
         // ============================================
         // 7. FUNÇÃO PARA CARREGAR DADOS
         // ============================================
@@ -1829,7 +1850,8 @@
             }
             
             console.log('[loadPokerData] Carregando dados:', pokerData);
-            
+            pokerData = normalizePokerDataUids(pokerData);
+
             // AQUI é a atribuição que dispara o setter
             window.POKER = pokerData;
             dataLoaded = true;
@@ -2479,7 +2501,7 @@ window.loadUserData = async function () {
 
     // ✅ RECONSTRUÇÃO HÍBRIDA: suporta id antigo E uid novo
     Object.keys(window.buyins || {}).forEach((key) => {
-        // 👈 key pode ser "123" (antigo) ou "t_abc123" (novo)
+        // 👈 key pode ser "123" (antigo) ou "tabc123" (novo)
         const uid = key;
         const isNewUidFormat = key.startsWith('t'); // detecta formato novo
         const numericId = isNewUidFormat ? NaN : Number(key); // id numérico se for formato antigo
@@ -3289,7 +3311,7 @@ window.resetTournamentsPagination = async function() {
         // ✅ SUPORTE UID + ID NUMÉRICO
         updateInterval = setInterval(() => {
             document.querySelectorAll('tr[data-tournament-row-id]').forEach(row => {
-                const rowId = row.dataset.tournamentRowId;  // String "t_b5y9ix" ou "123"
+                const rowId = row.dataset.tournamentRowId;  // String "tb5y9ix" ou "123"
                 const t = window.filteredTournaments.find(x => x.uid === rowId || String(x.id) === rowId) ||
                         Array.from(window.registeredTournaments.values()).find(x => x.uid === rowId);
                 if (!t) return;
@@ -4991,7 +5013,7 @@ console.log('[Init] ✅ runFinalBackfillAndReport exportada:', typeof window.run
         }
 
         // ✅ CORREÇÃO: UIDs como STRING (não Number!)
-        const allBuyinUids = Object.keys(window.buyins);  // ["t_b5y9ix", ...]
+        const allBuyinUids = Object.keys(window.buyins);  // ["tb5y9ix", ...]
         console.log('[Bankroll] 🔍 Total de torneios no histórico:', allBuyinUids.length);
         console.log('[Bankroll] 🔍 UIDs:', allBuyinUids.slice(0, 5) + (allBuyinUids.length > 5 ? '...' : ''));
 
@@ -5317,7 +5339,7 @@ async function refreshAllBankrollMetrics() {
   await updateBankrollMetrics();  // Atualiza DOM + calcula registeredTournaments
 
   // ✅ CORREÇÃO: UIDs como STRING (não Number)
-  const allBuyinUids = Object.keys(window.buyins || {});  // ["t_b5y9ix", ...]
+  const allBuyinUids = Object.keys(window.buyins || {});  // ["tb5y9ix", ...]
   const tournaments = allBuyinUids.map(getTournamentForHistory);  // Funciona com strings
 
   console.log('[Bankroll] 🔍 Torneios para gráfico e tabela:', tournaments.length);
