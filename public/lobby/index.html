@@ -3630,18 +3630,18 @@ window.renderTable = async function() {
         const itmPercent = finishedUids.length > 0 ? (itmCount / finishedUids.length) * 100 : 0;
 
         // Atualizar DOM
-        const updateElement = (id, value) => {
-            const el = document.getElementById(id);
-            if (el) el.textContent = value;
-        };
+        //const updateElement = (id, value) => {
+            //const el = document.getElementById(id);
+            //if (el) el.textContent = value;
+        //};
 
-        updateElement('bankrollTotalTournaments', finishedUids.length);
-        updateElement('bankrollTotalBuyin', '$' + totalBuyin.toFixed(2));  // ✅ NOVO
-        updateElement('bankrollAvgBuyin', '$' + avgBuyin.toFixed(2));
-        updateElement('bankrollPrizeTotal', '$' + totalCashout.toFixed(2));
-        updateElement('bankrollTotalProfit', '$' + totalProfit.toFixed(2));
-        updateElement('bankrollROI', roi.toFixed(2) + '%');
-        updateElement('bankrollITM', itmPercent.toFixed(2) + '%');
+        //updateElement('bankrollTotalTournaments', finishedUids.length);
+        //updateElement('bankrollTotalBuyin', '$' + totalBuyin.toFixed(2));  // ✅ NOVO
+        //updateElement('bankrollAvgBuyin', '$' + avgBuyin.toFixed(2));
+        //updateElement('bankrollPrizeTotal', '$' + totalCashout.toFixed(2));
+        //updateElement('bankrollTotalProfit', '$' + totalProfit.toFixed(2));
+        //updateElement('bankrollROI', roi.toFixed(2) + '%');
+        //updateElement('bankrollITM', itmPercent.toFixed(2) + '%');
 
         // Persistir métricas (pra restoreBankrollMetricsUI + saveCurrentUserState)
         window.bankrollMetricsCache = {
@@ -5076,17 +5076,18 @@ console.log('[Init] ✅ runFinalBackfillAndReport exportada:', typeof window.run
 
         // 3. ATUALIZAR DOM...
         document.getElementById('bankrollTotalTournaments').textContent = historyTournaments.length;
-        document.getElementById('bankrollAvgBuyin').textContent = avgBuyin.toFixed(2);
-        document.getElementById('bankrollPrizeTotal').textContent = totalCashout.toFixed(2);
+        document.getElementById('bankrollAvgBuyin').textContent = '$' + avgBuyin.toFixed(2);
+        document.getElementById('bankrollTotalBuyin').textContent = '$' + totalInvested.toFixed(2);
+        document.getElementById('bankrollPrizeTotal').textContent = '$' + totalCashout.toFixed(2);
 
         const profitEl = document.getElementById('bankrollTotalProfit');
         if (profitEl) {
-            profitEl.textContent = totalProfit.toFixed(2);
-            profitEl.style.color = totalProfit >= 0 ? 'var(--success)' : 'var(--danger)';
+            profitEl.textContent = '$' + totalProfit.toFixed(2);
+            profitEl.style.color = '$' + totalProfit >= 0 ? 'var(--success)' : 'var(--danger)';
         }
 
-        document.getElementById('bankrollROI').textContent = roi.toFixed(2);
-        document.getElementById('bankrollITM').textContent = itm.toFixed(1);
+        document.getElementById('bankrollROI').textContent = roi.toFixed(2) + '%';
+        document.getElementById('bankrollITM').textContent = itm.toFixed(1) + '%';
 
         // 4. Banca Atual...
         const initialBank = parseFloat(document.getElementById('bankrollInitialBank')?.value || 1000);
@@ -5095,6 +5096,15 @@ console.log('[Init] ✅ runFinalBackfillAndReport exportada:', typeof window.run
 
         console.log('[Bankroll] ✅ DOM atualizada!');
         console.log('[Bankroll] 📌 Pendentes (registeredTournaments.size):', window.registeredTournaments?.size ?? 0);
+       
+        const safetyFactor = Number(document.getElementById('bankrollSafetyFactor')?.value ?? 0);
+        // você já tem totalProfit calculado aí em cima:
+        
+        const idealABI = safetyFactor > 0 ? (currentBank / safetyFactor) : 0;
+        const idealEl = document.getElementById('bankrollIdealABI');
+        if (idealEl) idealEl.textContent = idealABI.toFixed(2);
+
+
 
         // ✅ agora o Control vai ler #bankrollTotalProfit já atualizado
         window.updateControlDashboard?.();
