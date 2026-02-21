@@ -3103,6 +3103,20 @@ function getBrazilYYYYMMDD(date = new Date()) {
   const d = parts.find(p => p.type === 'day')?.value;
   return `${y}-${m}-${d}`;
 }
+window.getBrazilYYYYMMDD = function () {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+
+  const y = parts.find(p => p.type === "year")?.value;
+  const m = parts.find(p => p.type === "month")?.value;
+  const d = parts.find(p => p.type === "day")?.value;
+  return `${y}-${m}-${d}`;
+};
+
 
 function updatePageInfo() {
   const info = document.getElementById('pageInfo');
@@ -3569,12 +3583,16 @@ window.resetTournamentsPagination = async function() {
         // listeners de registro continuam usando o id visual;
         // o toggleRegister resolve o uid internamente
         document.querySelectorAll('.btn-register').forEach(btn => {
-            btn.addEventListener('click', e => {
-                const id = parseInt(e.target.dataset.id, 10);
-                toggleRegister(id);
-                updateControlDashboard();
+            btn.addEventListener('click', async (e) => {
+                const uid = String(e.currentTarget.dataset.uid || '').trim();
+                if (!uid) return showNotification?.('Erro', 'UID ausente no botão Registrar.', 'error');
+
+                await toggleRegister(uid); // agora toggleRegister recebe uid
+                window.rebuildSessionsByDate?.();
+                updateControlDashboard?.(); // isso chama renderSessions internamente no seu código
             });
         });
+
     }    
 
 // WRAPPER PARA renderTable - SEM SALVAMENTOS AUTOMÁTICOS
@@ -3732,117 +3750,179 @@ window.renderTable = async function() {
     }
 
    
-    window.ensureCurrentSession = function () {
-        // Se já existe e tem estrutura válida, mantém
-        if (
-            window.currentSession &&
-            typeof window.currentSession === "object" &&
-            Array.isArray(window.currentSession.tournamentIds)
-        ) {
-            return;
-        }
+window.rebuildSessionsByDate = function rebuildSessionsByDate() {
+  const buyins = window.buyins || {};
+  const registeredMeta = window.registeredMeta || {};
 
-        // Se não veio nada do Supabase ou veio quebrado, cria uma nova
-        const now = new Date();
-        window.currentSession = {
-            id: crypto?.randomUUID ? crypto.randomUUID() : `sess-${now.getTime()}`,
-            startedAt: now.toISOString(),
-            tournamentIds: []
-        };
+  const rawUids =
+    (typeof getAllPlayedTournamentUids === 'function')
+      ? getAllPlayedTournamentUids().map(String)
+      : Object.keys(buyins).map(String);
+
+  const uids = Array.from(new Set(rawUids)).filter(Boolean);
+
+  const groups = {};         // YYYY-MM-DD -> uid[]
+  const missingDateUids = []; // debug
+
+  const todayBR = (typeof getBrazilYYYYMMDD === 'function')
+    ? getBrazilYYYYMMDD()
+    : new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Sao_Paulo',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).format(new Date());
+
+  for (const uid of uids) {
+    let d = null;
+
+    if (typeof getTournamentDate === 'function') {
+      d = getTournamentDate(uid);
+    }
+
+    // fallbacks do seu estado salvo
+    if (!d) d = registeredMeta?.[uid]?.date || null;
+    if (!d) d = buyins?.[uid]?.date || null;
+
+    // ✅ fallback final: não some com o torneio (entra na sessão de hoje)
+    if (!d) {
+      missingDateUids.push(uid);
+      d = todayBR;
+    }
+
+    if (!groups[d]) groups[d] = [];
+    groups[d].push(uid);
+  }
+
+  const dates = Object.keys(groups).sort(); // antigo -> novo
+
+  // ⚠️ Se você já tiver sessions "manuais", preserve (auto:false)
+  const existingManual = Array.isArray(window.sessions)
+    ? window.sessions.filter(s => s && s.auto === false)
+    : [];
+
+  const autoSessions = dates.map((d) => ({
+    id: `day-${d.replaceAll('-', '')}`,
+    date: d,
+    startedAt: new Date(`${d}T00:00:00`).toISOString(),
+    endedAt: new Date(`${d}T23:59:59`).toISOString(),
+    tournamentUids: Array.from(new Set(groups[d])),
+    auto: true,
+  }));
+
+  window.sessions = [...existingManual, ...autoSessions];
+
+  try { renderSessions?.(); } catch (e) { console.error(e); }
+
+  console.log("[Sessions] ✅ Rebuild por data:", {
+    sessions: window.sessions.length,
+    dates: dates.length,
+    uidsTotal: uids.length,
+    missingDates: missingDateUids.length,
+    missingDateSample: missingDateUids.slice(0, 5),
+    todayBR
+  });
+};
+
+
+
+async function toggleRegister(uidInput) {
+  // 0) init
+  if (!window.registeredMeta || typeof window.registeredMeta !== 'object') window.registeredMeta = {};
+  if (!(window.registeredTournaments instanceof Map)) window.registeredTournaments = new Map();
+  if (!window.buyins) window.buyins = {};
+  if (!window.cashouts) window.cashouts = {};
+
+  // 1) resolve UID e torneio
+  const uidKey = String(uidInput || '').trim();
+  if (!uidKey) {
+    showNotification?.('Erro', 'UID inválido.', 'error');
+    return;
+  }
+
+  const t =
+    (window.filteredTournaments || []).find(x => String(getUid(x)) === uidKey || String(x.uid) === uidKey) ||
+    (window.allTournamentsData || []).find(x => String(getUid(x)) === uidKey || String(x.uid) === uidKey) ||
+    null;
+
+  if (!t) {
+    showNotification?.('Erro', 'Não achei o torneio pelo UID.', 'error');
+    return;
+  }
+
+  const uid = String(getUid(t) || '').trim();
+  if (!uid) {
+    showNotification?.('Erro', 'Não foi possível identificar o torneio (UID ausente).', 'error');
+    return;
+  }
+
+  // 2) status
+  const hasCashoutKey = Object.prototype.hasOwnProperty.call(window.cashouts, uid);
+  const currentVal = hasCashoutKey ? window.cashouts[uid] : undefined;
+
+  const isPending = hasCashoutKey && currentVal === null;
+  const isFinalized = hasCashoutKey && currentVal !== null; // inclui 0
+
+  // 3) toggle
+  if (isPending) {
+    delete window.cashouts[uid];
+    delete window.buyins[uid];
+    delete window.registeredMeta[uid];
+    window.registeredTournaments.delete(uid);
+
+  } else if (isFinalized) {
+    showNotification?.('Aviso', 'Este torneio já tem cashout (incluindo 0).', 'warning');
+    return;
+
+  } else {
+    window.cashouts[uid] = null;
+
+    // IMPORTANTÍSSIMO: date aqui é o que gera sessão por data
+    window.buyins[uid] = {
+      baseBuyin: Number(t?.buyin ?? 0),
+      rebuyCount: 0,
+      totalInvested: Number(t?.buyin ?? 0),
+      date: t?.date,
+      time: t?.time,
+      name: t?.name,
+      site: t?.site,
+      type: t?.type,
     };
 
+    window.registeredMeta[uid] = {
+      uid,
+      id: Number(t?.id ?? NaN), // debug; não trava se faltar
+      name: t?.name,
+      site: t?.site,
+      type: t?.type,
+      buyin: Number(t?.buyin ?? 0),
+      date: t?.date,
+      time: t?.time,
+    };
 
-    async function toggleRegister(id) {
-        // id ainda é o id "visual" (ex: vindo do data-id), mas o que vale é o uid
-        const numericId = Number(id);
+    window.registeredTournaments.set(uid, window.registeredMeta[uid]);
+  }
 
-        if (!window.registeredMeta || typeof window.registeredMeta !== 'object') window.registeredMeta = {};
-        if (!(window.registeredTournaments instanceof Map)) window.registeredTournaments = new Map();
-        if (!window.buyins) window.buyins = {};
-        if (!window.cashouts) window.cashouts = {};
+  // 4) sessões por data + persistência
+  window.rebuildSessionsByDate?.();
 
-        // achar o torneio nas fontes e pegar o UID único
-        const t =
-            (window.filteredTournaments || []).find(x => Number(x.id) === numericId) ||
-            (window.allTournamentsData || []).find(x => Number(x.id) === numericId) ||
-            null;
+  if (typeof window.saveCurrentUserState === 'function') {
+    await window.saveCurrentUserState({
+      registeredMeta: window.registeredMeta,
+      buyins: window.buyins,
+      cashouts: window.cashouts,
+      sessions: Array.isArray(window.sessions) ? window.sessions : [],
+      sessionsMeta: window.sessionsMeta || {},
+      selectedGames: Array.from(window.selectedGames || []),
+      currentSession: window.currentSession, // opcional
+    });
+  }
 
-        if (!t || !t.uid) {
-            showNotification('Erro', 'Não foi possível identificar o torneio (UID ausente).', 'error');
-            return;
-        }
+  renderTable?.();
+  updateControlDashboard?.(); // isso atualiza o #historyContainer no seu código atual
+}
 
-        const uid = getUid(t);
-        if (!uid) {
-            showNotification('Erro', 'Não foi possível identificar o torneio (UID ausente).', 'error');
-            return;
-        }
 
-        const hasCashoutKey = Object.prototype.hasOwnProperty.call(window.cashouts || {}, uid);   
-        const currentVal = hasCashoutKey ? window.cashouts[uid] : undefined;
-
-        const isPending = hasCashoutKey && currentVal === null;                  // pendente = null
-        const isFinalized = hasCashoutKey && currentVal !== null;               // qualquer valor diferente de null
-
-        if (isPending) {
-            // estava pendente -> desregistrar
-            delete window.cashouts[uid];
-            delete window.buyins[uid];
-            delete window.registeredMeta[uid];
-            window.registeredTournaments.delete(uid);
-
-            // remover da sessão atual
-            ensureCurrentSession();
-            window.currentSession.tournamentUids =
-                (window.currentSession.tournamentUids || []).filter(x => String(x) !== uid);
-        } else if (isFinalized) {
-            showNotification('Aviso', 'Este torneio já tem cashout (incluindo 0).', 'warning');
-            return;
-        } else {
-            // não existe -> registrar como pendente
-            window.cashouts[uid] = null;
-            window.buyins[uid] = {
-            baseBuyin: Number(t?.buyin ?? 0),
-            rebuyCount: 0,
-            totalInvested: Number(t?.buyin ?? 0),
-            };
-
-            ensureCurrentSession();
-            const arr = window.currentSession.tournamentUids || [];
-            if (!arr.map(String).includes(uid)) {
-            arr.push(uid);
-            }
-            window.currentSession.tournamentUids = arr;
-
-            window.registeredMeta[uid] = {
-            uid,                      // guarda o CPF
-            id: numericId,            // opcional: id original da API para debug
-            name: t.name,
-            site: t.site,
-            type: t.type,
-            buyin: Number(t.buyin ?? 0),
-            date: t.date,
-            time: t.time,
-            };
-
-            window.registeredTournaments.set(uid, window.registeredMeta[uid]);
-        }
-
-        // persistir estado (com chaves por UID)
-        if (typeof window.saveCurrentUserState === 'function') {
-            await window.saveCurrentUserState({
-            registeredMeta: window.registeredMeta,
-            buyins: window.buyins,
-            cashouts: window.cashouts,
-            sessions: Array.isArray(window.sessions) ? window.sessions : [],
-            sessionsMeta: window.sessionsMeta || {},
-            currentSession: window.currentSession,
-            selectedGames: Array.from(window.selectedGames || []),
-            });
-        }
-
-        renderTable();
-    }
 
 
 function updateControlDashboard() {
@@ -4085,41 +4165,12 @@ function computeSessionSummary(uids){
 }
 
 // ------------------ migração (one-shot) ------------------
-function migrateOldTournamentsToSessionsByDate(){
-  if (window.sessionsMigrated) return;
-
-  const uids = getAllPlayedTournamentUids();
-
-  // agrupa por date (YYYY-MM-DD)
-  const groups = {};
-  uids.forEach(uid => {
-    const d = getTournamentDate(uid);
-    if (!d) return;
-    groups[d] = groups[d] || [];
-    groups[d].push(uid);
-  });
-
-  const dates = Object.keys(groups).sort(); // antigo -> novo
-  const migrated = dates.map((d, idx) => {
-    const startedAt = new Date(d + "T10:00:00").toISOString();
-    const endedAt = new Date(d + "T23:59:59").toISOString();
-  // garante render após migração
-  try { renderSessions(); } catch(e) { console.error(e); }
-    return {
-      id: `migrated_${idx}_${d.replaceAll("-", "")}`,
-      startedAt,
-      endedAt,
-      tournamentUids: groups[d]
-    };
-  });
-
-  // evita duplicar migração se já existir alguma sessão
-  const existing = Array.isArray(window.sessions) ? window.sessions : [];
-  window.sessions = [...migrated, ...existing];
-
+function migrateOldTournamentsToSessionsByDate() {
+  // Agora "migrar" = apenas reconstruir do estado atual
+  window.rebuildSessionsByDate?.();
   window.sessionsMigrated = true;
-  console.log("[Sessions] ✅ Migração por data:", { sessions: migrated.length, tournamentsWithDate: uids.length });
 }
+
 
 // ------------------ sessão ativa ------------------
 window.startSession = async function startSession(){
