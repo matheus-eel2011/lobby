@@ -4501,9 +4501,7 @@ window.saveCashout = async function() {
         // 🆕 REMOVER DO REGISTERED (torneio finalizado)
         const uid = String(window.currentCashoutId || '');
         if (uid && uid !== 'NaN' && uid !== 'undefined') {
-            window.registeredTournaments?.delete(uid);  // ✅ String direto
-            delete window.registeredMeta?.[uid];     // Se precisar
-        
+            window.registeredTournaments?.delete(uid);  // ✅ String direto                  
             console.log(`[Cashout] ✅ Torneio ${uid} removido de registered (${window.registeredTournaments.size} restantes)`);
         } else {
             console.warn('[Cashout] ❌ UID inválido para delete:', uid);
