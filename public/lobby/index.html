@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -833,6 +834,14 @@
                 opacity: 1;
             }
         }
+        @keyframes tournamentAlertPulse {
+            0% { transform: translateX(-50%) scale(0.96); opacity: 0; }
+            100% { transform: translateX(-50%) scale(1); opacity: 1; }
+        }
+
+        #screenAlertBanner {
+        pointer-events: none;
+        }
 
         .notification-toast.success {
             border-color: var(--secondary);
@@ -1170,6 +1179,7 @@
         <div class="sidebar-section">
             <div class="sidebar-section-title" onclick="toggleSection(this)">Salas</div>
             <div class="sidebar-section-content">
+                <div class="checkbox-item"><input type="checkbox" id="toggle-all-sites" checked><label for="toggle-all-sites">Marcar/Desmarcar todos</label></div>
                 <div class="checkbox-item"><input type="checkbox" id="ggpoker" class="room-filter" value="GGPoker" checked><label for="ggpoker">GGPoker</label></div>
                 <div class="checkbox-item"><input type="checkbox" id="pokerstars" class="room-filter" value="PokerStars" checked><label for="pokerstars">PokerStars</label></div>
                 <div class="checkbox-item"><input type="checkbox" id="888poker" class="room-filter" value="888Poker" checked><label for="888poker">888Poker</label></div>
@@ -3075,6 +3085,9 @@ console.log('[Storage] Aguardando User ID...')
         }
     }
 
+
+
+
     // ===== Paginação de torneios (NOVO) =====
 const TOURNAMENTS_PAGE_SIZE = 50;
 
@@ -3258,6 +3271,7 @@ async function loadTournamentsFromAPI({ reset = false } = {}) {
 
     // Atualizar UI de paginação
     updatePageInfo();
+    checkTournamentAlerts();
 
     return tournaments;
 
@@ -3337,6 +3351,382 @@ window.resetTournamentsPagination = async function() {
 
     }
 
+    //ALERTAS DE TORNEIOS
+window.tournamentAlerts = window.tournamentAlerts || {
+    enabled: true,
+    start: new Set(),
+    lateEnd: new Set(),
+    intervalId: null,
+    audioUnlocked: false,
+    desktopEnabled: false,
+    debug: true
+};
+
+window.resetTournamentAlerts = function() {
+    window.tournamentAlerts.start.clear();
+    window.tournamentAlerts.lateEnd.clear();
+    console.log('[ALERTS] Estado de alertas resetado');
+};
+
+window.enableDesktopNotifications = async function() {
+  try {
+    if (!('Notification' in window)) {
+      console.warn('[ALERTS] Notification API não suportada');
+      return false;
+    }
+
+    if (Notification.permission === 'granted') {
+      window.tournamentAlerts.desktopEnabled = true;
+      console.log('[ALERTS] Notificações desktop já permitidas');
+      return true;
+    }
+
+    if (Notification.permission === 'denied') {
+      window.tournamentAlerts.desktopEnabled = false;
+      console.warn('[ALERTS] Notificações desktop bloqueadas');
+      return false;
+    }
+
+    const permission = await Notification.requestPermission();
+    const ok = permission === 'granted';
+    window.tournamentAlerts.desktopEnabled = ok;
+
+    console.log('[ALERTS] Permissão desktop:', permission);
+    return ok;
+  } catch (err) {
+    console.warn('[ALERTS] Erro ao pedir permissão desktop:', err);
+    return false;
+  }
+};
+
+window.showDesktopNotification = function(title, message, type = 'success') {
+  try {
+    if (!('Notification' in window)) return false;
+    if (Notification.permission !== 'granted') return false;
+
+    const n = new Notification(title, {
+      body: message,
+      tag: `tournament-alert-${type}`,
+      renotify: true,
+      silent: false
+    });
+
+    n.onclick = () => {
+      try {
+        window.focus();
+        n.close();
+      } catch (_) {}
+    };
+
+    if (window.tournamentAlerts.debug) {
+      console.log('[ALERTS] Notificação desktop enviada:', { title, message, type });
+    }
+
+    return true;
+  } catch (err) {
+    console.warn('[ALERTS] Falha ao criar notificação desktop:', err);
+    return false;
+  }
+};
+
+window.unlockAlertAudio = function() {
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) {
+            console.warn('[ALERTS] AudioContext não suportado');
+            return false;
+        }
+
+        if (!window.__alertAudioCtx) {
+            window.__alertAudioCtx = new AudioCtx();
+        }
+
+        const ctx = window.__alertAudioCtx;
+
+        if (ctx.state === 'suspended') {
+            ctx.resume();
+        }
+
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.value = 440;
+        gain.gain.value = 0.0001;
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start();
+        osc.stop(ctx.currentTime + 0.02);
+
+        window.tournamentAlerts.audioUnlocked = true;
+        console.log('[ALERTS] Áudio desbloqueado com sucesso');
+        return true;
+    } catch (err) {
+        console.warn('[ALERTS] Falha ao desbloquear áudio:', err);
+        return false;
+    }
+};
+
+window.playAlertSound = function(type = 'start') {
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) {
+            console.warn('[ALERTS] AudioContext indisponível');
+            return;
+        }
+
+        if (!window.__alertAudioCtx) {
+            window.__alertAudioCtx = new AudioCtx();
+        }
+
+        const ctx = window.__alertAudioCtx;
+
+        if (ctx.state === 'suspended') {
+            console.warn('[ALERTS] Áudio suspenso. Clique na página e rode unlockAlertAudio()');
+            return;
+        }
+
+        const now = ctx.currentTime;
+        const notes =
+            type === 'lateEnd'
+                ? [660, 520, 440]
+                : [523.25, 659.25, 783.99];
+
+        notes.forEach((freq, index) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + index * 0.12);
+
+            gain.gain.setValueAtTime(0.0001, now + index * 0.12);
+            gain.gain.exponentialRampToValueAtTime(0.12, now + index * 0.12 + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + index * 0.12 + 0.22);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            osc.start(now + index * 0.12);
+            osc.stop(now + index * 0.12 + 0.24);
+        });
+
+        if (window.tournamentAlerts.debug) {
+            console.log(`[ALERTS] Som executado: ${type}`);
+        }
+    } catch (err) {
+        console.warn('[ALERTS] Erro ao tocar som:', err);
+    }
+};
+
+window.showScreenAlert = function(title, message, type = 'success') {
+    let container = document.getElementById('tournamentAlertContainer');
+
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'tournamentAlertContainer';
+        container.style.cssText = `
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 999999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: min(360px, calc(100vw - 32px));
+            pointer-events: none;
+         `;
+        document.body.appendChild(container);
+    }
+
+    const bg =
+        type === 'warning' ? '#7c4d00' :
+        type === 'error' ? '#8b1e3f' :
+        '#0f766e';
+
+    const alert = document.createElement('div');
+    alert.style.cssText = `
+        background: ${bg};
+        color: white;
+        border-radius: 12px;
+        padding: 14px 16px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.30);
+        font-family: inherit;
+        pointer-events: auto;
+        opacity: 0;
+        transform: translateY(-8px);
+        transition: opacity .25s ease, transform .25s ease;
+       `;
+
+    alert.innerHTML = `
+        <div style="font-weight:700; margin-bottom:6px;">${title}</div>
+        <div style="font-size:13px; line-height:1.45;">${message}</div>
+        `;
+
+    container.appendChild(alert);
+
+    requestAnimationFrame(() => {
+        alert.style.opacity = '1';
+        alert.style.transform = 'translateY(0)';
+    });
+
+    setTimeout(() => {
+        alert.style.opacity = '0';
+        alert.style.transform = 'translateY(-8px)';
+        setTimeout(() => alert.remove(), 250);
+    }, 5000);
+
+    if (window.tournamentAlerts.debug) {
+        console.log('[ALERTS] Visual mostrado:', { title, message, type });
+    }
+};
+
+window.getTournamentEvents = function(uid) {
+    const uidStr = String(uid ?? '').trim();
+    if (!uidStr) return null;
+
+    const t =
+        window.registeredTournaments?.get?.(uidStr) ||
+        (Array.isArray(window.filteredTournaments)
+           ? window.filteredTournaments.find(x => String(window.getUid?.(x) || x?.uid || x?.id || '') === uidStr)
+           : null) ||
+           (Array.isArray(window.allTournamentsData)
+            ? window.allTournamentsData.find(x => String(window.getUid?.(x) || x?.uid || x?.id || '') === uidStr)
+            : null);
+
+    if (!t || !t.date || !t.time) return null;
+
+    const [year, month, day] = String(t.date).split('-').map(Number);
+    const [hours, minutes] = String(t.time || '00:00').split(':').map(Number);
+
+    if (![year, month, day, hours, minutes].every(Number.isFinite)) return null;
+    const startTime = new Date(year, month - 1, day, hours, minutes);
+    const lateRegEnd = new Date(startTime.getTime() + (Number(t.lateReg ?? 0) * 60 * 1000));
+    const now = new Date();
+
+    return {
+        uid: uidStr,
+        tournament: t,
+        name: t.name || 'Torneio',
+        site: t.site || '-',
+        start: startTime,
+        lateRegEnd,
+        startIn: Math.max(0, startTime.getTime() - now.getTime()),
+        lateRegIn: Math.max(0, lateRegEnd.getTime() - now.getTime())
+    };
+};
+window.fireTournamentAlert = function(kind, ev) {
+  if (!ev) return;
+
+  const title = kind === 'lateEnd'
+    ? 'Late register encerrando'
+    : 'Torneio começando';
+
+  const message = kind === 'lateEnd'
+    ? `${ev.name} encerrou o late register agora.`
+    : `${ev.name} começa agora às ${ev.start.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.`;
+
+  const type = kind === 'lateEnd' ? 'warning' : 'success';
+
+  window.showScreenAlert(title, message, type);
+  window.showDesktopNotification(title, message, type);
+  window.playAlertSound(kind === 'lateEnd' ? 'lateEnd' : 'start');
+};
+
+window.checkTournamentAlerts = function() {
+    if (!window.tournamentAlerts?.enabled) return;
+
+    const now = Date.now();
+    const source = [
+        ...(Array.isArray(window.filteredTournaments) ? window.filteredTournaments : []),
+        ...(Array.isArray(window.allTournamentsData) ? window.allTournamentsData : [])
+    ];
+
+    const seen = new Set();
+
+    source.forEach(t => {
+        const uid = String(window.getUid?.(t) || t?.uid || t?.id || '').trim();
+        if (!uid || seen.has(uid)) return;
+        seen.add(uid);
+
+        const ev = window.getTournamentEvents?.(uid);
+        if (!ev) return;
+
+        const startTs = ev.start?.getTime?.();
+        const lateEndTs = ev.lateRegEnd?.getTime?.();
+
+        if (!Number.isFinite(startTs) || !Number.isFinite(lateEndTs)) return;
+
+        const startDiff = now - startTs;
+        const lateDiff = now - lateEndTs;
+
+        const startWindow = Math.abs(startDiff) <= 60000;
+        const lateEndWindow = Math.abs(lateDiff) <= 60000;
+
+        if (window.tournamentAlerts.debug) {
+            console.log('[ALERTS] Check', {
+                uid,
+                name: ev.name,
+                startDiffMs: startDiff,
+                lateDiffMs: lateDiff,
+                startWindow,
+                lateEndWindow
+            });
+        }
+
+        if (startWindow && !window.tournamentAlerts.start.has(uid)) {
+            window.tournamentAlerts.start.add(uid);
+            window.fireTournamentAlert('start', ev);
+        }
+
+        if (lateEndWindow && !window.tournamentAlerts.lateEnd.has(uid)) {
+            window.tournamentAlerts.lateEnd.add(uid);
+            window.fireTournamentAlert('lateEnd', ev);
+        }    
+    });
+};
+
+window.startTournamentAlerts = function() {
+    if (window.tournamentAlerts.intervalId) {
+        clearInterval(window.tournamentAlerts.intervalId);
+    }
+
+    window.tournamentAlerts.intervalId = setInterval(() => {
+        window.checkTournamentAlerts?.();
+    }, 1000);
+
+    console.log('[ALERTS] Monitor de alertas iniciado');
+};
+
+window.stopTournamentAlerts = function() {
+    if (window.tournamentAlerts.intervalId) {
+        clearInterval(window.tournamentAlerts.intervalId);
+        window.tournamentAlerts.intervalId = null;
+        }
+
+    console.log('[ALERTS] Monitor de alertas parado');
+};
+
+document.addEventListener('click', () => {
+    if (!window.tournamentAlerts.audioUnlocked) {
+        window.unlockAlertAudio?.();
+    }
+
+    if (!window.tournamentAlerts.desktopEnabled && 'Notification' in window && Notification.permission === 'default') {
+        console.log('[ALERTS] Clique detectado; você pode chamar enableDesktopNotifications()');
+    }
+}, { once: true });
+
+
+    function startTournamentAlertLoop() {
+        if (window.tournamentAlertInterval) clearInterval(window.tournamentAlertInterval);
+        window.tournamentAlertInterval = setInterval(checkTournamentAlerts, 1000);
+        setTimeout(checkTournamentAlerts, 2000);
+    }
+
+
+    startTournamentAlertLoop();    
     function setupEventListeners() {
         document.querySelectorAll('.weekday-btn').forEach(btn => {
             btn.addEventListener('click', e => {
@@ -3413,13 +3803,67 @@ window.resetTournamentsPagination = async function() {
         });
         // No setupEventListeners():
         document.getElementById('rebuyCount').addEventListener('input', updateInvestedAmount);
+        document.querySelectorAll('.room-filter, .type-filter, .priority-filter, .status-filter').forEach(el => {
+            el.addEventListener('change', applyFilters);
+        });
+        setupToggleAllSites();
     
     }
+window.enableDesktopNotifications = async function() {
+  if (!('Notification' in window)) {
+    console.warn('[ALERTS] Navegador não suporta notificações desktop');
+    return false;
+  }
 
+  if (Notification.permission === 'granted') {
+    console.log('[ALERTS] Notificações já permitidas');
+    window.tournamentAlerts = window.tournamentAlerts || {};
+    window.tournamentAlerts.desktopEnabled = true;
+    return true;
+  }
+
+  if (Notification.permission === 'denied') {
+    console.warn('[ALERTS] Notificações bloqueadas pelo usuário');
+    return false;
+  }
+
+  const permission = await Notification.requestPermission();
+  const ok = permission === 'granted';
+
+  window.tournamentAlerts = window.tournamentAlerts || {};
+  window.tournamentAlerts.desktopEnabled = ok;
+
+  console.log('[ALERTS] Permissão de notificação:', permission);
+  return ok;
+};
+
+window.showDesktopNotification = function(title, message, type = 'success') {
+  try {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return false;
+
+    const icon =
+      type === 'warning' ? undefined :
+      type === 'error' ? undefined :
+      undefined;
+
+    new Notification(title, {
+      body: message,
+      tag: `tournament-${type}`,
+      renotify: true,
+      silent: false,
+      icon
+    });
+
+    return true;
+  } catch (err) {
+    console.warn('[ALERTS] Falha ao exibir notificação desktop:', err);
+    return false;
+  }
+};    
     function getMergedTournamentsSource() {
-    const api = Array.isArray(window.allTournamentsData) ? window.allTournamentsData : [];
-    const manual = Array.isArray(window.manualTournaments) ? window.manualTournaments : [];
-    return mergeTournamentsById(api, manual); // usa getUid
+        const api = Array.isArray(window.allTournamentsData) ? window.allTournamentsData : [];
+        const manual = Array.isArray(window.manualTournaments) ? window.manualTournaments : [];
+        return mergeTournamentsById(api, manual); // usa getUid
     }
     
 
@@ -3510,8 +3954,33 @@ window.resetTournamentsPagination = async function() {
 
         renderTable();
         updateControlDashboard();
+        checkTournamentAlerts();
     }
 
+function syncToggleAllSitesState() {
+    const siteToggle = document.getElementById('toggle-all-sites');
+    const roomFilters = document.querySelectorAll('.room-filter');
+    if (!siteToggle || !roomFilters.length) return;
+
+    const checkedCount = [...roomFilters].filter(cb => cb.checked).length;
+        siteToggle.checked = checkedCount === roomFilters.length;
+        siteToggle.indeterminate = checkedCount > 0 && checkedCount < roomFilters.length;
+    }
+
+function setupToggleAllSites() {
+    const siteToggle = document.getElementById('toggle-all-sites');
+    const roomFilters = document.querySelectorAll('.room-filter');
+    if (!siteToggle || !roomFilters.length) return;
+
+    siteToggle.addEventListener('change', () => {
+        roomFilters.forEach(cb => cb.checked = siteToggle.checked);
+        siteToggle.indeterminate = false;
+        applyFilters();
+    });
+
+        roomFilters.forEach(cb => cb.addEventListener('change', syncToggleAllSitesState));
+syncToggleAllSitesState();
+}
     function renderTable() {
         renderRegisteredTournamentsTable();
         const tbody = document.getElementById('tournamentBody');
@@ -3615,6 +4084,7 @@ window.renderTable = async function() {
 
         // 1️⃣ RENDERIZAR A TABELA
         origRenderTable();
+        checkTournamentAlerts();
         
 
 
@@ -3920,6 +4390,7 @@ async function toggleRegister(uidInput) {
 
   renderTable?.();
   updateControlDashboard?.(); // isso atualiza o #historyContainer no seu código atual
+  checkTournamentAlerts();
 }
 
 
