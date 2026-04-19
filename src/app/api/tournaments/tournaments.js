@@ -1357,7 +1357,7 @@ function addCoinPokerTournaments(tournaments) {
  * Suprema, JackPoker, ClubGG, QQPK – stubs prontos para você plugar templates reais.
  */
 function addSupremaTournaments(tournaments) {
-  const dates = generateWeekdayDatesForAprAndMay2026();
+  const dates = generateDatesForAprAndMay2026();
   const supConfig = {
     mainSeries: [
       {date: "2026-04-19", time: "10:00", name: "R$ 50 - SAT Supremo", type: "REG",buyin: 10, guaranteed: 11700, priority: "high", lateReg: 65},
@@ -1367,7 +1367,7 @@ function addSupremaTournaments(tournaments) {
       {date: "2026-04-19", time: "13:00", name: "R$75 - Sunday MB", type: "MYSTERY",buyin: 15, guaranteed: 50000, priority: "high", lateReg: 200},
       {date: "2026-04-19", time: "14:00", name: "R$110 - WarmUp", type: "REG KO",buyin: 22, guaranteed: 50000, priority: "high", lateReg: 200},
       {date: "2026-04-19", time: "14:00", name: "R$ 35+40 - SAT Supremo", type: "REG",buyin: 6, guaranteed: 11700, priority: "high", lateReg: 55},
-      {date: "2026-04-19", time: "15:00", name: "####### R$ 390 - Supremo  #######", type: "REG KO",buyin: 78, guaranteed: 1000000, priority: "high", lateReg: 245},
+      {date: "2026-04-19", time: "15:00", name: "####### R$ 390 - Supremo  #######", type: "REG KO",buyin: 78, guaranteed: 999999, priority: "high", lateReg: 245},
       {date: "2026-04-19", time: "17:00", name: "R$250 - Freeze HR", type: "REG",buyin: 50, guaranteed: 100000, priority: "high", lateReg: 215},
       {date: "2026-04-19", time: "17:00", name: "R$ 39 - Supreminho", type: "REG KO",buyin: 7.80, guaranteed: 100000, priority: "high", lateReg: 245},
       {date: "2026-04-19", time: "18:00", name: "R$ 50 + R$100 - Sunday Plus", type: "REG KO",buyin: 10, guaranteed: 1000000, priority: "high", lateReg: 300},
