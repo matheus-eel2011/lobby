@@ -1379,7 +1379,13 @@ function addSupremaTournaments(tournaments) {
   
 
     dailies: [
-      {time: "08:30", name: "3500 BOUNTY HUNTER", type: "REG KO", buyin: 15, guaranteed: 3500, priority: "medium", lateReg: 200},
+      {time: "11:00", name: "R$ 15+15 - Plus", type: "REG", buyin: 3, guaranteed: 15000, priority: "medium", lateReg: 112},
+      {time: "13:00", name: "R$ 25 - Battle", type: "REG KO", buyin: 5, guaranteed: 15000, priority: "medium", lateReg: 156},
+      {time: "13:15", name: "R$ 35 - Freeze", type: "REG", buyin: 7, guaranteed: 5000, priority: "medium", lateReg: 140},
+      {time: "15:00", name: "R$ 15+15 - Plus", type: "REG", buyin: 3, guaranteed: 30000, priority: "medium", lateReg: 140},
+      {time: "16:30", name: "R$ 35 - Freeze", type: "REG", buyin: 7, guaranteed: 5000, priority: "medium", lateReg: 140},
+      {time: "17:30", name: "R$ 25 - Battle", type: "REG KO", buyin: 5, guaranteed: 15000, priority: "medium", lateReg: 156},
+      {time: "18:00", name: "R$ 10+15 - Mini Plus", type: "REG", buyin: 2, guaranteed: 50000, priority: "medium", lateReg: 150},
     ],
   };
 
