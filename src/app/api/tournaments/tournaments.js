@@ -1369,7 +1369,7 @@ function addSupremaTournaments(tournaments) {
       {date: "2026-04-19", time: "14:00", name: "R$ 35+40 - SAT Supremo", type: "REG",buyin: 6, guaranteed: 11700, priority: "high", lateReg: 55},
       {date: "2026-04-19", time: "15:00", name: "####### R$ 390 - Supremo  #######", type: "REG KO",buyin: 78, guaranteed: 1000000, priority: "high", lateReg: 245},
       {date: "2026-04-19", time: "17:00", name: "R$250 - Freeze HR", type: "REG",buyin: 50, guaranteed: 100000, priority: "high", lateReg: 215},
-      {date: "2026-04-19", time: "17:00", name: "R$ 39 - Supreminho", type: "REG KO",buyin: 7.80, guaranteed: 1000000, priority: "high", lateReg: 245},
+      {date: "2026-04-19", time: "17:00", name: "R$ 39 - Supreminho", type: "REG KO",buyin: 7.80, guaranteed: 100000, priority: "high", lateReg: 245},
       {date: "2026-04-19", time: "18:00", name: "R$ 50 + R$100 - Sunday Plus", type: "REG KO",buyin: 10, guaranteed: 1000000, priority: "high", lateReg: 300},
       {date: "2026-04-19", time: "19:00", name: "R$ 150 - Battle HR", type: "REG KO",buyin: 30, guaranteed: 100000, priority: "high", lateReg: 300},
       {date: "2026-04-19", time: "19:00", name: "R$ 750 - HighS", type: "REG KO",buyin: 150, guaranteed: 100000, priority: "high", lateReg: 300},
@@ -1386,6 +1386,7 @@ function addSupremaTournaments(tournaments) {
       {time: "16:30", name: "R$ 35 - Freeze", type: "REG", buyin: 7, guaranteed: 5000, priority: "medium", lateReg: 140},
       {time: "17:30", name: "R$ 25 - Battle", type: "REG KO", buyin: 5, guaranteed: 15000, priority: "medium", lateReg: 156},
       {time: "18:00", name: "R$ 10+15 - Mini Plus", type: "REG", buyin: 2, guaranteed: 50000, priority: "medium", lateReg: 150},
+
     ],
   };
 
