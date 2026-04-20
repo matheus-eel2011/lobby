@@ -1388,7 +1388,9 @@ function addSupremaTournaments(tournaments) {
       {date: "2026-04-20", time: "19:00", name: "R$ 250 - Battle HR", type: "REG KO",buyin: 50, guaranteed: 150000, priority: "high", lateReg: 180},
       {date: "2026-04-20", time: "19:00", name: "R$ 150 - Battle HR", type: "REG KO",buyin: 110, guaranteed: 60000, priority: "high", lateReg: 300},     
       {date: "2026-04-20", time: "20:00", name: "R$ 150 - Big Mystery", type: "MYSTERY",buyin: 22, guaranteed: 40000, priority: "high", lateReg: 140},
-      
+      {date: "2026-04-20", time: "15:00", name: "R$ 16 - SAT 250", type: "REG",buyin: 3.20, guaranteed: 1750, priority: "high", lateReg: 45},
+      {date: "2026-04-20", time: "16:30", name: "R$ 16 - SAT 250", type: "REG",buyin: 3.20, guaranteed: 2000, priority: "high", lateReg: 36},
+      {date: "2026-04-20", time: "17:30", name: "R$ 16 - SAT 250", type: "REG",buyin: 3.20, guaranteed: 2500, priority: "high", lateReg: 36},
     ],
   
 
