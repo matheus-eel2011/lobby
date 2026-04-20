@@ -1381,7 +1381,14 @@ function addSupremaTournaments(tournaments) {
       {date: "2026-04-19", time: "19:00", name: "R$ 150 - Battle HR", type: "REG KO",buyin: 30, guaranteed: 100000, priority: "high", lateReg: 300},
       {date: "2026-04-19", time: "19:00", name: "R$ 750 - HighS", type: "REG KO",buyin: 150, guaranteed: 100000, priority: "high", lateReg: 300},
       {date: "2026-04-19", time: "20:00", name: "R$ 75 - Bounty", type: "REG KO",buyin: 15, guaranteed: 30000, priority: "high", lateReg: 300},
-
+      {date: "2026-04-20", time: "16:30", name: "R$ 50 - Bounty", type: "REG KO",buyin: 10, guaranteed: 5000, priority: "medium", lateReg: 168},
+      {date: "2026-04-20", time: "18:00", name: "R$ 20 + R$30 - Plus", type: "REG",buyin: 4, guaranteed: 84500, priority: "high", lateReg: 140},
+      {date: "2026-04-20", time: "18:00", name: "R$ 50 + R$60 - Big Plus", type: "REG",buyin: 10, guaranteed: 50000, priority: "high", lateReg: 150},
+      {date: "2026-04-20", time: "19:00", name: "R$ 75 - Battle", type: "REG KO",buyin: 15, guaranteed: 100000, priority: "high", lateReg: 168},
+      {date: "2026-04-20", time: "19:00", name: "R$ 250 - Battle HR", type: "REG KO",buyin: 50, guaranteed: 150000, priority: "high", lateReg: 180},
+      {date: "2026-04-20", time: "19:00", name: "R$ 150 - Battle HR", type: "REG KO",buyin: 110, guaranteed: 60000, priority: "high", lateReg: 300},     
+      {date: "2026-04-20", time: "20:00", name: "R$ 150 - Big Mystery", type: "MYSTERY",buyin: 22, guaranteed: 40000, priority: "high", lateReg: 140},
+      
     ],
   
 
@@ -1389,10 +1396,14 @@ function addSupremaTournaments(tournaments) {
       {time: "11:00", name: "R$ 15+15 - Plus", type: "REG", buyin: 3, guaranteed: 15000, priority: "medium", lateReg: 112},
       {time: "13:00", name: "R$ 25 - Battle", type: "REG KO", buyin: 5, guaranteed: 15000, priority: "medium", lateReg: 156},
       {time: "13:15", name: "R$ 35 - Freeze", type: "REG", buyin: 7, guaranteed: 5000, priority: "medium", lateReg: 140},
-      {time: "15:00", name: "R$ 15+15 - Plus", type: "REG", buyin: 3, guaranteed: 30000, priority: "medium", lateReg: 140},
+      {time: "14:00", name: "R$ 110 - WarmUP", type: "REG KO", buyin: 22, guaranteed: 15000, priority: "medium", lateReg: 180},
+      {time: "15:00", name: "R$ 15+15 - Plus", type: "REG", buyin: 3, guaranteed: 20000, priority: "medium", lateReg: 140},
+      {time: "16:00", name: "R$ 80 - Bounty", type: "REG", buyin: 16, guaranteed: 5000, priority: "medium", lateReg: 140},
       {time: "16:30", name: "R$ 35 - Freeze", type: "REG", buyin: 7, guaranteed: 5000, priority: "medium", lateReg: 140},
       {time: "17:30", name: "R$ 25 - Battle", type: "REG KO", buyin: 5, guaranteed: 15000, priority: "medium", lateReg: 156},
       {time: "18:00", name: "R$ 10+15 - Mini Plus", type: "REG", buyin: 2, guaranteed: 50000, priority: "medium", lateReg: 150},
+      {time: "20:00", name: "R$ 75 - Freeze", type: "REG", buyin: 15, guaranteed: 12000, priority: "medium", lateReg: 150},
+
 
     ],
   };
