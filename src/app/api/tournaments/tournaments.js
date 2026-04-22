@@ -1360,6 +1360,7 @@ function addSupremaTournaments(tournaments) {
   const dates = generateWeekdayDatesForAprAndMay2026();
   const supConfig = {
     mainSeries: [
+      {date: "2026-03-30", time: "18:00", name: "R$ 50+60 - SCP 117-M Big Plus", type: "REG",buyin: 22, guaranteed: 100000, priority: "high", lateReg: 112},
       {date: "2026-04-19", time: "10:00", name: "R$ 15+15 - Plus", type: "REG",buyin: 3, guaranteed: 15000, priority: "high", lateReg: 112},
       {date: "2026-04-19", time: "11:00", name: "R$ 50 - SAT Supremo", type: "REG",buyin: 10, guaranteed: 11700, priority: "high", lateReg: 65},
       {date: "2026-04-19", time: "11:30", name: "R$ 30+35 - SAT Supremo", type: "REG",buyin: 6, guaranteed: 19500, priority: "high", lateReg: 55},
@@ -1391,6 +1392,7 @@ function addSupremaTournaments(tournaments) {
       {date: "2026-04-20", time: "15:00", name: "R$ 16 - SAT 250", type: "REG",buyin: 3.20, guaranteed: 1750, priority: "high", lateReg: 45},
       {date: "2026-04-20", time: "16:30", name: "R$ 16 - SAT 250", type: "REG",buyin: 3.20, guaranteed: 2000, priority: "high", lateReg: 36},
       {date: "2026-04-20", time: "17:30", name: "R$ 16 - SAT 250", type: "REG",buyin: 3.20, guaranteed: 2500, priority: "high", lateReg: 36},
+      
     ],
   
 
