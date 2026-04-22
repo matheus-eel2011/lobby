@@ -864,6 +864,16 @@ function addYaPokerTournaments(tournaments) {
   const yaPokerConfig = {
     mainSeries: [
       {date: "2026-02-25", time: "14:30", name: "€10.000 GTD WEDNESDAY SPECIAL", type: "REG",buyin: 25, guaranteed: 10000, priority: "high", lateReg: 120},
+      {date: "2026-04-22", time: "13:30", name: "$30.000 GTD Hi5 #33", type: "REG",buyin: 33, guaranteed: 30000, priority: "high", lateReg: 240},
+      {date: "2026-04-22", time: "13:30", name: "$10.000 GTD Hi5 #34", type: "REG",buyin: 11, guaranteed: 10000, priority: "high", lateReg: 240},
+      {date: "2026-04-22", time: "14:30", name: "$20.000 GTD Hi5 #35", type: "REG KO",buyin: 22, guaranteed: 20000, priority: "high", lateReg: 240},
+      {date: "2026-04-22", time: "14:30", name: "$5.000 GTD Hi5 #36", type: "REG KO",buyin: 5.5, guaranteed: 5000, priority: "high", lateReg: 240},
+      {date: "2026-04-23", time: "11:15", name: "$25.000 GTD Hi5 #41", type: "REG",buyin: 16.50, guaranteed: 25000, priority: "high", lateReg: 240},
+      {date: "2026-04-23", time: "11:30", name: "$50.000 GTD Hi5 #42", type: "REG",buyin: 55, guaranteed: 50000, priority: "high", lateReg: 240},
+      {date: "2026-04-23", time: "11:45", name: "$30.000 GTD Hi5 #43", type: "REG KO",buyin: 27.50, guaranteed: 30000, priority: "high", lateReg: 240},
+      {date: "2026-04-23", time: "13:30", name: "$40.000 GTD Hi5 #47", type: "REG",buyin: 33, guaranteed: 40000, priority: "high", lateReg: 240},
+      {date: "2026-04-23", time: "13:30", name: "$15.000 GTD Hi5 #48", type: "REG",buyin: 11, guaranteed: 15000, priority: "high", lateReg: 240},
+
     ],
     dailies: [
       { time: "00:05", name: "$7,500 GTD", type: "REG", buyin: 33, guaranteed: 7500, lateReg: 192 },
@@ -903,6 +913,8 @@ function addYaPokerTournaments(tournaments) {
       { time: "19:30", name: "$2,000 GTD 1RE", type: "REG", buyin: 22, guaranteed: 2000, lateReg: 100 },
       { time: "20:15", name: "The Boski Daily Double A - $7500 GTD", type: "REG", buyin: 11, guaranteed: 7500, lateReg: 192 },
       { time: "20:45", name: "The Boski Daily Double B - $7500 GTD", type: "REG", buyin: 11, guaranteed: 7500, lateReg: 192 },
+      { time: "20:15", name: "The Boski Daily Double A - $7500 GTD", type: "REG", buyin: 55, guaranteed: 20000, lateReg: 192 },
+      { time: "20:45", name: "The Boski Daily Double B - $7500 GTD", type: "REG", buyin: 55, guaranteed: 20000, lateReg: 192 },
     ],
   };
 
