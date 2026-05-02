@@ -873,6 +873,16 @@ function addYaPokerTournaments(tournaments) {
       {date: "2026-04-23", time: "11:45", name: "$30.000 GTD Hi5 #43", type: "REG KO",buyin: 27.50, guaranteed: 30000, priority: "high", lateReg: 240},
       {date: "2026-04-23", time: "13:30", name: "$40.000 GTD Hi5 #47", type: "REG",buyin: 33, guaranteed: 40000, priority: "high", lateReg: 240},
       {date: "2026-04-23", time: "13:30", name: "$15.000 GTD Hi5 #48", type: "REG",buyin: 11, guaranteed: 15000, priority: "high", lateReg: 240},
+      {date: "2026-05-03", time: "11:15", name: "The Stormer $7500 GTD", type: "REG",buyin: 6.60, guaranteed: 7500, priority: "high", lateReg: 240},
+      {date: "2026-05-03", time: "11:30", name: "Sunday splash $50000 GTD", type: "REG",buyin: 11, guaranteed: 50000, priority: "very-high", lateReg: 270},
+      {date: "2026-05-03", time: "12:05", name: "Drew's Derby $50000 GTD", type: "REG",buyin: 33, guaranteed: 50000, priority: "medium", lateReg: 240},
+      {date: "2026-05-03", time: "11:15", name: "The Stormer $7500 GTD", type: "REG",buyin: 6.60, guaranteed: 7500, priority: "high", lateReg: 240},
+      {date: "2026-05-03", time: "12:30", name: "MB $20000 GTD", type: "REG",buyin: 17.50, guaranteed: 20000, priority: "high", lateReg: 240},
+      {date: "2026-05-03", time: "12:30", name: "Sat $109 50 seats", type: "REG",buyin: 11, guaranteed: 7500, priority: "high", lateReg: 240},
+      {date: "2026-05-03", time: "13:30", name: "Sunday Smash $75000 GTD", type: "REG",buyin: 22, guaranteed: 75000, priority: "very-high", lateReg: 240},
+      {date: "2026-05-03", time: "13:30", name: "Micro $7500 GTD", type: "REG",buyin: 5.5, guaranteed: 7500, priority: "very-high", lateReg: 240},
+      {date: "2026-05-03", time: "14:30", name: "Mini Special $80000 GTD", type: "REG",buyin: 55, guaranteed: 80000, priority: "medium", lateReg: 240},
+      {date: "2026-05-03", time: "14:30", name: "PKO $15000 GTD", type: "REG KO",buyin: 11, guaranteed: 15000, priority: "high", lateReg: 240},
 
     ],
     dailies: [
