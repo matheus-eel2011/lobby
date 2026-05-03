@@ -162,6 +162,22 @@ function addGGPokerTournaments(tournaments) {
         priority: "medium",
         lateReg: 150,
       },
+      {date: "2026-05-03", time: "08:30", name: "PKO $100000 GTD", type: "REG KO",buyin: 10, guaranteed: 100000, priority: "very-high", lateReg: 240},
+      {date: "2026-05-03", time: "09:30", name: "MB $125000 GTD", type: "REG KO",buyin: 5.50, guaranteed: 125000, priority: "very-high", lateReg: 240},
+      {date: "2026-05-03", time: "10:00", name: "$3 sunday monster $25000 GTD", type: "REG",buyin: 3, guaranteed: 25000, priority: "very-high", lateReg: 240},
+      {date: "2026-05-03", time: "11:00", name: "Sunday marathon $40000 GTD", type: "REG",buyin: 5.50, guaranteed: 40000, priority: "very-high", lateReg: 240},
+      {date: "2026-05-03", time: "12:00", name: "05-L GP Europa $150000 GTD", type: "REG",buyin: 15, guaranteed: 150000, priority: "very-high", lateReg: 240},
+      {date: "2026-05-03", time: "12:30", name: "06-L BH Deep Turbo $40000 GTD", type: "REG KO",buyin: 10, guaranteed: 40000, priority: "very-high", lateReg: 240},
+      {date: "2026-05-03", time: "13:30", name: "07-L Main event PKO $100000 GTD", type: "REG KO",buyin: 5.50, guaranteed: 100000, priority: "very-high", lateReg: 240},
+      {date: "2026-05-03", time: "15:00", name: "08-L Sunday Hundred $125000 GTD", type: "REG",buyin: 15, guaranteed: 125000, priority: "very-high", lateReg: 240},
+      {date: "2026-05-03", time: "16:00", name: "10-LMain event $150000 GTD", type: "REG",buyin: 25, guaranteed: 150000, priority: "very-high", lateReg: 240},
+      {date: "2026-05-03", time: "16:30", name: "11-L BH king $25000 GTD", type: "REG KO",buyin: 3, guaranteed: 25000, priority: "very-high", lateReg: 240},
+      {date: "2026-05-03", time: "17:00", name: "12-L $10 $150000 GTD", type: "MYSTERY",buyin: 10, guaranteed: 150000, priority: "very-high", lateReg: 240},
+      {date: "2026-05-03", time: "17:00", name: "13-L $15 $150000 GTD", type: "MYSTERY",buyin: 15, guaranteed: 150000, priority: "very-high", lateReg: 240},
+      {date: "2026-05-03", time: "17:00", name: "14-L $3 $150000 GTD", type: "MYSTERY",buyin: 3, guaranteed: 150000, priority: "very-high", lateReg: 240},
+      {date: "2026-05-03", time: "17:00", name: "15-L $5.50 $150000 GTD", type: "MYSTERY",buyin: 5.50, guaranteed: 150000, priority: "very-high", lateReg: 240},
+      {date: "2026-05-03", time: "17:00", name: "16-L $10 $150000 GTD", type: "MYSTERY",buyin: 10, guaranteed: 150000, priority: "very-high", lateReg: 240},
+      {date: "2026-05-03", time: "17:00", name: "17-L $10 $150000 GTD", type: "MYSTERY",buyin: 10, guaranteed: 150000, priority: "very-high", lateReg: 240},
     ],
     // BountyHunter diários (trecho do seu código). [file:3]
     bountyhunterdailies: [
@@ -923,8 +939,8 @@ function addYaPokerTournaments(tournaments) {
       { time: "19:30", name: "$2,000 GTD 1RE", type: "REG", buyin: 22, guaranteed: 2000, lateReg: 100 },
       { time: "20:15", name: "The Boski Daily Double A - $7500 GTD", type: "REG", buyin: 11, guaranteed: 7500, lateReg: 192 },
       { time: "20:45", name: "The Boski Daily Double B - $7500 GTD", type: "REG", buyin: 11, guaranteed: 7500, lateReg: 192 },
-      { time: "20:15", name: "The Boski Daily Double A - $7500 GTD", type: "REG", buyin: 55, guaranteed: 20000, lateReg: 192 },
-      { time: "20:45", name: "The Boski Daily Double B - $7500 GTD", type: "REG", buyin: 55, guaranteed: 20000, lateReg: 192 },
+      { time: "20:15", name: "The Boski Daily Double A - $20000 GTD", type: "REG", buyin: 55, guaranteed: 20000, lateReg: 192 },
+      { time: "20:45", name: "The Boski Daily Double B - $20000 GTD", type: "REG", buyin: 55, guaranteed: 20000, lateReg: 192 },
     ],
   };
 
